@@ -1,4 +1,9 @@
+open import Level renaming (suc to s; zero to z)
 module Prelude where
+
+private
+  variable
+    ℓ l : Level
 
 -- Natural numbers as our first example of
 -- an inductive data type.
@@ -15,13 +20,13 @@ data Nat : Set where
 
 -- Lists are a parameterized inductive data type.
 
-data List (A : Set) : Set where
+data List (A : Set ℓ) : Set ℓ where
   nil  : List A
   cons : (x : A) (xs : List A) → List A
 
 -- Disjoint sum type.
 
-data _⊎_ (S T : Set) : Set where
+data _⊎_ (S : Set l) (T : Set ℓ) : Set (s (l ⊔ ℓ)) where
   inl : S → S ⊎ T
   inr : T → S ⊎ T
 infixr 4 _⊎_
@@ -43,7 +48,7 @@ data False : Set where
 --   Σ ℕ A =  Σ   A(n) = A(0) + A(1) + ...
 --           n ∈ ℕ
 
-record Σ (S : Set) (T : S → Set) : Set where
+record Σ (S : Set l) (T : S → Set ℓ) : Set (l ⊔ ℓ) where
   constructor _,_
   field fst : S
         snd : T fst
@@ -53,7 +58,7 @@ infixr 5 _,_
 
 -- The non-dependent version is the ordinary Cartesian product.
 
-_×_ : (S T : Set) → Set
+_×_ : (S : Set l) (T : Set ℓ) → Set (l ⊔ ℓ)
 S × T = Σ S λ _ → T
 
 infixr 5 _×_
@@ -63,7 +68,7 @@ infixr 5 _×_
 -- By Curry-Howard, it corresponds to Truth, as
 -- no evidence is needed to construct this proposition.
 
-record True : Set where
+record True : Set ℓ where
 
 -- Relations
 
@@ -88,7 +93,7 @@ LEℕ (suc x) zero  = False
 LEℕ (suc x) (suc y) = LEℕ x y 
 
 
-data _≡_ {A : Set} (x : A) : A → Set where
+data _≡_ {A : Set ℓ} (x : A) : A → Set ℓ where
   refl : x ≡ x
 
 -- C-c C-l load
@@ -97,13 +102,13 @@ data _≡_ {A : Set} (x : A) : A → Set where
 -- C-c C-. show goal and assumptions and current term
 -- C-c C-SPC give
 
-record ⌜_⌝ (P : Set) : Set where
+record ⌜_⌝ (P : Set ℓ) : Set ℓ where
   constructor !
   field {{prf}} : P
 
 -- Extension by a least and a greatest element
 
-data Ext (A : Set) : Set where
+data Ext (A : Set ℓ) : Set ℓ where
   ⊤ : Ext A
   # : A → Ext A
   ⊥ : Ext A

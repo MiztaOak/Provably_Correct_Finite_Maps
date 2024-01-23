@@ -2,25 +2,42 @@ module Map.BSTMap where
 
 open import Prelude
 open import OrdSet
+open import Level
 
-data Maybe (A : Set) : Set where
+data Maybe {ℓ : Level} (A : Set ℓ) : Set ℓ where
   nothing : Maybe A
   just : A → Maybe A
 
-module _ {K : Set} (V : Set) (R : OSet K) where
+private
+  variable
+    ℓ ℓ' ℓ'' : Level
+
+module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   open OSet R
-  open OSet (ext {K} {R}) renaming 
+  open OSet (ext {ℓ} {K} {R}) renaming 
    (_≤_ to _≤Ex_; trans to transEx; compare to compareEx)
 
   -- BST based map implementation
-  data BSTMap (lu : Ext K × Ext K) : Set where
+  data BSTMap (lu : Ext K × Ext K) : Set (ℓ ⊔ ℓ') where
     leaf : {{l≤u : (fst lu) ≤Ex (snd lu)}} → BSTMap lu
     node : (p : K × V)
            (let (k , v) = p)
            (let (l , u) = lu)
            (lt : BSTMap (l , # k))
            (rt : BSTMap (# k , u)) → BSTMap lu
-  
+
+  data Env {lu : Ext K × Ext K} (f : V → Set ℓ'') : BSTMap lu → Set (ℓ ⊔ (ℓ' ⊔ ℓ'')) where
+    leaf : {{l≤u : (fst lu) ≤Ex (snd lu)}} → Env f leaf
+    node : {p : K × V}
+           (let (k , v) = p)
+           (let (l , u) = lu)
+           → f v
+           → {lt : BSTMap (l , # k)}
+           → Env f lt
+           → {rt : BSTMap (# k , u)} 
+           → Env f rt
+           → Env f (node p lt rt)
+
   mapOrd : ∀ {l u : Ext K} → BSTMap (l , u) → l ≤Ex u
   mapOrd {l} {u} (leaf ⦃ l≤u ⦄) = l≤u
   mapOrd {l} {u} (node p lt rt) = transEx {x = l} {z = u} (mapOrd lt) (mapOrd rt)
@@ -34,7 +51,7 @@ module _ {K : Set} (V : Set) (R : OSet K) where
   ... | eq = node (fst kv , f (snd kv , snd p)) lt rt
   ... | ge = node p lt (insert f kv rt)
 
-  lookup : ∀ {l u : Ext K}  → BSTMap (l , u) → K → Maybe V
+  lookup : ∀ {l u : Ext K} → BSTMap (l , u) → K → Maybe V
   lookup leaf k = nothing
   lookup (node (k' , v) lt rt) k with compare k k'
   ... | le = lookup lt k
@@ -59,14 +76,15 @@ module _ {K : Set} (V : Set) (R : OSet K) where
   ... | ge = node (k' , v) lt (delete rt k)
   ... | eq = merge lt rt 
 
+
   -- Ordered lists
 
-  data OList (lu : Ext K × Ext K) : Set where
+  data OList (lu : Ext K × Ext K) : Set (ℓ ⊔ ℓ') where
     []  : {{l≤u : (fst lu) ≤Ex (snd lu)}} → OList lu
     _∷_ : (p : K × V)
-            (let (l , u) = lu)
-            {{l≤p : (l ≤Ex # (fst p))}}
-            (ps : OList (# (fst p) , u)) → OList lu
+          (let (l , u) = lu)
+          {{l≤p : (l ≤Ex # (fst p))}}
+          (ps : OList (# (fst p) , u)) → OList lu
 
   -- Flattening a BST
 
@@ -91,10 +109,12 @@ module _ {K : Set} (V : Set) (R : OSet K) where
   sort : (xs : List (K × V)) → OList (⊥ , ⊤)
   sort xs = flatten (tree xs)
 
-  sort' : (xs : List (K × V)) → (K × V) → (K × V) → OList (⊥ , ⊤)
-  sort' xs x y = flatten (insert fst y {{record {}}} {{record {}}} (insert fst x {{record {}}} {{record {}}} (tree xs)))
-  
 xs : List (Nat × Nat)
 xs = cons (5 , 4) (cons (0 , 10) (cons (5 , 11) (cons (2 , 4) nil)))
      
-sorted = sort' Nat OSetℕ xs (5 , 10) (11 , 20)
+sorted = sort Nat OSetℕ xs 
+
+module _ {K : Set ℓ} {R : OSet K} where
+  map : ∀ {l u : Ext K} {A : Set ℓ} {B : Set ℓ'} → (A → B)→ BSTMap A R (l , u) → BSTMap B R (l , u)
+  map f leaf = leaf
+  map f (node (k , v) lt rt) = node (k , f v) (map f lt) (map f rt)

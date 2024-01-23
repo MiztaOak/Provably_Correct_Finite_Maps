@@ -1,30 +1,37 @@
-open import Prelude 
+open import Prelude hiding (Rel; _≡_) 
+open import Level renaming (suc to s)
+open import Relation.Binary.Core
+open import Relation.Binary.PropositionalEquality hiding (trans)
 
 module OrdSet where
   pattern le = inl !
   pattern ge = inr (inr !)
   pattern eq = inr (inl refl)
   
-  record OSet (Carrier : Set) : Set₁ where
+  private
+    variable
+      ℓ : Level
+
+  record OSet (Carrier : Set ℓ) : Set (s (s ℓ)) where
     infix 4 _≤_
     field
       --Carrier : Set
 
       -- relation
-      _≤_     : Rel Carrier
+      _≤_     : Rel Carrier ℓ
 
       -- invariants of ≤
       trans : ∀ {x y z : Carrier} → x ≤ y → y ≤ z → x ≤ z
       compare : ∀ x y → ⌜ (x ≤ y)⌝ ⊎ ((x ≡ y) ⊎ ⌜ (y ≤ x)⌝ )
 
-  module _ {A : Set} {R : OSet A} where
+  module _ {A : Set ℓ} {R : OSet A} where
     open OSet R
 
     ext : OSet (Ext A)
     (ext OSet.≤ _) ⊤         = True
     (ext OSet.≤ (# x)) (# y) = x ≤ y
     (ext OSet.≤ ⊥) _         = True
-    (ext OSet.≤ _) _         = False
+    (ext OSet.≤ _) _         = Lift ℓ False 
     OSet.trans (ext) {x} {y} {⊤} e1 e2       = record {}
     OSet.trans (ext) {# x} {# y} {# z} e1 e2 = trans e1 e2
     OSet.trans (ext) {⊥} {# y} {# z} e1 e2   = record {}

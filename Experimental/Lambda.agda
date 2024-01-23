@@ -30,8 +30,8 @@ data Type : Set where
 Ctx : Set
 Ctx = BSTMap Type OSetℕ (⊥ , ⊤)
 
-Env : Ctx → Set
-Env = {!!}
+env : Ctx → Set₁ 
+env = Env Type OSetℕ [[_]] 
 
 data _⊢_ : Ctx → Type → Set where
   T-Int  : ∀ {Γ : Ctx}
@@ -68,7 +68,7 @@ data _⊢_ : Ctx → Type → Set where
            --------------------------
              → Γ ⊢ τ₂
 
-translate : ∀ {Γ : Ctx} {τ : Type} → Env Γ → Γ ⊢ τ → [[ τ ]]
+translate : ∀ {Γ : Ctx} {τ : Type} → env Γ → Γ ⊢ τ → [[ τ ]]
 translate _ (T-Int n) = Level.lift n
 translate env (T-Add e₁ e₂) = Level.lift (lower (translate env e₁) + lower (translate env e₂))
 translate env T-Unit = Level.lift unit
