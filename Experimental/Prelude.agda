@@ -69,6 +69,7 @@ infixr 5 _×_
 -- no evidence is needed to construct this proposition.
 
 record True : Set ℓ where
+  constructor tt
 
 -- Relations
 
@@ -92,6 +93,11 @@ LEℕ zero  y     = True
 LEℕ (suc x) zero  = False
 LEℕ (suc x) (suc y) = LEℕ x y 
 
+≺ℕ : Rel Nat
+≺ℕ zero zero = False
+≺ℕ zero (suc y) = True 
+≺ℕ (suc x) zero = False
+≺ℕ (suc x) (suc y) = ≺ℕ x y
 
 data _≡_ {A : Set ℓ} (x : A) : A → Set ℓ where
   refl : x ≡ x
