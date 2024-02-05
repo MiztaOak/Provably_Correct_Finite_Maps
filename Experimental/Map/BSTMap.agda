@@ -70,6 +70,16 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   ... | eq = node (fst kv , f (snd kv , snd p)) lt rt
   ... | ge = node p lt (insert f kv rt) 
 
+  insert∈ : ∀ {l u : Ext K} {m : BSTMap (l , u)} {k : K} {v : V}
+            {f : V × V → V}
+            {{l≤k : l ≺Ex # k}} {{k≤u : # k ≺Ex u}}
+            → k ∈ (insert f (k , v) m)
+  insert∈ {m = leaf} {k} = here k
+  insert∈ {m = node p lt rt} {k} with compare k (fst p)
+  ... | le = left (insert∈ {m = lt}) 
+  ... | eq = here k
+  ... | ge = right (insert∈ {m = rt})
+
   lookup : ∀ {l u : Ext K} → BSTMap (l , u) → K → Maybe V
   lookup leaf k = nothing
   lookup (node (k' , v) lt rt) k with compare k k'
