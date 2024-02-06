@@ -2,6 +2,7 @@ open import Prelude hiding (Rel; _≡_)
 open import Level renaming (suc to s)
 open import Relation.Binary.Core
 open import Relation.Binary.PropositionalEquality hiding (trans)
+open import Data.Product 
 
 module OrdSet where
   pattern le = inl !

@@ -16,7 +16,7 @@ data Nat : Set where
 -- 2 instead of (suc (suc zero)), connect it
 -- to the built-in natural numbers.
 
-{-# BUILTIN NATURAL Nat #-}
+--{-# BUILTIN NATURAL Nat #-}
 
 -- Lists are a parameterized inductive data type.
 
