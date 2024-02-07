@@ -1,26 +1,25 @@
-module BasicMap where
+module Map.BasicMap where
 
--- TODO: find out which are necessary
 open import Agda.Builtin.Unit using (⊤)
-open import Data.Bool.Base using (Bool; true; false)
 open import Data.Empty using (⊥)
 open import Data.Maybe.Base using (Maybe; just; nothing; is-just)
-open import Data.Product
-open import Data.Sum
+--open import Data.Product
+--open import Data.Sum
 open import Level renaming (suc to lsuc; zero to lzero)
-open import Relation.Binary.PropositionalEquality
+--open import Relation.Binary.PropositionalEquality
 open import Relation.Nullary.Negation.Core using (¬_)
+open import Prelude renaming (⊥ to bot; ⊤ to top)
 
 private
   variable
-    𝓁 l : Level
+    ℓ ℓ' : Level
 
-module _ {K : Set} {V : Set} {l : Level} where
+module _ {K : Set ℓ} {V : Set ℓ'} where
 
-  record BMap : Set (lsuc l) where
+  record BMap : Set {!!} where
     constructor mkMap
     field
-      Map    : Set l
+      Map    : Set {!!}
       ∅      : Map                 -- Empty
       _∈_    : K → Map → Set       -- Domain
       _∪_    : Map → Map → Map
@@ -33,16 +32,16 @@ module _ {K : Set} {V : Set} {l : Level} where
     infixr 6 _∪_
     infix  5 _∈_
 
-    _[_↦_] : Map → K → V → Set
+    _[_↦_] : Map → K → V → Set ℓ'
     m [ k ↦ v ] = lookup m k ≡ just v
 
     _∉_ : K → Map → Set
     k ∉ m = ¬ (k ∈ m)
 
-    _⊆_ : Map → Map → Set
+    _⊆_ : Map → Map → Set ℓ
     n ⊆ m = ∀ k → k ∈ n → k ∈ m
 
-    _≐_ : Map → Map → Set
+    _≐_ : Map → Map → Set ℓ
     n ≐ m = (n ⊆ m) × (m ⊆ n)
 
     field

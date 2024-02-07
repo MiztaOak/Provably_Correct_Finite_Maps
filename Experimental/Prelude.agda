@@ -9,8 +9,8 @@ private
 -- an inductive data type.
 
 data Nat : Set where
-  zero : Nat 
-  suc  : (n : Nat) → Nat 
+  zero : Nat
+  suc  : (n : Nat) → Nat
 
 -- To use decimal notation for numerals, like
 -- 2 instead of (suc (suc zero)), connect it
@@ -88,19 +88,20 @@ Rel A = A → A → Set
 
 -- Less-or-equal on natural numbers
 
-LEℕ : Rel Nat 
+LEℕ : Rel Nat
 LEℕ zero  y     = True
 LEℕ (suc x) zero  = False
-LEℕ (suc x) (suc y) = LEℕ x y 
+LEℕ (suc x) (suc y) = LEℕ x y
 
 ≺ℕ : Rel Nat
 ≺ℕ zero zero = False
-≺ℕ zero (suc y) = True 
+≺ℕ zero (suc y) = True
 ≺ℕ (suc x) zero = False
 ≺ℕ (suc x) (suc y) = ≺ℕ x y
 
 data _≡_ {A : Set ℓ} (x : A) : A → Set ℓ where
   refl : x ≡ x
+infix 4 _≡_
 
 -- C-c C-l load
 -- C-c C-c case split
