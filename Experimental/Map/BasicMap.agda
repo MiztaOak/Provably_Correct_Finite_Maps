@@ -7,7 +7,7 @@ open import Data.Maybe.Base using (Maybe; just; nothing; is-just)
 --open import Data.Sum
 open import Level renaming (suc to lsuc; zero to lzero)
 --open import Relation.Binary.PropositionalEquality
-open import Relation.Nullary.Negation.Core using (¬_)
+open import Relation.Nullary using (¬_)
 open import Prelude renaming (⊥ to bot; ⊤ to top)
 
 private
@@ -16,10 +16,10 @@ private
 
 module _ {K : Set ℓ} {V : Set ℓ'} where
 
-  record BMap : Set {!!} where
+  record BMap : Set (lsuc (ℓ ⊔ ℓ')) where
     constructor mkMap
     field
-      Map    : Set {!!}
+      Map    : Set (ℓ ⊔ ℓ')
       ∅      : Map                 -- Empty
       _∈_    : K → Map → Set       -- Domain
       _∪_    : Map → Map → Map
