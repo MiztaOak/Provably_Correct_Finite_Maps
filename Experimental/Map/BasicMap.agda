@@ -3,12 +3,12 @@ module Map.BasicMap where
 open import Agda.Builtin.Unit using (⊤)
 open import Data.Empty using (⊥)
 open import Data.Maybe.Base using (Maybe; just; nothing; is-just)
---open import Data.Product
+open import Data.Product
 --open import Data.Sum
 open import Level renaming (suc to lsuc; zero to lzero)
 --open import Relation.Binary.PropositionalEquality
 open import Relation.Nullary using (¬_)
-open import Prelude renaming (⊥ to bot; ⊤ to top)
+open import Prelude renaming (⊥ to bot; ⊤ to top) hiding (_×_; _,_)
 
 private
   variable
@@ -21,7 +21,8 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
     field
       Map    : Set (ℓ ⊔ ℓ')
       ∅      : Map                 -- Empty
-      _∈_    : K → Map → Set       -- Domain
+      _∈_    : K → Map → Set (ℓ ⊔ ℓ') -- Domain
+      --[_↦_]_ : K → V → Map → Set (ℓ ⊔ ℓ')
       _∪_    : Map → Map → Map
       lookup : Map → K → Maybe V   -- Apply
       insert : Map → (K × V) → Map -- Update
@@ -31,17 +32,18 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
     infix  7 lookup
     infixr 6 _∪_
     infix  5 _∈_
+    --infix  5 [_↦_]_ 
 
-    _[_↦_] : Map → K → V → Set ℓ'
-    m [ k ↦ v ] = lookup m k ≡ just v
+    [_↦_]_ : K → V → Map → Set ℓ'
+    [ k ↦ v ] m = lookup m k ≡ just v
 
-    _∉_ : K → Map → Set
+    _∉_ : K → Map → Set (ℓ ⊔ ℓ') 
     k ∉ m = ¬ (k ∈ m)
 
-    _⊆_ : Map → Map → Set ℓ
+    _⊆_ : Map → Map → Set (ℓ ⊔ ℓ') 
     n ⊆ m = ∀ k → k ∈ n → k ∈ m
 
-    _≐_ : Map → Map → Set ℓ
+    _≐_ : Map → Map → Set (ℓ ⊔ ℓ') 
     n ≐ m = (n ⊆ m) × (m ⊆ n)
 
     field
@@ -63,24 +65,24 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
             ⊃
           ∀ f . P f
       -}
-      ips : {P : Map → Set}
+      ips : {P : Map → Set (ℓ ⊔ ℓ')}
             → P ∅ × (∀ m → P m → (∀ k → (k ∉ m → (∀ v → P (insert m (k , v))))))
             → (∀ m → P m)
 
       lookup-∅ : ∀ {k} → lookup ∅ k ≡ nothing
-      ∈-∅ : ∀ {k} → k ∈ ∅ ≡ ⊥
+      ∈-∅ : ∀ {k} → ¬ (k ∈ ∅) 
 
-      ∈⇒lookup : ∀ {m k v} → m [ k ↦ v ] → k ∈ m
-      lookup⇒∈ : ∀ {m k v} → k ∈ m → m [ k ↦ v ]
+      ∈⇒lookup : ∀ {m k v} → [ k ↦ v ] m → k ∈ m
+      lookup⇒∈ : ∀ {m k v} → k ∈ m → [ k ↦ v ] m
 
       {-
       ⊢ ∀ f a b . lookup (insert f (a , b)) a = b
       -}
       insert-∉ : ∀ {m k v} → k ∉ m
-                 → (insert m (k , v)) [ k ↦ v ]
+                 → [ k ↦ v ] (insert m (k , v)) 
       insert-∈ : ∀ {m k v} → k ∈ m
-                 → ¬ (m [ k ↦ v ]) -- is this necessary?
-                 → (insert m (k , v)) [ k ↦ v ]
+                 → ¬ ([ k ↦ v ] m) -- is this necessary?
+                 → [ k ↦ v ] (insert m (k , v)) 
 
       {-
       ⊢ ∀ a c . (a ≠ c) ⊃
@@ -110,8 +112,8 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
       ∪-∅ : ∀ {m} → (m ∪ ∅ ≡ m) × (∅ ∪ m ≡ m)
 
       ↦∈∪ : ∀ {k v} → ∀ {n m}
-            → (n ∪ m) [ k ↦ v ]
-            → n [ k ↦ v ] ⊎ m [ k ↦ v ]
+            → [ k ↦ v ] (n ∪ m) 
+            → [ k ↦ v ] n ⊎ [ k ↦ v ] m
 
       -- equality
       {-
