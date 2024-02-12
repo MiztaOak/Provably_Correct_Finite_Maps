@@ -26,9 +26,15 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   open Map.BOBMap.Map {ℓ} {ℓ'} {K} (V) (R)
   open OSet R
 
+  size : Map V R → ℕ
+  size (map {h} x) = h
+
+  toBMap : (m : Map V R) → BOBMap (⊥' , ⊤') (size m)   
+  toBMap (map x) = x
+
   private
     -- needs to be BMap.Map
-    fldr : {l : Level} {A : Set l} → (K × V → A → A) → A → {!Map V R!} → A
+    fldr : {l : Level} {A : Set l} → (K × V → A → A) → A → Map V R → A
     fldr f g (map m) = foldr f g m
 
   instance
@@ -39,7 +45,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     BMap._∈_ BOBMapImp k m = AnyM (λ kv' → k ≡ proj₁ kv') m
     --BMap.[_↦_]_ BOBMapImp k v m = AnyM (λ kv' → (k ≡ proj₁ kv') × (v ≡ proj₂ kv')) m
 
-    BMap._∪_ BOBMapImp n m = fldr (λ p t → {!BMap.insert t p!}) m n
+    BMap._∪_ BOBMapImp n m = fldr (λ p t → map $ proj₂ $ insert p {{tt}} {{tt}} (toBMap t) ) m n
     BMap.lookup BOBMapImp (map m) = lookup m
     BMap.insert BOBMapImp (map m) kv = map $ proj₂ $ insert kv {{tt}} {{tt}} m
 

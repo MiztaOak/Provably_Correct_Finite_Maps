@@ -181,9 +181,10 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   foldr f g leaf = g
   foldr f g (node p l r bal) = foldr f (f p (foldr f g r)) l
 
-  -- issue with height of trees
+{-  -- issue with height of trees
   merge : {n m h : ℕ} {l u : Ext K}
           → BOBMap (l , u) n
           → BOBMap (l , u) m
           → ∃ λ i → BOBMap (l , u) (i ⊕ h)
-  merge α β = {!!} , foldr (λ p → {!proj₂ ∘ insert p!}) {!β!} {!!}
+  merge α β = {!!} , foldr (λ p → {!proj₂ ∘ insert p!}) {!β!} α
+-}
