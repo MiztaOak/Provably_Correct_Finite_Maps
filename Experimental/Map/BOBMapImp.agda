@@ -26,14 +26,13 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   open Map.BOBMap.Map {ℓ} {ℓ'} {K} (V) (R)
   open OSet R
 
-  size : Map V R → ℕ
-  size (map {h} x) = h
-
-  toBMap : (m : Map V R) → BOBMap (⊥' , ⊤') (size m)   
-  toBMap (map x) = x
-
   private
-    -- needs to be BMap.Map
+    height : Map V R → ℕ
+    height (map {h} x) = h
+
+    toBMap : (m : Map V R) → BOBMap (⊥' , ⊤') (height m)
+    toBMap (map x) = x
+
     fldr : {l : Level} {A : Set l} → (K × V → A → A) → A → Map V R → A
     fldr f g (map m) = foldr f g m
 
@@ -74,7 +73,10 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     BMap.ins-assoc BOBMapImp = {!!}
     BMap.ins-same BOBMapImp = {!!}
     BMap.∈-ins BOBMapImp = {!!}
-    BMap.∪-assoc BOBMapImp = {!!}
+    BMap.↦-∪ᴸ BOBMapImp = {!!}
+    BMap.↦-∪ᴿ BOBMapImp = {!!}
+    BMap.∪-∅ BOBMapImp = {!!}
+    BMap.↦∈∪ BOBMapImp = {!!}
     BMap.∪-∅ BOBMapImp = {!!}
     BMap.↦∈∪ BOBMapImp = {!!}
     BMap.equality BOBMapImp = {!!}
