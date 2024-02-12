@@ -1,7 +1,7 @@
 {-# OPTIONS --allow-unsolved-metas #-}
 module Map.BOBMap where
 
-open import Prelude hiding (Nat;_×_;_,_)
+open import Prelude 
 open import OrdSet
 open import Level using (Level; _⊔_) 
 open import Data.Nat.Base using (ℕ; zero; suc; _+_) 
@@ -9,6 +9,7 @@ open import Data.Fin.Base using (Fin) renaming (zero to fzero; suc to fsuc)
 open import Data.Product
 open import Data.Maybe
 open import Relation.Unary using (Pred)
+open import Relation.Binary.PropositionalEquality hiding (trans)
 
 private
   variable
@@ -17,7 +18,7 @@ private
 module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   open OSet R
   open OSet (ext {ℓ} {K} {R}) renaming 
-   (_≤_ to _≤Ex_;_≺_ to _≺Ex_; trans to transEx; compare to compareEx)
+   (_≺_ to _≺Ex_; trans to transEx; compare to compareEx)
 
   ℕ₂ = Fin 2
   pattern 0# = fzero
