@@ -8,7 +8,7 @@ open import Data.Product
 open import Level renaming (suc to lsuc; zero to lzero)
 --open import Relation.Binary.PropositionalEquality
 open import Relation.Nullary using (¬_)
-open import Prelude renaming (⊥ to bot; ⊤ to top) 
+open import Prelude renaming (⊥ to bot; ⊤ to top)
 open import Relation.Binary.PropositionalEquality
 open import Data.Sum
 
@@ -32,18 +32,18 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
 
     infix  7 lookup
     infixr 6 _∪_
-    infix  5 _↦_∈_ 
+    infix  5 _↦_∈_
 
     [_↦_]_ : K → V → Map → Set ℓ'
     [ k ↦ v ] m = lookup m k ≡ just v
 
-    _↦_∉_ : K → V → Map → Set (ℓ ⊔ ℓ') 
+    _↦_∉_ : K → V → Map → Set (ℓ ⊔ ℓ')
     k ↦ v ∉ m = ¬ (k ↦ v ∈ m)
 
-    _⊆_ : Map → Map → Set (ℓ ⊔ ℓ') 
+    _⊆_ : Map → Map → Set (ℓ ⊔ ℓ')
     n ⊆ m = ∀ k v → k ↦ v ∈ n → k ↦ v ∈ m
 
-    _≐_ : Map → Map → Set (ℓ ⊔ ℓ') 
+    _≐_ : Map → Map → Set (ℓ ⊔ ℓ')
     n ≐ m = (n ⊆ m) × (m ⊆ n)
 
     field
@@ -70,7 +70,7 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
             → (∀ m → P m)
 
       lookup-∅ : ∀ {k} → lookup ∅ k ≡ nothing
-      ∈-∅ : ∀ {k v} → ¬ (k ↦ v ∈ ∅) 
+      ∈-∅ : ∀ {k v} → ¬ (k ↦ v ∈ ∅)
 
       ∈⇒lookup : ∀ {m k v} → [ k ↦ v ] m → k ↦ v ∈ m
       lookup⇒∈ : ∀ {m k v} → k ↦ v ∈ m → [ k ↦ v ] m
@@ -79,10 +79,10 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
       ⊢ ∀ f a b . lookup (insert f (a , b)) a = b
       -}
       insert-∉ : ∀ {m k v} → k ↦ v ∉ m
-                 → [ k ↦ v ] (insert m (k , v)) 
+                 → [ k ↦ v ] (insert m (k , v))
       insert-∈ : ∀ {m k v} → k ↦ v ∈ m
                  → ¬ ([ k ↦ v ] m) -- is this necessary?
-                 → [ k ↦ v ] (insert m (k , v)) 
+                 → [ k ↦ v ] (insert m (k , v))
 
       {-
       ⊢ ∀ a c . (a ≠ c) ⊃
@@ -106,13 +106,16 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
       -}
       ∈-ins : ∀ {m k x v} → x ↦ v ∈ (insert m (k , v)) → (x ≡ k) ⊎ x ↦ v ∈ m
 
-      ∪-assoc : ∀ {m1 m2 m3}
-                    → m1 ∪ (m2 ∪ m3)
-                      ≡ (m1 ∪ m2) ∪ m3
+      ↦-∪ᴸ : ∀ {m1 m2 k v}
+               → [ k ↦ v ] m1
+               → [ k ↦ v ] (m1 ∪ m2)
+      ↦-∪ᴿ : ∀ {m1 m2 k v }
+               → k ↦ v ∉ m1
+               → lookup m2 k ≡ lookup (m1 ∪ m2) k
       ∪-∅ : ∀ {m} → (m ∪ ∅ ≡ m) × (∅ ∪ m ≡ m)
 
       ↦∈∪ : ∀ {k v} → ∀ {n m}
-            → [ k ↦ v ] (n ∪ m) 
+            → [ k ↦ v ] (n ∪ m)
             → [ k ↦ v ] n ⊎ [ k ↦ v ] m
 
       -- equality

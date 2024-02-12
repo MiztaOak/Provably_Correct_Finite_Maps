@@ -29,44 +29,54 @@ data AnyM {K : Set ℓ} {V : Set ℓ'} {R : OSet K} (P : Pred (K × V) ℓₚ) :
 module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   open Map.BOBMap.Map {ℓ} {ℓ'} {K} (V) (R)
   open OSet R
-  open OSet (ext {ℓ} {K} {R}) renaming 
+  open OSet (ext {ℓ} {K} {R}) renaming
    (_≺_ to _≺Ex_; trans to transEx; compare to compareEx; inreflex to inreflexEx)
   open OrdSet.ExtHelper {ℓ} {K} {R}
 
-  liftMap : ∀ {l u : Ext K} {h : ℕ} → BOBMap (l , u) h → BOBMap (l , ⊤') h
-  liftMap {l} {u} (leaf ⦃ l≤u ⦄) = leaf ⦃ maxEx {l} {u} l≤u ⦄
-  liftMap (node p lm rm bal) = node p lm (liftMap rm) bal
+  private
+    height : Map V R → ℕ
+    height (map {h} x) = h
 
-  eqFromJust : ∀ {l : Level} {A : Set l} {a b : A} → just a ≡ just b → a ≡ b
-  eqFromJust refl = refl
-  
+    toBMap : (m : Map V R) → BOBMap (⊥' , ⊤') (height m)
+    toBMap (map x) = x
+
+    fldr : {l : Level} {A : Set l} → (K × V → A → A) → A → Map V R → A
+    fldr f g (map m) = foldr f g m
+
+    liftMap : ∀ {l u : Ext K} {h : ℕ} → BOBMap (l , u) h → BOBMap (l , ⊤') h
+    liftMap {l} {u} (leaf ⦃ l≤u ⦄) = leaf ⦃ maxEx {l} {u} l≤u ⦄
+    liftMap (node p lm rm bal) = node p lm (liftMap rm) bal
+
+    eqFromJust : ∀ {l : Level} {A : Set l} {a b : A} → just a ≡ just b → a ≡ b
+    eqFromJust refl = refl
+
   instance
-    -- Assigning map functionallity to interface
+    -- Assigning map functionality to interface
     BOBMapImp : BMap {K = K} {V}
-    BMap.Map BOBMapImp = Map V R 
+    BMap.Map BOBMapImp = Map V R
     BMap.∅ BOBMapImp = map (leaf {{tt}})
     BMap._↦_∈_ BOBMapImp k v m = AnyM (λ kv' → (k ≡ proj₁ kv') × (v ≡ proj₂ kv')) m
-    BMap._∪_ BOBMapImp = {!!}
+    BMap._∪_ BOBMapImp n m = fldr (λ p t → map $ proj₂ $ insert p {{tt}} {{tt}} (toBMap t) ) m n
     BMap.lookup BOBMapImp (map m) = lookup m
-    BMap.insert BOBMapImp (map m) kv = map $ proj₂ $ insert kv {{tt}} {{tt}} m  
+    BMap.insert BOBMapImp (map m) kv = map $ proj₂ $ insert kv {{tt}} {{tt}} m
 
     BMap.ip BOBMapImp (base , _) (map leaf) = base
-    BMap.ip BOBMapImp (base , step) (map (node p ls rs bal)) = {!!} 
+    BMap.ip BOBMapImp {P} (base , step) (map (node p ls rs bal)) = {!!}
 
     BMap.ips BOBMapImp = {!!}
 
     BMap.lookup-∅ BOBMapImp = refl
     BMap.∈-∅ BOBMapImp {k} (map ())
-      
+
     BMap.∈⇒lookup BOBMapImp {map Map.BOBMap.Map.leaf} ()
     BMap.∈⇒lookup BOBMapImp {map (node p lt rt bal)} {k} prf with compare k (proj₁ p)
     BMap.∈⇒lookup BOBMapImp {map (node p lt rt bal)} {k} prf
-      | le = {!!} 
+      | le = {!!}
     BMap.∈⇒lookup BOBMapImp {map (node p lt rt bal)} {k} prf
       | eq = map (here (refl , (sym $ eqFromJust prf)))
     BMap.∈⇒lookup BOBMapImp {map (node p lt rt bal)} {k} prf
       | ge = {!!}
-      
+
     BMap.lookup⇒∈ BOBMapImp {map (node p lt rt bal)} {.(proj₁ p)} (map (here (refl , refl))) with
       compare (proj₁ p) (proj₁ p)
     BMap.lookup⇒∈ BOBMapImp {map (node p lt rt bal)} {.(proj₁ p)} (map (here (refl , refl)))
@@ -76,10 +86,10 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
       | eq = refl
     BMap.lookup⇒∈ BOBMapImp {map (node p lt rt bal)} {.(proj₁ p)} (map (here (refl , refl)))
       | inj₂ (inj₂ (! ⦃ prf ⦄)) with (inreflex prf) refl
-    ... | () 
+    ... | ()
     BMap.lookup⇒∈ BOBMapImp {map (node p lt rt bal)} {k} (map (left prf)) = {!!}
     BMap.lookup⇒∈ BOBMapImp {map (node p lt rt bal)} {k} (map (right prf)) = {!!}
-    
+
     BMap.insert-∉ BOBMapImp {map leaf} {k} {v} ¬x∈m with compare k k
     BMap.insert-∉ BOBMapImp {map Map.BOBMap.Map.leaf} {k} {v} ¬x∈m
       | inj₁ (! ⦃ prf ⦄) with (inreflex prf) refl
@@ -89,20 +99,23 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     BMap.insert-∉ BOBMapImp {map Map.BOBMap.Map.leaf} {k} {v} ¬x∈m
       | inj₂ (inj₂ (! ⦃ prf ⦄)) with (inreflex prf) refl
     ... | ()
-    BMap.insert-∉ BOBMapImp {map (node p lm rm bal)} {k} {v} ¬x∈m with compare k (proj₁ p) in cPrf 
+    BMap.insert-∉ BOBMapImp {map (node p lm rm bal)} {k} {v} ¬x∈m with compare k (proj₁ p) in cPrf
     ... | le = {!!}
-    ... | eq = {!!} 
+    ... | eq = {!!}
     BMap.insert-∉ BOBMapImp {map (node p lm rm bal)} {k} {v} ¬x∈m
       | inj₂ (inj₂ (! ⦃ prf ⦄)) with insert (k , v) {{prf}} {{tt}} rm in prf'
     ... | 0# , rm' = {!!}
     ... | 1# , rm' = {!!}
-    
+
     BMap.insert-∈ BOBMapImp k∈m v≢v' = {!!}
 
     BMap.ins-assoc BOBMapImp = {!!}
     BMap.ins-same BOBMapImp = {!!}
     BMap.∈-ins BOBMapImp = {!!}
-    BMap.∪-assoc BOBMapImp = {!!}
+    BMap.↦-∪ᴸ BOBMapImp = {!!}
+    BMap.↦-∪ᴿ BOBMapImp = {!!}
+    BMap.∪-∅ BOBMapImp = {!!}
+    BMap.↦∈∪ BOBMapImp = {!!}
     BMap.∪-∅ BOBMapImp = {!!}
     BMap.↦∈∪ BOBMapImp = {!!}
 
@@ -128,7 +141,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
       | eq | ()
     BMap.equality BOBMapImp {map (node p lt rt bal)} {map leaf} prf
       | inj₂ (inj₂ (! ⦃ prf' ⦄)) | y with inreflex prf' refl
-    ... | () 
+    ... | ()
     BMap.equality BOBMapImp {map (node p lt rt bal)} {map (node p' lt' rt' bal')} prf with
       compare (proj₁ p) (proj₁ p) | compare (proj₁ p) (proj₁ p') | prf (proj₁ p)
     BMap.equality BOBMapImp {map (node p lt rt bal)} {map (node p' lt' rt' bal')} prf
