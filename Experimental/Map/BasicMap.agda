@@ -4,9 +4,7 @@ open import Agda.Builtin.Unit using (⊤)
 open import Data.Empty using (⊥)
 open import Data.Maybe.Base using (Maybe; just; nothing; is-just)
 open import Data.Product
---open import Data.Sum
 open import Level renaming (suc to lsuc; zero to lzero)
---open import Relation.Binary.PropositionalEquality
 open import Relation.Nullary using (¬_)
 open import Prelude renaming (⊥ to bot; ⊤ to top)
 open import Relation.Binary.PropositionalEquality
@@ -136,3 +134,7 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
       ⊢ ∀ f g x . (x ∈ f ∧ x ∈ g) ∧ (x ∈ f → lookup x f ≡ lookup x g) → f ≡ g
       -}
       -- pointless given that our ∈ includes values.
+    ip' : {P : Map → Set (ℓ ⊔ ℓ')}
+          → P ∅ × (∀ m → P m → ∀ k v → P (insert (k , v) m))
+          → (∀ m → P m)
+    ip' {P} (b , s) mp = ips (b , λ m x k _ _ v → s m x k v ) mp
