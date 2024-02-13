@@ -56,9 +56,11 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     BMap.Map BOBMapImp = Map V R
     BMap.∅ BOBMapImp = map (leaf {{tt}})
     BMap._↦_∈_ BOBMapImp k v m = AnyM (λ kv' → (k ≡ proj₁ kv') × (v ≡ proj₂ kv')) m
+    BMap.unionWith BOBMapImp f n m = {!!}
     BMap._∪_ BOBMapImp n m = fldr (λ p t → map $ proj₂ $ insert p {{tt}} {{tt}} (toBMap t) ) m n
     BMap.lookup BOBMapImp (map m) = lookup m
-    BMap.insert BOBMapImp (map m) kv = map $ proj₂ $ insert kv {{tt}} {{tt}} m
+    BMap.insertWith BOBMapImp f kv (map x) = {!!}
+    BMap.insert BOBMapImp kv (map m) = map $ proj₂ $ insert kv {{tt}} {{tt}} m
 
     BMap.ip BOBMapImp (base , _) (map leaf) = base
     BMap.ip BOBMapImp {P} (base , step) (map (node p ls rs bal)) = {!!}
@@ -90,6 +92,9 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     BMap.lookup⇒∈ BOBMapImp {map (node p lt rt bal)} {k} (map (left prf)) = {!!}
     BMap.lookup⇒∈ BOBMapImp {map (node p lt rt bal)} {k} (map (right prf)) = {!!}
 
+    BMap.lookup-insert BOBMapImp (map x) k v = {!!}
+
+{-
     BMap.insert-∉ BOBMapImp {map leaf} {k} {v} ¬x∈m with compare k k
     BMap.insert-∉ BOBMapImp {map Map.BOBMap.Map.leaf} {k} {v} ¬x∈m
       | inj₁ (! ⦃ prf ⦄) with (inreflex prf) refl
@@ -108,8 +113,9 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     ... | 1# , rm' = {!!}
 
     BMap.insert-∈ BOBMapImp k∈m v≢v' = {!!}
+-}
 
-    BMap.ins-assoc BOBMapImp = {!!}
+    BMap.ins-comm BOBMapImp = {!!}
     BMap.ins-same BOBMapImp = {!!}
     BMap.∈-ins BOBMapImp = {!!}
     BMap.↦-∪ᴸ BOBMapImp = {!!}
