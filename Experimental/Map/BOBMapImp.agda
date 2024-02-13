@@ -123,6 +123,8 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     BMap.∪-∅ BOBMapImp = {!!}
     BMap.↦∈∪ BOBMapImp = {!!}
 
+    BMap.eq∈ BOBMapImp = {!!}
+
     -- REPLACE ALL OF THIS WITH A BETTER SOLUTION PLEASE END BY SUFFERING
     BMap.equality BOBMapImp {map leaf} {map leaf} prf = refl
     BMap.equality BOBMapImp {map leaf} {map (node p lt rt bal)} prf with
