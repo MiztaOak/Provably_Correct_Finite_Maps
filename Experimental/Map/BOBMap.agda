@@ -85,28 +85,34 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   rotL kv lt (node p (node p' rllt rlrt bal) rrt ~-) =
     0# , (node p' (node kv lt rllt (max~ bal)) (node p rlrt rrt (~max bal)) ~0)
 
+  insertWith : ∀ {l u : Ext K} {h : ℕ} (k : K) (f : Maybe V → V)
+               {{l≤p : l ≺Ex  (# k)}} {{p≤u :(# k) ≺Ex u}}
+               → BOBMap (l , u) h
+               → ∃ λ i → BOBMap (l , u) (i ⊕ h)
+  insertWith k f leaf = 1# , node (k , f nothing) leaf leaf ~0
+  insertWith k f (node p lt rt bal) with compare k (proj₁ p)
+  insertWith k f (node p lt rt bal)
+    | le with insertWith k f lt
+  ... | 0# , t = 0# , (node p t rt bal)
+  ... | 1# , t with bal
+  ... | ~+ = 0# , (node p t rt ~0)
+  ... | ~0 = 1# , (node p t rt ~-)
+  ... | ~- = rotR p t rt
+  insertWith k f (node p lt rt bal)
+    | eq = 0# , (node (k , f (just (proj₂ p))) lt rt bal)
+  insertWith k f (node p lt rt bal)
+    | ge with insertWith k f rt
+  ... | 0# , t = 0# , (node p lt t bal)
+  ... | 1# , t with bal
+  ... | ~+ = rotL p lt t
+  ... | ~0 = 1# , (node p lt t ~+)
+  ... | ~- = 0# , (node p lt t ~0)
+
   insert : ∀ {l u : Ext K} {h : ℕ} (kv : K × V)
             {{l≤p : l ≺Ex  (# (proj₁ kv))}} {{p≤u :(# (proj₁ kv)) ≺Ex u}}
             → BOBMap (l , u) h
             → ∃ λ i → BOBMap (l , u) (i ⊕ h)
-  insert kv leaf = (1# , node kv leaf leaf ~0)
-  insert kv (node p lt rt bal) with compare (proj₁ kv) (proj₁ p)
-  insert kv (node p lt rt bal)
-    | le with insert kv lt
-  ... | 0# , t = 0# , (node p t rt bal)
-  ... | 1# , t with bal
-  ... | ~+ = 0# , (node p t rt ~0)
-  ... | ~0 = 1# , node p t rt ~-
-  ... | ~- = rotR p t rt -- rotate
-  insert kv (node p lt rt bal)
-    | eq = 0# , (node kv lt rt bal)
-  insert kv (node p lt rt bal)
-    | ge with insert kv rt
-  ... | 0# , t = 0# , node p lt t bal
-  ... | 1# , t with bal
-  ... | ~+ = rotL p lt t -- rotate
-  ... | ~0 = 1# , (node p lt t ~+)
-  ... | ~- = 0# , node p lt t ~0
+  insert (k , v) m = insertWith k (λ _ → v) m
 
   lookup : ∀ {l u : Ext K} {h : ℕ}
            → BOBMap (l , u) h
