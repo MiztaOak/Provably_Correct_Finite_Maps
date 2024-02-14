@@ -57,8 +57,8 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     BMap.∅ BOBMapImp = map (leaf {{tt}})
     BMap._∈_ BOBMapImp k m = {!!}
     BMap._↦_∈_ BOBMapImp k v m = AnyM (λ kv' → (k ≡ proj₁ kv') × (v ≡ proj₂ kv')) m
-    BMap.unionWith BOBMapImp f n m = {!!}
---      fldr (λ (k , v) t → map $ proj₂ $ BMap.insertWith k (f v) {{tt}} {{tt}} (toBMap t)) m n
+    BMap.unionWith BOBMapImp f n m =
+      fldr (λ (k , v) t → map $ proj₂ $ insertWith k (f v) {{tt}} {{tt}} (toBMap t)) m n
     BMap.lookup BOBMapImp (map m) = lookup m
     BMap.insertWith BOBMapImp k f (map x) = {!map $ proj₂ $ insertWith k f {{tt}} {{tt}} m!}
 

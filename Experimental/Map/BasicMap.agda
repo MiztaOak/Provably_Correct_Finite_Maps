@@ -23,7 +23,7 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
       ∅      : Map                 -- Empty
       _∈_   : K → Map → Set (ℓ ⊔ ℓ')
       _↦_∈_ : K → V → Map → Set (ℓ ⊔ ℓ') -- Domain
-      unionWith : (K × V → Maybe K × V → K × V) → Map → Map → Map
+      unionWith : (V → Maybe V → V) → Map → Map → Map
       lookup : Map → K → Maybe V   -- Apply
       insertWith : K → (Maybe V → V) → Map → Map
 
