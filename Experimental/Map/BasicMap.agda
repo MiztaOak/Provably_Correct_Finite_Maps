@@ -21,26 +21,26 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
     field
       Map    : Set (ℓ ⊔ ℓ')
       ∅      : Map                 -- Empty
+      _∈_   : K → Map → Set (ℓ ⊔ ℓ')
       _↦_∈_ : K → V → Map → Set (ℓ ⊔ ℓ') -- Domain
-      unionWith : (K × V → K × V → K × V) → Map → Map → Map
-      -- TODO: Translate all union laws to use unionWith
-      _∪_    : Map → Map → Map
+      unionWith : (K × V → Maybe K × V → K × V) → Map → Map → Map
       lookup : Map → K → Maybe V   -- Apply
-      insertWith : (K × V → K × V → K × V) → K × V → Map → Map
-      -- TODO: Translate all insert laws to use insertWith
-      insert : (K × V) → Map → Map -- Update
+      insertWith : K → (Maybe V → V) → Map → Map
 
     syntax Map {K = K} {V = V} = Map⟨ K ↦ V ⟩
 
     infix  7 lookup
-    infixr 6 _∪_
     infix  5 _↦_∈_
+    infix  5 _∈_
 
     [_↦_]_ : K → V → Map → Set ℓ'
     [ k ↦ v ] m = lookup m k ≡ just v
 
     _↦_∉_ : K → V → Map → Set (ℓ ⊔ ℓ')
     k ↦ v ∉ m = ¬ (k ↦ v ∈ m)
+
+    _∉_ : K → Map → Set (ℓ ⊔ ℓ')
+    k ∉ m = ¬ (k ∈ m)
 
     _⊆_ : Map → Map → Set (ℓ ⊔ ℓ')
     n ⊆ m = ∀ k v → k ↦ v ∈ n → k ↦ v ∈ m
@@ -55,8 +55,8 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
           ⊃
         ∀ f . P f
       -}
-      ip : {P : Map → Set}
-           → P ∅ × (∀ m → P m → ∀ k v → P (insert (k , v) m))
+      ip : (P : Map → Set)
+           → P ∅ × (∀ m → P m → ∀ k v → P (insertWith k (λ _ → v) m))
            → (∀ m → P m)
 
       -- induction principle (stronger)
@@ -67,20 +67,28 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
             ⊃
           ∀ f . P f
       -}
-      ips : {P : Map → Set (ℓ ⊔ ℓ')}
-            → P ∅ × (∀ m → P m → ∀ k v → k ↦ v ∉ m → ∀ v → P (insert (k , v) m))
+      ips : (P : Map → Set (ℓ ⊔ ℓ'))
+            → P ∅ × (∀ m → P m → ∀ k v → k ↦ v ∉ m → ∀ v
+              → P (insertWith k (λ _ → v) m))
             → (∀ m → P m)
 
-      lookup-∅ : ∀ {k} → lookup ∅ k ≡ nothing
-      ∈-∅ : ∀ {k v} → ¬ (k ↦ v ∈ ∅)
+      lookup-∅ : ∀ k → lookup ∅ k ≡ nothing
+      ∈↦-∅ : ∀ k v → ¬ (k ↦ v ∈ ∅)
+      ∈-∅ : ∀ k → k ∉ ∅
 
-      ∈⇒lookup : ∀ {m k v} → [ k ↦ v ] m → k ↦ v ∈ m
-      lookup⇒∈ : ∀ {m k v} → k ↦ v ∈ m → [ k ↦ v ] m
+      ∈⇒lookup : ∀ m k v → [ k ↦ v ] m → k ↦ v ∈ m
+      lookup⇒∈ : ∀ m k v → k ↦ v ∈ m → [ k ↦ v ] m
 
       {-
       ⊢ ∀ f a b . lookup (insert f (a , b)) a = b
       -}
-      lookup-insert : (m : Map) → (k : K) → (v : V) → [ k ↦ v ] (insert (k , v) m)
+      lookup-insert∈ : ∀ k m f
+                       → k ∈ m
+                       → [ k ↦ f (lookup m k) ] (insertWith k f m)
+
+      lookup-insert∉ : ∀ k m f
+                       → k ∉ m
+                       → [ k ↦ f nothing ] (insertWith k f m)
 
       {-
       ⊢ ∀ a c . (a ≠ c) ⊃
@@ -88,53 +96,49 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
             insert (insert f (a , b)) (c , d)
               = insert (insert f (c , d)) (a , b)
       -}
-      ins-comm : {k k' : K} → {v v' : V} → {m : Map}
-                  → ¬ (k ≡ k')
-                  → insert (k' , v') (insert (k , v) m)
-                    ≐ insert (k , v) (insert (k' , v') m)
+      ins-comm : ∀ k k' f f' m
+                → k ≢ k'
+                → insertWith k f (insertWith k' f' m)
+                  ≐ insertWith k' f' (insertWith k f m)
 
-      {-
+      {- TODO: Irrelevant given insertWith?
       ⊢ ∀ f a b c . insert (insert f (a , b)) (a , c) = insert f (a , c)
+      ins-same : ∀ m k v w f
+                 → insertWith k (λ _ → v) (insertWith k (λ _ → v') m)
+                   ≐ insertWith k (λ _ → v) m
       -}
-      ins-same : ∀ {m k v v'}
-                 → insert (k , v) (insert (k , v') m) ≐ insert (k , v) m
 
       {-
       ⊢ ∀ f a b x . x ∈ (insert f (a , b)) → (x = a) ∨ x ∈ f
       -}
-      ∈-ins : ∀ {m k x v} → x ↦ v ∈ (insert (k , v) m) → (x ≡ k) ⊎ x ↦ v ∈ m
+      ∈-ins : ∀ m k x f
+              → x ∈ (insertWith k f m)
+              → (x ≡ k) ⊎ x ∈ m
 
-      ↦-∪ᴸ : ∀ {m1 m2 k v}
-               → k ↦ v ∈ m1
-               → k ↦ v ∈ (m1 ∪ m2)
-      ↦-∪ᴿ : ∀ {m1 m2 k v }
-               → k ↦ v ∉ m1
-               → lookup m2 k ≡ lookup (m1 ∪ m2) k
-      ∪-∅ : ∀ {m} → (m ∪ ∅ ≡ m) × (∅ ∪ m ≡ m)
+      -- is this actually the case?
+      ∪-assoc : ∀ m1 m2 m3 f
+                → unionWith f m1 (unionWith f m2 m3)
+                  ≐ unionWith f (unionWith f m1 m2) m3
 
-      ↦∈∪ : ∀ {k v} → ∀ {n m}
-            → k ↦ v ∈ (n ∪ m)
-            → k ↦ v ∈ n ⊎ k ↦ v ∈ m
+      ∪-∅ : ∀ m f → unionWith f m ∅ ≐ unionWith f ∅ m
 
-      -- equality (bad)
-      {-
-      ⊢ ∀ f g . (∀ x . lookup f x = lookup g x) → (f = g)
-      -}
-      equality : ∀ {n m} → (∀ k → lookup n k ≡ lookup m k) → n ≡ m
-
+      ∪-∈ : ∀ m1 m2 f k
+            → k ∈ unionWith f m1 m2
+            → k ∈ m1 ⊎ k ∈ m2
 
       -- eq
       {-
       ⊢ ∀ f g x . (x ∈ f ∧ x ∈ g) ∧ (lookup x f ≡ lookup x g) → f ≡ g
       -}
-      -- our ∈ includes values, so we can ignore the lookup part.
-      eq∈ : (f g : Map) → ∀ k v → k ↦ v ∈ f × k ↦ v ∈ g → f ≡ g
+      -- consider whether these are equivalent
+      eq? : (f g : Map) → ∀ k v → k ↦ v ∈ f × k ↦ v ∈ g → f ≐ g
 
       {-
       ⊢ ∀ f g x . (x ∈ f ∧ x ∈ g) ∧ (x ∈ f → lookup x f ≡ lookup x g) → f ≡ g
       -}
-      -- pointless given that our ∈ includes values.
-    ip' : {P : Map → Set (ℓ ⊔ ℓ')}
-          → P ∅ × (∀ m → P m → ∀ k v → P (insert (k , v) m))
+      eq∈ : ∀ f g x → (x ∈ f × x ∈ g) × (x ∈ f → lookup f x ≡ lookup g x) → f ≐ g
+
+    ip' : (P : Map → Set (ℓ ⊔ ℓ'))
+          → P ∅ × (∀ m → P m → ∀ k v → P (insertWith k (λ _ → v) m))
           → (∀ m → P m)
-    ip' {P} (b , s) mp = ips (b , λ m x k _ _ v → s m x k v ) mp
+    ip' P (b , s) mp = ips P (b , λ m x k _ _ v → s m x k v ) mp
