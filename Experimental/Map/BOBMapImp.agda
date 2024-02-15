@@ -55,7 +55,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     BOBMapImp : BMap {K = K} {V}
     BMap.Map BOBMapImp = Map V R
     BMap.∅ BOBMapImp = map (leaf {{tt}})
-    BMap._∈_ BOBMapImp k m = {!!}
+    BMap._∈_ BOBMapImp k m = {!AnyM (λ kv' → (k ≡ proj₁ kv')) m!}
     BMap._↦_∈_ BOBMapImp k v m = AnyM (λ kv' → (k ≡ proj₁ kv') × (v ≡ proj₂ kv')) m
     BMap.unionWith BOBMapImp f n m =
       fldr (λ (k , v) t → map $ proj₂ $ insertWith k (f v) {{tt}} {{tt}} (toBMap t)) m n
@@ -72,27 +72,36 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
 
     BMap.∈-∅ BOBMapImp k m = {!!}
 
-    BMap.∈⇒lookup BOBMapImp (map Map.BOBMap.Map.leaf) _ _ ()
-    BMap.∈⇒lookup BOBMapImp (map (node p lt rt bal)) k prf with compare k (proj₁ p)
-    BMap.∈⇒lookup BOBMapImp (map (node p lt rt bal)) k prf
-      | le = {!!}
-    BMap.∈⇒lookup BOBMapImp (map (node p lt rt bal)) k prf
-      | eq = {!map (here (refl , (sym $ eqFromJust prf)))!}
-    BMap.∈⇒lookup BOBMapImp (map (node p lt rt bal)) k prf
-      | ge = {!!}
+    BMap.∈⇒lookup BOBMapImp (map m) k prf = map $ ∈⇒lookup m k prf
+      where
+        ∈⇒lookup : ∀ {l u : Ext K} {h : ℕ} (m : BOBMap (l , u) h) (k : K) {v : V}
+                   → lookup m k ≡ just v
+                   → Any (λ kv' → (k ≡ proj₁ kv') × (v ≡ proj₂ kv')) m
+        ∈⇒lookup (node p lm rm bal) k prf with compare k (proj₁ p)
+        ... | le = left (∈⇒lookup lm k prf)
+        ... | eq = here (refl , (sym $ eqFromJust prf))
+        ... | ge = right (∈⇒lookup rm k prf)
 
-    BMap.lookup⇒∈ BOBMapImp (map (node p lt rt bal)) (.(proj₁ p)) v (map (here (refl , refl))) with
-      compare (proj₁ p) (proj₁ p)
-    BMap.lookup⇒∈ BOBMapImp (map (node p lt rt bal)) (.(proj₁ p)) v (map (here (refl , refl)))
-      | inj₁ (! ⦃ prf ⦄) with (inreflex prf) refl
-    ... | ()
-    BMap.lookup⇒∈ BOBMapImp (map (node p lt rt bal)) (.(proj₁ p)) v (map (here (refl , refl)))
-      | eq = refl
-    BMap.lookup⇒∈ BOBMapImp (map (node p lt rt bal)) (.(proj₁ p)) v (map (here (refl , refl)))
-      | inj₂ (inj₂ (! ⦃ prf ⦄)) with (inreflex prf) refl
-    ... | ()
-    BMap.lookup⇒∈ BOBMapImp (map (node p lt rt bal)) k v (map (left prf)) = {!!}
-    BMap.lookup⇒∈ BOBMapImp (map (node p lt rt bal)) k v (map (right prf)) = {!!}
+
+    BMap.lookup⇒∈ BOBMapImp (map m) k v (map prf) = lookup⇒∈ k m prf
+      where
+        lookup⇒∈ : ∀ {l u : Ext K} {h : ℕ} (k : K) {v : V} (m : BOBMap (l , u) h)
+                   → Any (λ kv' → (k ≡ proj₁ kv') × (v ≡ proj₂ kv')) m
+                   → lookup m k ≡ just v
+        lookup⇒∈ k (node p lm rm bal) (left prf) with compare k (proj₁ p)
+        ... | le = lookup⇒∈ k lm prf
+        ... | eq = {!!}
+        ... | ge = {!!}
+        lookup⇒∈ k (node p lm rm bal) (right prf) with compare k (proj₁ p)
+        ... | le = {!!}
+        ... | eq = {!!}
+        ... | ge = lookup⇒∈ k rm prf
+        lookup⇒∈ (.(proj₁ p)) (node p lm rm bal) (here (refl , refl))
+          with compare (proj₁ p) (proj₁ p)
+        ... | le = {!!}
+        ... | eq = refl
+        ... | ge = {!!}
+
 
     BMap.lookup-insert∈ BOBMapImp k∈m (map x) k v = {!!}
 

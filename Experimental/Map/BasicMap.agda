@@ -76,7 +76,7 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
       ∈↦-∅ : ∀ k v → ¬ (k ↦ v ∈ ∅)
       ∈-∅ : ∀ k → k ∉ ∅
 
-      ∈⇒lookup : ∀ m k v → [ k ↦ v ] m → k ↦ v ∈ m
+      ∈⇒lookup : ∀ m k {v} → [ k ↦ v ] m → k ↦ v ∈ m
       lookup⇒∈ : ∀ m k v → k ↦ v ∈ m → [ k ↦ v ] m
 
       {-
