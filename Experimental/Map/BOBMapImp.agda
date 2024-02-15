@@ -60,7 +60,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     BMap.unionWith BOBMapImp f n m =
       fldr (λ (k , v) t → map $ proj₂ $ insertWith k (f v) {{tt}} {{tt}} (toBMap t)) m n
     BMap.lookup BOBMapImp (map m) = lookup m
-    BMap.insertWith BOBMapImp k f (map x) = {!map $ proj₂ $ insertWith k f {{tt}} {{tt}} m!}
+    BMap.insertWith BOBMapImp k f (map x) = map $ proj₂ $ insertWith k f {{tt}} {{tt}} x
 
     BMap.ip BOBMapImp _ (base , _) (map leaf) = base
     BMap.ip BOBMapImp P (base , step) (map (node p ls rs bal)) = {!!}
@@ -81,22 +81,18 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     BMap.∈⇒lookup BOBMapImp (map (node p lt rt bal)) k prf
       | ge = {!!}
 
-    BMap.lookup⇒∈ BOBMapImp (map x) k v prf = {!!}
-    -- TODO: not sure what the issue is here
-{-
-    BMap.lookup⇒∈ BOBMapImp (map (node p lt rt bal)) (.(proj₁ p)) (map (here (refl , refl))) with
+    BMap.lookup⇒∈ BOBMapImp (map (node p lt rt bal)) (.(proj₁ p)) v (map (here (refl , refl))) with
       compare (proj₁ p) (proj₁ p)
-    BMap.lookup⇒∈ BOBMapImp {map (node p lt rt bal)} {.(proj₁ p)} (map (here (refl , refl)))
+    BMap.lookup⇒∈ BOBMapImp (map (node p lt rt bal)) (.(proj₁ p)) v (map (here (refl , refl)))
       | inj₁ (! ⦃ prf ⦄) with (inreflex prf) refl
     ... | ()
-    BMap.lookup⇒∈ BOBMapImp {map (node p lt rt bal)} {.(proj₁ p)} (map (here (refl , refl)))
+    BMap.lookup⇒∈ BOBMapImp (map (node p lt rt bal)) (.(proj₁ p)) v (map (here (refl , refl)))
       | eq = refl
-    BMap.lookup⇒∈ BOBMapImp {map (node p lt rt bal)} {.(proj₁ p)} (map (here (refl , refl)))
+    BMap.lookup⇒∈ BOBMapImp (map (node p lt rt bal)) (.(proj₁ p)) v (map (here (refl , refl)))
       | inj₂ (inj₂ (! ⦃ prf ⦄)) with (inreflex prf) refl
     ... | ()
-    BMap.lookup⇒∈ BOBMapImp {map (node p lt rt bal)} {k} (map (left prf)) = {!!}
-    BMap.lookup⇒∈ BOBMapImp {map (node p lt rt bal)} {k} (map (right prf)) = {!!}
--}
+    BMap.lookup⇒∈ BOBMapImp (map (node p lt rt bal)) k v (map (left prf)) = {!!}
+    BMap.lookup⇒∈ BOBMapImp (map (node p lt rt bal)) k v (map (right prf)) = {!!}
 
     BMap.lookup-insert∈ BOBMapImp k∈m (map x) k v = {!!}
 
