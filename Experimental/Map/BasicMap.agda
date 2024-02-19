@@ -33,6 +33,9 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
     infix  5 _↦_∈_
     infix  5 _∈_
 
+    insert : K → V → Map → Map
+    insert k v m = insertWith k (λ _ → v) m
+
     [_↦_]_ : K → V → Map → Set ℓ'
     [ k ↦ v ] m = lookup m k ≡ just v
 
@@ -126,17 +129,23 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
             → k ∈ unionWith f m1 m2
             → k ∈ m1 ⊎ k ∈ m2
 
+      ∪-∈' : ∀ m1 m2 f k
+            → k ∈ m1 ⊎ k ∈ m2
+            → k ∈ unionWith f m1 m2
+
       -- eq
       {-
       ⊢ ∀ f g x . (x ∈ f ∧ x ∈ g) ∧ (lookup x f ≡ lookup x g) → f ≡ g
       -}
       -- consider whether these are equivalent
-      eq? : (f g : Map) → ∀ k v → k ↦ v ∈ f × k ↦ v ∈ g → f ≐ g
+      eq? : (f g : Map) → (∀ k v → k ↦ v ∈ f × k ↦ v ∈ g) → f ≐ g
 
       {-
       ⊢ ∀ f g x . (x ∈ f ∧ x ∈ g) ∧ (x ∈ f → lookup x f ≡ lookup x g) → f ≡ g
       -}
       eq∈ : ∀ f g x → (x ∈ f × x ∈ g) × (x ∈ f → lookup f x ≡ lookup g x) → f ≐ g
+
+      insert∈ : ∀ k v m → k ↦ v ∈ (insert k v m)
 
     ip' : (P : Map → Set (ℓ ⊔ ℓ'))
           → P ∅ × (∀ m → P m → ∀ k v → P (insertWith k (λ _ → v) m))
