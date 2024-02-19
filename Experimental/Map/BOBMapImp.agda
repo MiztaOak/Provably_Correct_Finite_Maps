@@ -134,12 +134,6 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     BMap.∪-∅ BOBMapImp = {!!}
     BMap.∪-∈ BOBMapImp = {!!}
 
-    BMap.eq? BOBMapImp (map m) (map n) k v (map inM , map inN) with eq? m n k v (inM , inN)
-      where
-        eq? : ∀ {l u : Ext K} {h h' : ℕ} (m : BOBMap (l , u) h) (n : BOBMap (l , u) h')
-              → ∀ k v → k ↦ v ∈ m × k ↦ v ∈ n → m ≐ n
-        eq? m n k v (inM , inN) = {!!}
-    ... | (prfM , prfN) =
-      (λ k₁ v₁ x → map $ prfM k₁ v₁ (toAny x)) , λ k₁ v₁ x → map $ prfN k₁ v₁ (toAny x)
-
+    BMap.eq? BOBMapImp f g fn
+      = (λ k v _ → proj₂ (fn k v)) , λ k v _ → proj₁ (fn k v)
     BMap.eq∈ BOBMapImp = {!!}

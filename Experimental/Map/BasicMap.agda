@@ -131,7 +131,7 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
       ⊢ ∀ f g x . (x ∈ f ∧ x ∈ g) ∧ (lookup x f ≡ lookup x g) → f ≡ g
       -}
       -- consider whether these are equivalent
-      eq? : (f g : Map) → ∀ k v → k ↦ v ∈ f × k ↦ v ∈ g → f ≐ g
+      eq? : (f g : Map) → (∀ k v → k ↦ v ∈ f × k ↦ v ∈ g) → f ≐ g
 
       {-
       ⊢ ∀ f g x . (x ∈ f ∧ x ∈ g) ∧ (x ∈ f → lookup x f ≡ lookup x g) → f ≡ g
