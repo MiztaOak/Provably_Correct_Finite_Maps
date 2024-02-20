@@ -228,26 +228,47 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     ... | inj₁ e = inj₁ e
     ... | inj₂ r = inj₂ (map r)
 
-    BMap.∪-assoc BOBMapImp = {!!}
+    BMap.ins-comm BOBMapImp = {!!}
+    BMap.∈-ins BOBMapImp = {!!}
 
-    BMap.∪-∅ BOBMapImp (map m) f = (λ k v x → map (eqLeft k v m {!!})) , (λ k v x → {!!})
+    BMap.∪-∅ BOBMapImp m f = helpl , helpr
       where
-        eqLeft : ∀ {l u : Ext K} {h : ℕ} (k : K) (v : V)
-                 → (m : BOBMap (l , u) h)
-                 → k ↦ v ∈ (foldr (λ (k , v) t → {!map $ proj₂ $ insertWith k (f v) t!}) leaf m)
-                 → k ↦ v ∈ m
-        eqLeft k v m prf = {!!}
+        helpl : ∀ k v
+                → (BMap._↦_∈_ BOBMapImp)
+                    k v (BMap.unionWith BOBMapImp f m (BMap.∅ BOBMapImp))
+                → (BMap._↦_∈_ BOBMapImp)
+                    k v (BMap.unionWith BOBMapImp f (BMap.∅ BOBMapImp) m)
+        helpl k v prf = {!!}
 
+        helpr : ∀ k v
+                → (BMap._↦_∈_ BOBMapImp)
+                    k v (BMap.unionWith BOBMapImp f (BMap.∅ BOBMapImp) m)
+                → (BMap._↦_∈_ BOBMapImp)
+                    k v (BMap.unionWith BOBMapImp f m (BMap.∅ BOBMapImp))
+        helpr k v (map (Map.BOBMap.Map.here x)) = {!!}
+        helpr k v (map (Map.BOBMap.Map.left x)) = {!!}
+        helpr k v (map (Map.BOBMap.Map.right x)) = {!!}
 
-    BMap.∪-∈ BOBMapImp n m f k p = {!p!}
+    BMap.∪-∈ BOBMapImp (map n) (map m) f k prf with (find k n , find k m)
+      where
+        find : ∀ {l u h} (x : K)
+               → (a : BOBMap (l , u) h)
+               → Maybe (x ∈ a)
+        find x Map.BOBMap.Map.leaf = nothing
+        find x (Map.BOBMap.Map.node p lt rt bal) with compare x (proj₁ p)
+        ... | le = (find x lt) >>= λ α → just (Map.BOBMap.Map.left α)
+        ... | eq = just $ Map.BOBMap.Map.here refl
+        ... | ge = (find x rt) >>= λ α → just (Map.BOBMap.Map.right α)
+    ... | just α , just β = inj₁ (map α)
+    ... | just α , nothing = inj₁ (map α)
+    ... | nothing , just β = inj₂ (map β)
+    ... | nothing , nothing = {!!}
 
     BMap.∪-∈' BOBMapImp n m f k (inj₁ prf) = {!!}
     BMap.∪-∈' BOBMapImp n m f k (inj₂ prf) = {!!}
 
-    BMap.eq? BOBMapImp f g fn
-      = (λ k v _ → proj₂ (fn k v)) , λ k v _ → proj₁ (fn k v)
-
-    BMap.eq∈ BOBMapImp = {!!}
+    BMap.eq? BOBMapImp (map m) (map n) fn
+      = (λ k v _ → proj₂ (fn k v)) , (λ k v _ → proj₁ (fn k v))
 
     BMap.insert∈ BOBMapImp k v (map m) = map (insert∈ k v ⦃ tt ⦄ ⦃ tt ⦄ m)
       where

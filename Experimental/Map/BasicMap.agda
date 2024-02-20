@@ -104,13 +104,6 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
                 → insertWith k f (insertWith k' f' m)
                   ≐ insertWith k' f' (insertWith k f m)
 
-      {- TODO: Irrelevant given insertWith?
-      ⊢ ∀ f a b c . insert (insert f (a , b)) (a , c) = insert f (a , c)
-      ins-same : ∀ m k v w f
-                 → insertWith k (λ _ → v) (insertWith k (λ _ → v') m)
-                   ≐ insertWith k (λ _ → v) m
-      -}
-
       {-
       ⊢ ∀ f a b x . x ∈ (insert f (a , b)) → (x = a) ∨ x ∈ f
       -}
@@ -118,11 +111,7 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
               → x ∈ (insertWith k f m)
               → (x ≡ k) ⊎ x ∈ m
 
-      -- is this actually the case?
-      ∪-assoc : ∀ m1 m2 m3 f
-                → unionWith f m1 (unionWith f m2 m3)
-                  ≐ unionWith f (unionWith f m1 m2) m3
-
+      -- is this possible? Issue with L/R bias in implementation
       ∪-∅ : ∀ m f → unionWith f m ∅ ≐ unionWith f ∅ m
 
       ∪-∈ : ∀ m1 m2 f k
@@ -139,11 +128,6 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
       -}
       -- consider whether these are equivalent
       eq? : (f g : Map) → (∀ k v → k ↦ v ∈ f × k ↦ v ∈ g) → f ≐ g
-
-      {-
-      ⊢ ∀ f g x . (x ∈ f ∧ x ∈ g) ∧ (x ∈ f → lookup x f ≡ lookup x g) → f ≡ g
-      -}
-      eq∈ : ∀ f g x → (x ∈ f × x ∈ g) × (x ∈ f → lookup f x ≡ lookup g x) → f ≐ g
 
       insert∈ : ∀ k v m → k ↦ v ∈ (insert k v m)
 
