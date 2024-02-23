@@ -1,8 +1,8 @@
-open import Prelude 
+open import Prelude
 open import Level renaming (suc to s; zero to z)
 open import Relation.Binary.Core
 open import Relation.Binary.PropositionalEquality hiding (trans)
-open import Data.Product 
+open import Data.Product
 open import Relation.Nullary using (¬_)
 open import Data.Nat.Base using (ℕ; suc; zero)
 open import Data.Sum
@@ -12,7 +12,7 @@ module OrdSet where
     variable
       ℓ : Level
 
-  inl : ∀ {ℓ ℓ' : Level} {A : Set ℓ} {B : Set ℓ'} → A → A ⊎ B 
+  inl : ∀ {ℓ ℓ' : Level} {A : Set ℓ} {B : Set ℓ'} → A → A ⊎ B
   inl = inj₁
 
   inr : ∀ {ℓ ℓ' : Level} {A : Set ℓ} {B : Set ℓ'} → B → A ⊎ B
@@ -24,15 +24,17 @@ module OrdSet where
     field
       --Carrier : Set
 
-      -- relation for ordering 
+      -- relation for ordering
       _≺_    : Rel Carrier ℓ
 
       -- operations for ≺
       compare : ∀ x y → ⌜ (x ≺ y)⌝ ⊎ ((x ≡ y) ⊎ ⌜ (y ≺ x)⌝ )
 
-      -- invariants of ≺ 
+      -- invariants of ≺
       trans : ∀ {x y z : Carrier} → x ≺ y → y ≺ z → x ≺ z
-      inreflex : ∀ {x y : Carrier} → x ≺ y → ¬ (x ≡ y) 
+      inreflex : ∀ {x y : Carrier} → x ≺ y → ¬ (x ≡ y)
+      ≺Eq : ∀ {x y : Carrier} → (a : x ≺ y) → (b : x ≺ y) → a ≡ b
+      ≺Absurd : ∀ {x y : Carrier} → x ≺ y → ¬ (y ≺ x)
 
   module _ {A : Set ℓ} {R : OSet A} where
     open OSet R
@@ -51,9 +53,9 @@ module OrdSet where
     OSet.trans ext {# x} {⊥} {⊤} () e2
     OSet.trans ext {⊥} {⊥} {⊤} () e2
     OSet.trans (ext) {# x} {# y} {# z} e1 e2 = trans e1 e2
-    OSet.trans (ext) {⊥} {# y} {# z} e1 e2   = tt 
-    OSet.trans (ext) {⊥} {⊥} {# z} e1 e2     = tt 
-    OSet.trans (ext) {⊥} {⊥} {⊥} e1 e2       = e1 
+    OSet.trans (ext) {⊥} {# y} {# z} e1 e2   = tt
+    OSet.trans (ext) {⊥} {⊥} {# z} e1 e2     = tt
+    OSet.trans (ext) {⊥} {⊥} {⊥} e1 e2       = e1
     OSet.compare ext ⊤ ⊤ = inr (inl refl)
     OSet.compare ext ⊤ (# x) = inr (inr (!{{tt}}))
     OSet.compare ext ⊤ ⊥ = inr (inr (!{{tt}}))
@@ -68,14 +70,22 @@ module OrdSet where
     OSet.compare ext ⊥ ⊥ = inr (inl refl)
     OSet.inreflex ext {# x} {.(# x)} prf refl = OSet.inreflex R {x} prf refl
     OSet.inreflex ext {⊥} {.⊥} () refl
+    OSet.≺Eq ext {# x} {⊤} a b = refl
+    OSet.≺Eq ext {# x} {# y} a b = OSet.≺Eq R {x} {y} a b
+    OSet.≺Eq ext {⊥} {⊤} a b = refl
+    OSet.≺Eq ext {⊥} {# x} a b = refl
+    OSet.≺Absurd ext {# x} {# y} a b = OSet.≺Absurd R {x} {y} a b
+    OSet.≺Absurd ext {⊤} {⊥} () b
+    OSet.≺Absurd ext {# x} {⊥} () b
+    OSet.≺Absurd ext {⊥} {⊥} () b
 
   module ExtHelper {A : Set ℓ} {R : OSet A} where
     open OSet R
-    open OSet (ext {ℓ} {A} {R}) renaming 
+    open OSet (ext {ℓ} {A} {R}) renaming
       (_≺_ to _≺Ex_; trans to transEx; compare to compareEx)
 
     maxEx : ∀ {l u : Ext A} → l ≺Ex u → l ≺Ex ⊤
-    maxEx {l} {⊤} prf = prf 
+    maxEx {l} {⊤} prf = prf
     maxEx {# x} {# y} prf = tt
     maxEx {⊥} {# y} prf = tt
     maxEx {⊤} {⊥} ()
@@ -89,21 +99,21 @@ module OrdSet where
 
   module _ where
     -- Less-or-equal on natural numbers
-    LEℕ :  Rel ℕ z 
+    LEℕ :  Rel ℕ z
     LEℕ zero  y     = True
     LEℕ (suc x) zero  = False
     LEℕ (suc x) (suc y) = LEℕ x y
 
-    ≺ℕ : Rel ℕ z 
+    ≺ℕ : Rel ℕ z
     ≺ℕ zero zero = False
     ≺ℕ zero (suc y) = True
     ≺ℕ (suc x) zero = False
     ≺ℕ (suc x) (suc y) = ≺ℕ x y
 
-    OSetℕ : OSet ℕ 
+    OSetℕ : OSet ℕ
     OSet._≺_ OSetℕ = ≺ℕ
     OSet.trans OSetℕ {x} {zero} {zero} e e' = e
-    OSet.trans OSetℕ {zero} {zero} {suc z} e e' = tt 
+    OSet.trans OSetℕ {zero} {zero} {suc z} e e' = tt
     OSet.trans OSetℕ {zero} {suc y} {suc z} e e' = e
     OSet.trans OSetℕ {suc x} {suc y} {suc z} e e' = OSet.trans OSetℕ {x} {y} {z} e e'
     OSet.compare OSetℕ zero zero = eq
@@ -115,6 +125,11 @@ module OrdSet where
     ... | ge = ge
     OSet.inreflex OSetℕ {zero} {.zero} () refl
     OSet.inreflex OSetℕ {suc x} {.(suc x)} p refl = OSet.inreflex OSetℕ {x} {x} p refl
+    OSet.≺Eq OSetℕ {zero} {suc y} a b = refl
+    OSet.≺Eq OSetℕ {suc x} {suc y} a b = OSet.≺Eq OSetℕ {x} {y} a b
+    OSet.≺Absurd OSetℕ {zero} {zero} () b
+    OSet.≺Absurd OSetℕ {suc x} {zero} () b
+    OSet.≺Absurd OSetℕ {suc x} {suc y} a b = OSet.≺Absurd OSetℕ {x} {y} a b
     {-OSet.inreflex OSetℕ zero refl () refl
     OSet.inreflex OSetℕ {suc x} {.(suc x)} prf refl = OSet.inreflex OSetℕ {x} {x} prf refl
     -}
