@@ -5,7 +5,7 @@ open import OrdSet
 open import Level using (Level; _⊔_)
 open import Map.BasicMap
 import Map.BOBMap
-open import Data.Nat.Base using (ℕ)
+open import Data.Nat.Base using (ℕ; _*_; suc; zero)
 open import Data.Product hiding (map)
 open import Function.Base
 open import Relation.Unary using (Pred)
@@ -38,7 +38,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     height (map {h} x) = h
 
     toBMap : (m : Map V R) → BOBMap (⊥' , ⊤') (height m)
-    toBMap (map x) = x
+    toBMap (map x) = {!!}
 
     toAny : {m : Map V R} {P : Pred (K × V) ℓₚ} → AnyM P m → Any P (toBMap m)
     toAny (map x) = x
@@ -52,6 +52,10 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     liftMap : ∀ {l u : Ext K} {h : ℕ} → BOBMap (l , u) h → BOBMap (l , ⊤') h
     liftMap {l} {u} (leaf ⦃ l≤u ⦄) = leaf ⦃ maxEx {l} {u} l≤u ⦄
     liftMap (node p lm rm bal) = node p lm (liftMap rm) bal
+
+    lowerMap : ∀ {l u : Ext K} {h : ℕ} → BOBMap (l , u) h → BOBMap (⊥' , u) h
+    lowerMap {l} {u} (leaf ⦃ l≤u ⦄) = leaf ⦃ minEx {l} {u} l≤u ⦄
+    lowerMap (node p lm rm bal) = node p (lowerMap lm) rm bal
 
     eqFromJust : ∀ {l : Level} {A : Set l} {a b : A} → just a ≡ just b → a ≡ b
     eqFromJust refl = refl
@@ -108,13 +112,68 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     BMap.∅ BOBMapImp = map (leaf {{tt}})
     BMap._∈_ BOBMapImp k m = AnyM (λ kv' → (k ≡ proj₁ kv')) m
     BMap._↦_∈_ BOBMapImp k v m = AnyM (λ kv' → (k ≡ proj₁ kv') × (v ≡ proj₂ kv')) m
-    BMap.unionWith BOBMapImp f n m =
-      fldr (λ (k , v) t → map $ proj₂ $ insertWith k (f v) {{tt}} {{tt}} (toBMap t)) m n
+
+    BMap.unionWith BOBMapImp f n m = {!!} --uw f n m
+      where
+        pattern Bleaf = Map.BOBMap.Map.leaf
+        pattern Bnode p l r b = Map.BOBMap.Map.node p l r b
+
+        data Sz : Set where
+          LT : Sz
+          EQ : Sz
+          GT : Sz
+
+        cmp : ℕ → ℕ → Sz
+        cmp zero    zero    = EQ
+        cmp zero    _       = LT
+        cmp _       zero    = GT
+        cmp (suc n) (suc m) = cmp n m
+
+        delta : ℕ
+        delta = 3 -- find source for magic number (some Adams text)
+
+        iw : K → (Maybe V → V) → Map V R → Map V R
+        iw = BMap.insertWith BOBMapImp
+
+        link : K × V → Map V R → Map V R → Map V R
+        link (k , v) (map Bleaf) m = {!!} --iw k (const v) m
+        link (k , v) n (map Bleaf) = {!!} --iw k (const v) n
+        link p n@(map (Bnode p1 l1 r1 bal1)) m@(map (Bnode p2 l2 r2 bal2))
+          with cmp (delta * height n) (height m)
+        ... | LT = map {!!}
+        ... | EQ = map {!!}
+        ... | GT = map {!!}
+
+
+        splitLookup : K × V → Map V R → Maybe V × Map V R × Map V R
+        splitLookup p t@(map Bleaf) = nothing , (t , t)
+        splitLookup p (map (Bnode p2 l2 r2 bal2))
+          with compare (proj₁ p) (proj₁ p2)
+        ... | le = let (z , (lt , gt)) = splitLookup p {!!} --(map $ liftMap l2)
+                   in (z , (lt , link p gt (map (lowerMap r2))))
+        ... | eq = {!!}
+        ... | ge = {!!}
+
+        uw : (V → Maybe V → V) → Map V R → Map V R → Map V R
+        uw f (map Bleaf) m = m
+        uw f n (map Bleaf) = n
+        uw f (map (Bnode (k , v) Bleaf Bleaf _)) m = iw k (f v) m -- I believe this might be incorrect.
+        uw f n (map (Bnode (k , v) Bleaf Bleaf _)) = iw k (f v) n
+        uw f (map (Bnode p@(k , v) l1 r1 bal)) m with splitLookup p m
+        ... | nothing , l2 , r2 = link p l1l2 r1r2
+          where
+            l1l2 = uw f (map {!!}) l2 --(map (liftMap l1)) l2
+            r1r2 = uw f {!!} r2 --(map (lowerMap r1)) r2
+        ... | x , (l2 , r2) = link (k , (f v x)) l1l2 r1r2
+          where
+            l1l2 = uw f {!!} l2 --(map (liftMap l1)) l2
+            r1r2 = uw f {!!} r2 --(map (lowerMap r1)) r2
+
     BMap.lookup BOBMapImp (map m) = lookup m
-    BMap.insertWith BOBMapImp k f (map x) = map $ proj₂ $ insertWith k f {{tt}} {{tt}} x
+    BMap.insertWith BOBMapImp k f (map x) = {!!} --map $ proj₂ $ insertWith k f {{tt}} {{tt}} x
 
     -- Leaving these for later as we are not 100% sure that they are relevant or correct
-    BMap.ip BOBMapImp _ (base , _) (map leaf) = base
+    BMap.ip BOBMapImp _ (base , _) (map leaf) = {!!} --base
     BMap.ip BOBMapImp P (base , step) (map (node p ls rs bal)) = {!!}
     BMap.ips BOBMapImp = {!!}
 
@@ -213,8 +272,8 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
 
     BMap.ins-comm BOBMapImp k k' f f' m notEq = {!!}
 
-    BMap.∈-ins BOBMapImp (map m) k x f (map prf) with ∈-ins k x f {{tt}} {{tt}} m prf
-      where
+    BMap.∈-ins BOBMapImp (map m) k x f prf = {!!} -- with ∈-ins k x f {{tt}} {{tt}} m prf
+{-      where
         ∈-ins : ∀ {l u : Ext K} {h : ℕ}
                 (k x : K) (f : Maybe V → V)
                 {{l≤k : l ≺Ex # k}} {{k≤u : # k ≺Ex u}}
@@ -227,10 +286,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
         ∈-ins k x f (node p lm rm bal) prf = {!!}
     ... | inj₁ e = inj₁ e
     ... | inj₂ r = inj₂ (map r)
-
-    BMap.ins-comm BOBMapImp = {!!}
-    BMap.∈-ins BOBMapImp = {!!}
-
+-}
     BMap.∪-∅ BOBMapImp m f = helpl , helpr
       where
         helpl : ∀ k v
@@ -245,9 +301,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
                     k v (BMap.unionWith BOBMapImp f (BMap.∅ BOBMapImp) m)
                 → (BMap._↦_∈_ BOBMapImp)
                     k v (BMap.unionWith BOBMapImp f m (BMap.∅ BOBMapImp))
-        helpr k v (map (Map.BOBMap.Map.here x)) = {!!}
-        helpr k v (map (Map.BOBMap.Map.left x)) = {!!}
-        helpr k v (map (Map.BOBMap.Map.right x)) = {!!}
+        helpr k v prf = {!!}
 
     BMap.∪-∈ BOBMapImp (map n) (map m) f k prf with (find k n , find k m)
       where
