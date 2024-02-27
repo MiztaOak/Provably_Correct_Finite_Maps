@@ -152,28 +152,31 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     | ge with delete k rt
   ... | x , rt' = {!!}
 
-  data Any (P : Pred (K × V) ℓₚ) {l u : Ext K} :
+  data Any (P : Pred (K × V) ℓₚ) {l u : Ext K} (k : K) :
     ∀ {h : ℕ} → BOBMap (l , u) h → Set (ℓ ⊔ ℓ' ⊔ ℓₚ) where
-    here : ∀ {h hl hr} {kv : K × V}
-           → P kv
-           → {lm : BOBMap (l , # (proj₁ kv)) hl}
-           {rm : BOBMap (# (proj₁ kv) , u) hr}
+    here : ∀ {h hl hr} {v : V}
+           {{l≤k : l ≺Ex # k}} {{k≤u : # k ≺Ex u}}
+           → P (k , v) 
+           → {lm : BOBMap (l , # k) hl}
+           {rm : BOBMap (# k , u) hr}
            {bal : hl ~ hr ⊔ h}
-           → Any P (node kv lm rm bal)
+           → Any P k (node (k , v) lm rm bal)
 
     left : ∀ {h hl hr} {kv : K × V}
            {lm : BOBMap (l , # (proj₁ kv)) hl}
-           → Any P lm
+           {{k≺k' : # k ≺Ex # (proj₁ kv)}}
+           → Any P k lm
            → {rm : BOBMap (# (proj₁ kv) , u) hr}
            {bal : hl ~ hr ⊔ h}
-           → Any P (node kv lm rm bal)
+           → Any P k (node kv lm rm bal)
 
     right : ∀ {h hl hr} {kv : K × V}
            {lm : BOBMap (l , # (proj₁ kv)) hl}
            {rm : BOBMap (# (proj₁ kv) , u) hr}
-           → Any P rm
+           {{k'≤k : # (proj₁ kv) ≺Ex # k}}
+           → Any P k rm
            → {bal : hl ~ hr ⊔ h}
-           → Any P (node kv lm rm bal)
+           → Any P k (node kv lm rm bal)
 
   foldr : ∀ {l u} {h : ℕ} {n : Level} {A : Set n}
           → (K × V → A → A)
