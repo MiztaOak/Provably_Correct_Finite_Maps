@@ -162,21 +162,21 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
            {bal : hl ~ hr ⊔ h}
            → Any P k (node (k , v) lm rm bal)
 
-    left : ∀ {h hl hr} {kv : K × V}
-           {lm : BOBMap (l , # (proj₁ kv)) hl}
-           {{k≺k' : # k ≺Ex # (proj₁ kv)}}
+    left : ∀ {h hl hr} {(k' , v) : K × V}
+           {lm : BOBMap (l , # k') hl}
+           {{k≺k' : # k ≺Ex # k'}}
            → Any P k lm
-           → {rm : BOBMap (# (proj₁ kv) , u) hr}
+           → {rm : BOBMap (# k' , u) hr}
            {bal : hl ~ hr ⊔ h}
-           → Any P k (node kv lm rm bal)
+           → Any P k (node (k' , v) lm rm bal)
 
-    right : ∀ {h hl hr} {kv : K × V}
-           {lm : BOBMap (l , # (proj₁ kv)) hl}
-           {rm : BOBMap (# (proj₁ kv) , u) hr}
-           {{k'≤k : # (proj₁ kv) ≺Ex # k}}
+    right : ∀ {h hl hr} {(k' , v) : K × V}
+           {lm : BOBMap (l , # k') hl}
+           {rm : BOBMap (# k' , u) hr}
+           {{k'≤k : # k' ≺Ex # k}}
            → Any P k rm
            → {bal : hl ~ hr ⊔ h}
-           → Any P k (node kv lm rm bal)
+           → Any P k (node (k' , v) lm rm bal)
 
   foldr : ∀ {l u} {h : ℕ} {n : Level} {A : Set n}
           → (K × V → A → A)
