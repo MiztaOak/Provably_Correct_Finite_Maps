@@ -2,7 +2,7 @@ module Map.BOBMapImp where
 
 open import Prelude renaming (⊥ to ⊥'; ⊤ to ⊤')
 open import OrdSet
-open import Level using (Level; _⊔_)
+open import Level using (Level; _⊔_) renaming (suc to s; zero to z)
 open import Map.BasicMap
 import Map.BOBMap
 open import Data.Nat.Base using (ℕ)
@@ -22,7 +22,7 @@ private
 data Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) : Set (ℓ ⊔ ℓ') where
   map : ∀ {h} → Map.BOBMap.Map.BOBMap V R (⊥' , ⊤') h → Map V R
 
-data AnyM {K : Set ℓ} {V : Set ℓ'} {R : OSet K} (P : Pred (K × V) ℓₚ) (k : K) :
+data AnyM {K : Set ℓ} {V : Set ℓ'} {R : OSet K} (P : Pred V ℓₚ) (k : K) :
   Map V R → Set (ℓ ⊔ ℓ' ⊔ ℓₚ) where
     map : ∀ {h t} → Map.BOBMap.Map.Any V R P k t → AnyM P k (map {h = h} t)
 
@@ -40,10 +40,10 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     toBMap : (m : Map V R) → BOBMap (⊥' , ⊤') (height m)
     toBMap (map x) = x
 
-    toAny : {m : Map V R} {P : Pred (K × V) ℓₚ} {k : K} → AnyM P k m → Any P k (toBMap m)
+    toAny : {m : Map V R} {P : Pred V ℓₚ} {k : K} → AnyM P k m → Any P k (toBMap m)
     toAny (map x) = x
 
-    toNotAny : {m : Map V R} {P : Pred (K × V) ℓₚ} {k : K} → ¬ AnyM P k m → ¬ Any P k (toBMap m)
+    toNotAny : {m : Map V R} {P : Pred V ℓₚ} {k : K} → ¬ AnyM P k m → ¬ Any P k (toBMap m)
     toNotAny {m = (map m)} prf x = prf (map x)
 
     fldr : {l : Level} {A : Set l} → (K × V → A → A) → A → Map V R → A
@@ -57,10 +57,10 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     eqFromJust refl = refl
 
     _↦_∈_ : K → V → {l u : Ext K} {h : ℕ} → BOBMap (l , u) h → Set (ℓ ⊔ ℓ')
-    k ↦ v ∈ m = Any (λ kv' → (k ≡ proj₁ kv') × (v ≡ proj₂ kv')) k m
+    k ↦ v ∈ m = Any (λ v' → v ≡ v') k m
 
     _∈_ : K → {l u : Ext K} {h : ℕ} → BOBMap (l , u) h → Set (ℓ ⊔ ℓ')
-    k ∈ m = Any (λ kv' → (k ≡ proj₁ kv')) k m
+    k ∈ m = Any {ℓₚ = z} (λ _ → True) k m
 
     _∉_ : K → {l u : Ext K} {h : ℕ} → BOBMap (l , u) h → Set (ℓ ⊔ ℓ')
     k ∉ m = ¬ (k ∈ m)
@@ -71,13 +71,13 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     _≐_ : {l u : Ext K} {h h' : ℕ} → BOBMap (l , u) h → BOBMap (l , u) h' → Set (ℓ ⊔ ℓ')
     n ≐ m = (n ⊆ m) × (m ⊆ n)
 
-    ¬Left : ∀ {l u : Ext K} {hl hr h : ℕ} {P : Pred (K × V) ℓₚ} {k kₚ : K } {v : V}
+    ¬Left : ∀ {l u : Ext K} {hl hr h : ℕ} {P : Pred V ℓₚ} {k kₚ : K } {v : V}
               {lm : BOBMap (l , # k) hl} {rm : BOBMap (# k , u) hr}
               {bal : hl ~ hr ⊔ h}
               → ¬ (Any P kₚ (node (k , v) lm rm bal)) → ¬ (Any P kₚ lm)
     ¬Left prf lmP = prf (left {{{!!}}} lmP)
 
-    ¬Right : ∀ {l u : Ext K} {hl hr h : ℕ} {P : Pred (K × V) ℓₚ} {k kₚ : K} {v : V}
+    ¬Right : ∀ {l u : Ext K} {hl hr h : ℕ} {P : Pred V ℓₚ} {k kₚ : K} {v : V}
                {lm : BOBMap (l , # k) hl} {rm : BOBMap (# k , u) hr}
                {bal : hl ~ hr ⊔ h}
                → ¬ (Any P kₚ (node (k , v) lm rm bal))
@@ -134,8 +134,8 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     BOBMapImp : BMap {K = K} {V}
     BMap.Map BOBMapImp = Map V R
     BMap.∅ BOBMapImp = map (leaf {{tt}})
-    BMap._∈_ BOBMapImp k m = AnyM (λ kv' → (k ≡ proj₁ kv')) k m
-    BMap._↦_∈_ BOBMapImp k v m = AnyM (λ kv' → (k ≡ proj₁ kv') × (v ≡ proj₂ kv')) k m
+    BMap._∈_ BOBMapImp k m = AnyM {ℓₚ = z} (λ _ → True) k m
+    BMap._↦_∈_ BOBMapImp k v m = AnyM (λ v' → v ≡ v') k m
     BMap.unionWith BOBMapImp f n m =
       fldr (λ (k , v) t → map $ proj₂ $ insertWith k (f v) {{tt}} {{tt}} (toBMap t)) m n
     BMap.lookup BOBMapImp (map m) = lookup m
@@ -158,7 +158,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
                    → k ↦ v ∈ m
         ∈⇒lookup (node p lm rm bal) k prf with compare k (proj₁ p)
         ... | le = left (∈⇒lookup lm k prf)
-        ... | eq = here {{mapOrd lm}} {{mapOrd rm}} (refl , (sym $ eqFromJust prf))
+        ... | eq = here {{mapOrd lm}} {{mapOrd rm}} (sym $ eqFromJust prf)
         ... | ge = right (∈⇒lookup rm k prf)
 
     -- Needs a connection between the branches of any and compare to solve
@@ -175,12 +175,39 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
         lookup⇒∈ k (node p lm rm bal) (right {{ord}} prf) with compareRight ord
         ... | x with compare k (proj₁ p)
         ... | ge = lookup⇒∈ k rm prf
-        lookup⇒∈ (.(proj₁ p)) (node p lm rm bal) (here (refl , refl))
+        lookup⇒∈ (.(proj₁ p)) (node p lm rm bal) (here refl)
           with compareSelf (proj₁ p)
         ... | x with compare (proj₁ p) (proj₁ p)
         ... | eq = refl
 
-    BMap.lookup-insert∈ BOBMapImp k∈m (map x) k v = {!!}
+    BMap.lookup-insert∈ BOBMapImp k (map m) f (map prf) = lookup-insert∈ k {{tt}} {{tt}} m f prf
+      where
+        lookup-insert∈ : ∀ {l u : Ext K} {h : ℕ} (k : K)
+                         {{l≤k : l ≺Ex # k}} {{k≤u : # k ≺Ex u}}
+                         (m : BOBMap (l , u) h)
+                         → (f : Maybe V → V)
+                         → k ∈ m
+                         → lookup (proj₂ (insertWith k f m)) k ≡ just (f (lookup m k))
+        lookup-insert∈ k (node .(k , v) lm rm bal) f (here {v = v} {{l≤k}} {{k≤u}} x)
+          with insertWith k f {{l≤k}} {{k≤u}} (node (k , v) lm rm bal)
+        ... | x with compareSelf k
+        ... | c with compare k k in rememberMe
+        ... | eq with compare k k
+        ... | eq = refl
+        lookup-insert∈ k (node p lm rm bal) f (left {{ord}} prf) with lookup-insert∈ k lm f prf
+        ... | lePrf with compareLeft ord
+        ... | c with compare k (proj₁ p)
+        ... | le with insertWith k f {{p≤u = ord}} lm
+        ... | x = {!!}
+        {-with insertWith k f (node p lm rm bal)
+        ... | (_ , m) with compareLeft ord
+        ... | c with compare k (proj₁ p)
+        ... | le = {!!} -}
+        lookup-insert∈ k (node p lm rm bal) f (right {{ord}} prf) with lookup-insert∈ k rm f prf
+        ... | x with insertWith k f (node p lm rm bal)
+        ... | (_ , m) with compareRight ord
+        ... | c with compare k (proj₁ p)
+        ... | ge = {!!}
 
     -- THIS IS MADNESS THERE HAS TO BE A BETTER WAY TO DO THIS
     BMap.lookup-insert∉ BOBMapImp k (map m) f prf =
@@ -213,7 +240,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
           | le | x | 0# , lm' with compare k (proj₁ p)
         ... | le = x
         lookup-insert∉ k (node p lm rm bal) f prf
-          | eq with prf (here refl)
+          | eq with prf (here tt)
         ... | ()
         lookup-insert∉ k (node p lm rm bal) f prf
           | ge with lookup-insert∉ k rm f (¬Right prf)
@@ -243,7 +270,8 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
                 → (x ≡ k) ⊎ x ∈ m
         ∈-ins {l} {u} k x f {{l≤k}} {{k≤u}} leaf prf with
           proj₂ $ insertWith {l} {u} k f {{l≤k}} {{k≤u}} leaf
-        ... | node (k' , v) leaf leaf ~0 = {!!}
+        ... | node (k' , v) leaf leaf ~0 with prf
+        ... | here eqPrf = {!!}
         ∈-ins k x f (node p lm rm bal) prf = {!!}
     ... | inj₁ e = inj₁ e
     ... | inj₂ r = inj₂ (map r)
@@ -262,19 +290,19 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
                     k v (BMap.unionWith BOBMapImp f (BMap.∅ BOBMapImp) m)
                 → (BMap._↦_∈_ BOBMapImp)
                     k v (BMap.unionWith BOBMapImp f m (BMap.∅ BOBMapImp))
-        helpr k v (map (Map.BOBMap.Map.here x)) = {!!}
-        helpr k v (map (Map.BOBMap.Map.left x)) = {!!}
-        helpr k v (map (Map.BOBMap.Map.right x)) = {!!}
+        helpr k v (map (here x)) = {!!}
+        helpr k v (map (left x)) = {!!}
+        helpr k v (map (right x)) = {!!}
 
     BMap.∪-∈ BOBMapImp (map n) (map m) f k prf with (find k n , find k m)
       where
         find : ∀ {l u h} (x : K)
                → (a : BOBMap (l , u) h)
                → Maybe (x ∈ a)
-        find x Map.BOBMap.Map.leaf = nothing
-        find x (Map.BOBMap.Map.node p lt rt bal) with compare x (proj₁ p)
+        find x leaf = nothing
+        find x (node p lt rt bal) with compare x (proj₁ p)
         ... | le = (find x lt) >>= λ α → just (left α)
-        ... | eq = just $ here {{mapOrd lt}} {{mapOrd rt}} refl
+        ... | eq = just $ here {{mapOrd lt}} {{mapOrd rt}} tt
         ... | ge = (find x rt) >>= λ α → just (right α)
     ... | just α , just β = inj₁ (map α)
     ... | just α , nothing = inj₁ (map α)
@@ -293,7 +321,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
                   {{l≤p : l ≺Ex # k}} {{p≤u : # k ≺Ex u}}
                   → (m : BOBMap (l , u) h)
                   → k ↦ v ∈ (proj₂ $ insertWith k (λ _ → v) m)
-        insert∈ k v leaf = here (refl , refl)
+        insert∈ k v leaf = here refl
         insert∈ k v (node p lm rm bal) with compare k (proj₁ p)
         insert∈ k v (node p lm rm bal)
           | le with insert∈ k v lm
@@ -304,7 +332,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
         ... | ~0 = left x
         ... | ~- = {!!}
         insert∈ k v (node p lm rm bal)
-          | eq = here (refl , refl)
+          | eq = here refl
         insert∈ k v (node p lm rm bal)
           | ge with insert∈ k v rm
         ... | x with insertWith k (λ _ → v) rm

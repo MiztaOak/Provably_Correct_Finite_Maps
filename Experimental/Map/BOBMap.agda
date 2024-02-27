@@ -152,11 +152,11 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     | ge with delete k rt
   ... | x , rt' = {!!}
 
-  data Any (P : Pred (K × V) ℓₚ) {l u : Ext K} (k : K) :
+  data Any (P : Pred V ℓₚ) {l u : Ext K} (k : K) :
     ∀ {h : ℕ} → BOBMap (l , u) h → Set (ℓ ⊔ ℓ' ⊔ ℓₚ) where
     here : ∀ {h hl hr} {v : V}
            {{l≤k : l ≺Ex # k}} {{k≤u : # k ≺Ex u}}
-           → P (k , v) 
+           → P v
            → {lm : BOBMap (l , # k) hl}
            {rm : BOBMap (# k , u) hr}
            {bal : hl ~ hr ⊔ h}
