@@ -341,3 +341,44 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
         ... | ~+ = {!!}
         ... | ~0 = right x
         ... | ~- = right x
+
+    BMap.noAlterInsert BOBMapImp (map prf) nEq = map (noAlterInsert {{tt}} {{tt}} prf nEq)
+      where
+        noAlterInsert : {k k' : K} {v v' : V} {l u : Ext K} {h : ℕ}
+                        {{l≤k' : l ≺Ex # k'}} {{k'≤u : # k' ≺Ex u}}
+                        {m : BOBMap (l , u) h}
+                        → k ↦ v ∈ m → ¬ (k ≡ k')
+                        → k ↦ v ∈ proj₂ (insert (k' , v') m)
+        noAlterInsert {k} {k'} (here x {lm} {rm} {bal}) nEq with compare k' k
+        noAlterInsert {k} {k'} {v' = v'} (here x {lm} {rm} {bal}) nEq
+          | le with insertWith k' (λ _ → v') lm
+        ... | 0# , lm' = here x
+        ... | 1# , lm' with bal
+        ... | ~+ = here x
+        ... | ~0 = here x
+        ... | ~- = {!!}
+        noAlterInsert {k} {k'} {v' = v'} (here x {lm} {rm} {bal}) nEq
+          | ge with insertWith k' (λ _ → v') rm
+        ... | 0# , rm' = here x
+        ... | 1# , rm' with bal
+        ... | ~+ = {!!}
+        ... | ~0 = here x
+        ... | ~- = here x
+        noAlterInsert {k} {k'} (here x {lm} {rm} {bal}) nEq
+          | eq with nEq refl
+        ... | ()
+        noAlterInsert {k} {k'} {v} {v'} {{l≤k'}} {m = node p _ _ _} (left {lm = lm} prf {rm}) nEq with
+          noAlterInsert {v' = v'} {{l≤k'}} {{{!!}}} prf nEq
+        ... | prf' with compare k' (proj₁ p)
+        ... | le = {!!}
+        ... | eq = {!!}
+        ... | ge = {!!}
+        noAlterInsert {k} {k'} {v} {v'} (right prf) nEq = {!!}
+
+    BMap.↦∈To∈ BOBMapImp (map x) = map (↦∈To∈ x)
+      where
+        ↦∈To∈ : ∀ {l u : Ext K} {h : ℕ} {k : K} {v : V} {m : BOBMap (l , u) h}
+                → k ↦ v ∈ m → k ∈ m
+        ↦∈To∈ (here x) = here tt
+        ↦∈To∈ (left prf) = left (↦∈To∈ prf)
+        ↦∈To∈ (right prf) = right (↦∈To∈ prf)

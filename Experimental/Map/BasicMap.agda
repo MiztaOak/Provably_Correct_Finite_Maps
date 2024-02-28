@@ -131,6 +131,10 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
 
       insert∈ : ∀ k v m → k ↦ v ∈ (insert k v m)
 
+      noAlterInsert : ∀ {k k' v v' m} → k ↦ v ∈ m → ¬ (k ≡ k') → k ↦ v ∈ (insert k' v' m)
+
+      ↦∈To∈ : ∀ {k v m} → k ↦ v ∈ m → k ∈ m
+
     ip' : (P : Map → Set (ℓ ⊔ ℓ'))
           → P ∅ × (∀ m → P m → ∀ k v → P (insertWith k (λ _ → v) m))
           → (∀ m → P m)
