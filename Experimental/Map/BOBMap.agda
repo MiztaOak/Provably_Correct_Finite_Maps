@@ -12,7 +12,7 @@ open import Data.Product
 open import Data.Maybe
 open import Relation.Unary using (Pred)
 open import Relation.Binary.PropositionalEquality hiding (trans)
-open import Function using (_∘_; _$_; const)
+open import Function using (_∘_; _$_; const; case_of_)
 
 private
   variable
@@ -87,8 +87,8 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   rotL kv lt (node p (node p' rllt rlrt bal) rrt ~-) =
     0# , (node p' (node kv lt rllt (max~ bal)) (node p rlrt rrt (~max bal)) ~0)
 
-  insertWith : ∀ {l u : Ext K} {h : ℕ} (k : K) (f : Maybe V → V)
-               {{@erased l≤p : l ≺Ex  (# k)}} {{@erased p≤u :(# k) ≺Ex u}}
+  insertWith : {l u : Ext K} {h : ℕ} (k : K) (f : Maybe V → V)
+               {{@erased l≤p : l ≺Ex  # k}} {{@erased p≤u : # k ≺Ex u}}
                → BOBMap (l , u) h
                → ∃ λ i → BOBMap (l , u) (i ⊕ h)
   insertWith k f leaf = 1# , node (k , f nothing) leaf leaf ~0
@@ -110,10 +110,11 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   ... | ~0 = 1# , (node p lt t ~+)
   ... | ~- = 0# , (node p lt t ~0)
 
-  insert : ∀ {l u : Ext K} {h : ℕ} (kv : K × V)
-            {{l≤p : l ≺Ex  (# (proj₁ kv))}} {{p≤u :(# (proj₁ kv)) ≺Ex u}}
-            → BOBMap (l , u) h
-            → ∃ λ i → BOBMap (l , u) (i ⊕ h)
+  insert : {l u : Ext K} {h : ℕ} (kv : K × V)
+           {{@erased l≤p : l ≺Ex  (# (proj₁ kv))}}
+           {{@erased p≤u :(# (proj₁ kv)) ≺Ex u}}
+           → BOBMap (l , u) h
+           → ∃ λ i → BOBMap (l , u) (i ⊕ h)
   insert (k , v) m = insertWith k (λ _ → v) m
 
   lookup : ∀ {l u : Ext K} {h : ℕ}
@@ -126,30 +127,60 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   ... | eq = just (proj₂ p)
   ... | ge = lookup rt k
 
-  join : ∀ {l u : Ext K} {k : K} {hl hr h : ℕ}
-         → BOBMap (l , # k) hl
-         → hl ~ hr ⊔ h
-         → BOBMap (# k , u) hr
-         → ∃ λ i → BOBMap (l , u) (i ⊕ h)
-  join leaf ~+ rt = {!!}
-  join leaf ~0 leaf = 0# , (leaf {{{!!}}})
-  join (node p llt lrt bal) b rt = {!!}
+  record Cons (p : K × V) (l u : Ext K) (h : ℕ) : Set (ℓ ⊔ ℓ') where
+    constructor cons
+    field
+      head : K × V
+      @erased l<u : l ≺Ex # (proj₁ head)
+      tail : ∃ λ i → BOBMap (# (proj₁ head) , u) (i ⊕ h)
 
-  -- * UNION STARTS HERE -----------------------------------------------------
+  uncons : ∀ {l u h h1 h2}
+           → ((k , v) : K × V)
+           → h1 ~ h2 ⊔ h
+           → BOBMap (l , # k) h1
+           → BOBMap (# k , u) h2
+           → Cons (k , v) l u h
+  uncons p b (leaf {{l<u}}) r = cons p l<u (case b of
+    λ { ~+ → 0# , r
+      ; ~0 → 0# , r })
+  uncons p b (node p' l c bl) r with uncons p' bl l c
+  ... | cons head l<u tail = cons head l<u (case tail of
+    λ { (1# , t) → 1# , node p t r b
+      ; (0# , t) → case b of
+        λ { ~- → 0# , node p t r ~0
+          ; ~0 → 1# , node p t r ~+
+          ; ~+ → rotL p t r } })
 
   reduce : ∀ {l y u h}
-          → @erased l ≺Ex y
+          → {{@erased l≤y : l ≺Ex y}}
           → BOBMap (y , u) h
           → BOBMap (l , u) h
-  reduce {x} {y} {z} a (leaf {{b}}) = leaf {{transEx {x} {y} {z} a b}}
-  reduce a (node p l r bal) = node p (reduce a l) r bal
+  reduce {l} {y} {u} {{a}} (leaf {{b}}) = leaf {{transEx {l} {y} {u} a b}}
+  reduce {{a}} (node p l r bal) = node p (reduce {{a}} l) r bal
 
   raise : ∀ {l y u h}
-          → @erased y ≺Ex u
+          → {{@erased y≤u : y ≺Ex u}}
           → BOBMap (l , y) h
           → BOBMap (l , u) h
-  raise {x} {y} {z} a (leaf {{b}}) = leaf {{transEx {x} {y} {z} b a}}
-  raise a (node p l r bal) = node p l (raise a r) bal
+  raise {x} {y} {z} {{a}} (leaf {{b}}) = leaf {{transEx {x} {y} {z} b a}}
+  raise {{a}} (node p l r bal) = node p l (raise {{a}} r) bal
+
+  join : {l u : Ext K} {k : K} {hl hr h : ℕ}
+         → BOBMap (# k , u) hr
+         → hl ~ hr ⊔ h
+         → BOBMap (l , # k) hl
+         → ∃ λ i → BOBMap (l , u) (i ⊕ h)
+  join leaf ~- lt = 0# , (raise lt)
+  join {l} {u} {k} (leaf {{k<u}}) ~0 (leaf {{l<k}}) =
+    0# , (leaf {{transEx {l} {# k} {u} l<k k<u}})
+  join (node p rlt rrt br) b tl with uncons p br rlt rrt
+  ... | cons head l<u (1# , tr') = 1# , node head (raise {{l<u}} tl) tr' b
+  ... | cons head l<u (0# , tr') with b
+  ... | ~- = rotR head (raise {{l<u}} tl) tr'
+  ... | ~0 = 1# , node head (raise {{l<u}} tl) tr' ~-
+  ... | ~+ = 0# , node head (raise {{l<u}} tl) tr' ~0
+
+-- * UNION STARTS HERE -----------------------------------------------------
 
   -- O(n) operation, not good!
   @erased mklim : ∀ {l u h}
@@ -175,41 +206,36 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   cmp _       zero    = GT
   cmp (suc n) (suc m) = cmp n m
 
-  balance : ∀ {l u h} → BOBMap (l , u) h → ∃ λ n → BOBMap (l , u) n
-  balance = {!!}
+  max : ℕ → ℕ → ℕ
+  max zero n = n
+  max n zero = n
+  max (suc n) (suc m) = max n m
 
-  {-# TERMINATING #-} -- does it though?
-  concat3 : {h1 h2 : ℕ} → {l u : Ext K}
+  {-# TERMINATING #-}
+  concat3 : {h1 h2 : ℕ}
             → ((k , v) : K × V)
-            -- → {{l≤k : l ≺Ex (# k)}} → {{k≤u : (# k) ≺Ex u}}
+            → {l u : Ext K}
             → BOBMap (l , # k) h1
             → BOBMap (# k , u) h2
             → ∃ λ n → BOBMap (l , u) n
-  concat3 = {!!}
-{-
-  concat3 {h} {_} {l} {u} (k , v) {{p1}} {{p2}} n leaf
-    with insertWith {l} {u} k (const v) {{p1}} {{p2}} (raise p2 n)
-  ... | fst , snd = (fst ⊕ h) , snd
-  concat3 {_} {h} {l} {u} (k , v) {{p1}} {{p2}} leaf m
-    with insertWith {l} {u} k (const v) {{p1}} {{p2}} (reduce p1 m)
-  ... | fst , snd = (fst ⊕ h) , snd
-  concat3 {h1} {h2} {l} {u} (k , v)
-          {{p1}} {{p2}}
-          n@(node kv1 l1 r1 b1) m@(node kv2 l2 r2 bal2)
-    with cmp (ratio * h1) h2
-  ... | LT = let (i , cc) = concat3 (k , v) {{p1}} {{mklim l2}} n l2
-             in balance (node kv2 cc r2 {!!})
-  ... | EQ = {!!} , node (k , v) n m {!!}
-  ... | GT = let (i , cc) = concat3 (k , v) {{mklim r1}} {{p2}} r1 m
-             in balance (node kv1 l1 cc {!!})
--}
+  concat3 p n (leaf {{pf}}) with insert p {{mklim n}} {{pf}} (raise {{pf}} n)
+  ... | _ , t = _ , t
+  concat3 p (leaf {{pf}}) m with insert p {{pf}} {{mklim m}} (reduce {{pf}} m)
+  ... | _ , t = _ , t
+  concat3 p@(k , v) n@(node p1 l1 r1 b1) m@(node p2 l2 r2 b2)
+    with cmp (ratio * height n) (height m)
+  ... | LT = let (i , cc) = concat3 p n l2
+             in {!!} --balance p2 cc r2
+  ... | EQ = {!!} , {!!}
+  ... | GT = let (i , cc) = concat3 p r1 m
+             in {!!} --balance p1 l1 cc
+
   splitLT : ∀ {l u h}
             → ((k , v) : K × V)
-            → {{@erased l≤k : l ≺Ex  (# k)}} -- {{@erased k≤u :(# k) ≺Ex u}}
+            → {{@erased l≤k : l ≺Ex  (# k)}}
             → BOBMap (l , u) h
             → ∃ λ n → BOBMap (l , # k) n
   splitLT x (leaf {{l<u}}) = 0 , leaf
-
   splitLT (k , v) (node (k' , v') lt rt bal) with compare k k'
   ... | le = splitLT (k , v) lt
   ... | ge = let (n , m) = splitLT (k , v) rt
@@ -218,59 +244,32 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
 
   splitGT : ∀ {l u h}
             → ((k , v) : K × V)
-            -- → {{@erased l≤p : l ≺Ex # k}}
-            → {{@erased p≤u : # k ≺Ex u}}
+            → {{@erased l≤u : # k ≺Ex u}}
             → BOBMap (l , u) h
             → ∃ λ n → BOBMap (# k , u) n
-  splitGT = {!!}
-
-{-
-  splitGT : ∀ {l u h}
-            → ((p , v) : K × V)
-            → BOBMap (l , u) h
-            → ∃ λ n → BOBMap (# p , u) n
-  splitGT x leaf = 0 , leaf
-  splitGT (x , y) (node (k , v) lt rt bal) with compare k x
-  ... | le = let (n , m) = splitGT (x , y) lt
-             in n , raise (mklim rt) m
-  ... | eq = height rt , reduce (mklim lt) rt
-  ... | ge = let (i1 , t1) = splitGT (x , y) lt
-             in concat3 (k , v) {- {{mklim t1}} {{mklim rt}} -} t1 rt
-
-  least : Ext K → Ext K → Ext K
-  least ⊥ n = ⊥
-  least n ⊥ = ⊥
-  least ⊤ n = n
-  least n ⊤ = n
-  least (# a) (# b) with compare a b
-  ... | le = # a
-  ... | eq = # a
-  ... | ge = # b
-
-  great : Ext K → Ext K → Ext K
-  great ⊥ n = n
-  great n ⊥ = n
-  great ⊤ n = ⊤
-  great n ⊤ = ⊤
-  great (# a) (# b) with compare a b
-  ... | le = # b
-  ... | eq = # a
-  ... | ge = # a
--- -}
+  splitGT x (leaf {{l<u}})= 0 , leaf
+  splitGT (k , v) (node (k' , v') lt rt bal) with compare k k'
+  ... | le = let (n , m) = splitGT (k , v) lt
+             in concat3 (k' , v') m rt
+  ... | eq = _ , rt
+  ... | ge = splitGT (k , v) rt
 
   union : {h1 h2 : ℕ} → ∀ {l u}
           → (V → Maybe V → V)
           → BOBMap (l , u) h1
           → BOBMap (l , u) h2
-          → ∃ λ h → BOBMap (l , u) h
+          -- real height is i ⊕ max h1 h2
+          -- but this caused issues in the n leaf case
+          → ∃ λ n → BOBMap (l , u) n
   union f leaf m = _ , m
   union f n leaf = _ , n
   union f n (node p lt rt bal)
-    = let (_ , ls) = splitLT p {{mklim lt}} n
-          (_ , rs) = splitGT p {{mklim rt}} n
-          (_ , ll) = union f ls lt
-          (_ , rr) = union f rs rt
-      in concat3 p ll rr
+    = let (lsh , ls) = splitLT p {{mklim lt}} n
+          (rsh , rs) = splitGT p {{mklim rt}} n
+          (llh , ll) = union f ls lt
+          (rrh , rr) = union f rs rt
+          (i , t) = join rr {!!} ll
+      in {!!}
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 
