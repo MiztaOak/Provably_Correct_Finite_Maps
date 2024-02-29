@@ -207,8 +207,8 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   cmp (suc n) (suc m) = cmp n m
 
   max : ℕ → ℕ → ℕ
-  max zero n = n
   max n zero = n
+  max zero n = n
   max (suc n) (suc m) = max n m
 
   {-# TERMINATING #-}
@@ -226,7 +226,7 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     with cmp (ratio * height n) (height m)
   ... | LT = let (i , cc) = concat3 p n l2
              in {!!} --balance p2 cc r2
-  ... | EQ = {!!} , {!!}
+  ... | EQ = {!!} , ?
   ... | GT = let (i , cc) = concat3 p r1 m
              in {!!} --balance p1 l1 cc
 
@@ -260,16 +260,16 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
           → BOBMap (l , u) h2
           -- real height is i ⊕ max h1 h2
           -- but this caused issues in the n leaf case
-          → ∃ λ n → BOBMap (l , u) n
-  union f leaf m = _ , m
-  union f n leaf = _ , n
-  union f n (node p lt rt bal)
-    = let (lsh , ls) = splitLT p {{mklim lt}} n
-          (rsh , rs) = splitGT p {{mklim rt}} n
-          (llh , ll) = union f ls lt
-          (rrh , rr) = union f rs rt
-          (i , t) = join rr {!!} ll
-      in {!!}
+          → ∃ λ n → BOBMap (l , u) (n ⊕ (max h1 h2))
+  union f leaf (leaf ⦃ l≤u ⦄) = 0# , leaf ⦃ l≤u ⦄
+  union f leaf (node p lm rm b) = 0# , node p lm rm b
+  union f (node p lm rm b) leaf = 0# , node p lm rm b
+  union {h1} {h2} f (node p1 lm1 rm1 b1) (node p2 lm2 rm2 b2) with
+    splitLT p2 {{mklim lm2}} (node p1 lm1 rm1 b1)
+  ... | lsh , ls with splitGT p2 {{mklim rm2}} (node p1 lm1 rm1 b1)
+  ... | rsh , rs with union f ls lm2
+  ... | llh , ll with union f rs rm2
+  ... | rrh , rr = join {h = max h1 h2} rr {!!} ll
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 
@@ -280,17 +280,33 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   delete k leaf = 0# , leaf
   delete k (node p lt rt bal) with compare k (proj₁ p)
   delete k (node p lt rt bal)
-    | le with delete k lt
-  ... | 0# , lt' = 1# , node p lt' rt {!!}
-  ... | 1# , lt' with bal
-  ... | ~+ = {!!}
-  ... | ~0 = 1# , node p lt' rt {!!}
+    | le with lt
+  ... | leaf = 1# , (node p leaf rt bal)
+  ... | node pL ltL rtL balL with delete k (node pL ltL rtL balL)
+  ... | 0# , lt' with bal
+  ... | ~+ = rotL p lt' rt
+  ... | ~0 = 1# , (node p lt' rt ~+)
+  ... | ~- = 0# , (node p lt' rt ~0)
+  delete k (node p lt rt bal)
+    | le | node pL ltL rtL balL | 1# , lt' with bal
+  ... | ~+ = 1# , (node p lt' rt ~+)
+  ... | ~0 = 1# , node p lt' rt ~0
   ... | ~- = 1# , (node p lt' rt ~-)
   delete k (node p lt rt bal)
-    | eq = {!!}
+    | eq = join rt bal lt
   delete k (node p lt rt bal)
-    | ge with delete k rt
-  ... | x , rt' = {!!}
+    | ge with rt
+  ... | leaf = _ , (node p lt leaf bal )
+  ... | node pR ltR rtR balR with delete k (node pR ltR rtR balR)
+  ... | 0# , rt' with bal
+  ... | ~+ = 0# , (node p lt rt' ~0)
+  ... | ~0 = 1# , (node p lt rt' ~-)
+  ... | ~- = rotR p lt rt'
+  delete k (node p lt rt bal)
+    | get | node pR ltR rtR balR | 1# , rt' with bal
+  ... | ~+ = 1# , node p lt rt' ~+
+  ... | ~0 = 1# , node p lt rt' ~0
+  ... | ~- = 1# , node p lt rt' ~-
 
   data Any (P : Pred (K × V) ℓₚ) {l u : Ext K} :
     ∀ {h : ℕ} → BOBMap (l , u) h → Set (ℓ ⊔ ℓ' ⊔ ℓₚ) where
