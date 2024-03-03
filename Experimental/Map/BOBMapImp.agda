@@ -123,12 +123,6 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     mapOrd (leaf ⦃ l≤u ⦄) = l≤u
     mapOrd {l} (node p lm rm bal) = transEx {l} (mapOrd lm) (mapOrd rm)
 
-   {- unionWith : ∀ (f : V → Maybe V → V) {l u : Ext K} {h : ℕ}
-                → BOBMap (l , u) {!!}
-                → BOBMap (l , u) h
-                → BOBMap (l , u) {!!}
-    unionWith f m n = foldr (λ (k , v) t → proj₂ $ insertWith k (f v) {{{!!}}} {{{!!}}} t) m n-}
-
   instance
     -- Assigning map functionality to interface
     BOBMapImp : BMap {K = K} {V}
@@ -136,8 +130,12 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     BMap.∅ BOBMapImp = map (leaf {{tt}})
     BMap._∈_ BOBMapImp k m = AnyM {ℓₚ = z} (λ _ → True) k m
     BMap._↦_∈_ BOBMapImp k v m = AnyM (λ v' → v ≡ v') k m
+
+    BMap.unionWith BOBMapImp _ (map leaf) m = m
+    BMap.unionWith BOBMapImp _ n (map leaf) = n
     BMap.unionWith BOBMapImp f n m =
       fldr (λ (k , v) t → map $ proj₂ $ insertWith k (f v) {{tt}} {{tt}} (toBMap t)) m n
+
     BMap.lookup BOBMapImp (map m) = lookup m
     BMap.insertWith BOBMapImp k f (map x) = map $ proj₂ $ insertWith k f {{tt}} {{tt}} x
 
