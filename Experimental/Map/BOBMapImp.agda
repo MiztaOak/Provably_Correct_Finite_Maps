@@ -147,15 +147,15 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     anyRotRᴸ p (node pL lmL rmL ~-) rm (left prf) = left prf
     anyRotRᴸ p (node pL lmL rmL ~-) rm (right prf) = right (left {{{!!}}} prf)
     anyRotRᴸ {u = u} {kᴾ = kᴾ} p (node pL lmL (node pL' lmL' rmL' b) ~+) rm (here x) =
-      left ⦃ mapOrd lmL' ⦄ (here ⦃ mapOrd lmL ⦄ ⦃ mapOrd lmL' ⦄ x)
+      left ⦃ {!!} {- mapOrd lmL' -} ⦄ (here ⦃ mapOrd lmL ⦄ ⦃ mapOrd lmL' ⦄ x)
     anyRotRᴸ {kᴾ = kᴾ} p (node pL lmL (node pL' lmL' rmL' b) ~+) rm (left ⦃ k≺k' ⦄ x) =
-      left ⦃ transEx {# kᴾ} {# (proj₁ pL)} {# (proj₁ pL')} k≺k' (mapOrd lmL') ⦄ (left x)
+      left ⦃ transEx {# kᴾ} {# (proj₁ pL)} {# (proj₁ pL')} k≺k' {!!} {- (mapOrd lmL') -} ⦄ (left x)
     anyRotRᴸ {l = l} {u} {kᴾ = kᴾ} p (node pL lmL (node pL' lmL' rmL' b) ~+) rm (right ⦃ k'≤k ⦄ (here x)) =
       here ⦃ l≤k ⦄ ⦃ k≤u ⦄ x
         where
-          l≤k : l ≺Ex # kᴾ
+          @erased l≤k : l ≺Ex # kᴾ
           l≤k = transEx {l} {# (proj₁ pL)} {# kᴾ} (mapOrd lmL) k'≤k
-          k≤u : # kᴾ ≺Ex u
+          @erased k≤u : # kᴾ ≺Ex u
           k≤u = transEx {# kᴾ} {# (proj₁ p)} {u} (mapOrd rmL') (mapOrd rm)
     anyRotRᴸ p (node pL lmL (node pL' lmL' rmL' b) ~+) rm (right (left x)) = left (right x)
     anyRotRᴸ p (node pL lmL (node pL' lmL' rmL' b) ~+) rm (right (right x)) = right (left ⦃ {!!} ⦄ x)
@@ -413,6 +413,17 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     -- This proof can be written in a way better way using a helper for the recursion
     BMap.∈-ins BOBMapImp (map m) k x f (map prf) with ∈-ins k x f {{tt}} {{tt}} m prf
       where
+        lemma : ∀ {l u : Ext K} {h : ℕ} {i : ℕ₂}
+                (m : BOBMap (l , u) h)
+                {m' : BOBMap (l , u) (i ⊕ h)}
+                {k x : K} (f : Maybe V → V)
+                ⦃ @erased l≤k : l ≺Ex # k ⦄
+                ⦃ @erased k≤u : # k ≺Ex u ⦄
+                → insertWith k f m ≡ (i , m')
+                → x ∈ m'
+                → x ∈ proj₂ (insertWith k f m)
+        lemma m f refl prf = prf
+
         ∈-ins : ∀ {l u : Ext K} {h : ℕ}
                 (k x : K) (f : Maybe V → V)
                 {{l≤k : l ≺Ex # k}} {{k≤u : # k ≺Ex u}}
@@ -431,7 +442,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
         ... | 0# , lm' with prf
         ... | here _ = inj₂ (here tt)
         ... | right α = inj₂ (right α)
-        ... | left α with ∈-ins k x f lm {!!}
+        ... | left α with ∈-ins k x f lm (lemma lm f insK α)
         ... | inj₁ eqP = inj₁ eqP
         ... | inj₂ anyP = inj₂ (left anyP)
         ∈-ins k x f (node p lm rm bal) prf
@@ -439,14 +450,14 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
         ... | ~+ with prf
         ... | here _ = inj₂ (here tt)
         ... | right α = inj₂ (right α)
-        ... | left α with ∈-ins k x f lm {!!}
+        ... | left α with ∈-ins k x f lm (lemma lm f insK α)
         ... | inj₁ eqP = inj₁ eqP
         ... | inj₂ anyP = inj₂ (left anyP)
         ∈-ins k x f (node p lm rm bal) prf
           | le | 1# , lm' | ~0 with prf
         ... | here _ = inj₂ (here tt)
         ... | right α = inj₂ (right α)
-        ... | left α with ∈-ins k x f lm {!!}
+        ... | left α with ∈-ins k x f lm (lemma lm f insK α)
         ... | inj₁ eqP = inj₁ eqP
         ... | inj₂ anyP = inj₂ (left anyP)
         ∈-ins k x f (node p lm rm bal) prf
@@ -461,7 +472,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
         ... | 0# , rm' with prf
         ... | here _ = inj₂ (here tt)
         ... | left α = inj₂ (left α)
-        ... | right α with ∈-ins k x f rm {!!}
+        ... | right α with ∈-ins k x f rm (lemma rm f insK α)
         ... | inj₁ eqP = inj₁ eqP
         ... | inj₂ anyP = inj₂ (right anyP)
         ∈-ins k x f (node p lm rm bal) prf
@@ -470,7 +481,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
         ... | ~0 with prf
         ... | here _ = inj₂ (here tt)
         ... | left α = inj₂ (left α)
-        ... | right α with ∈-ins k x f rm {!α!}
+        ... | right α with ∈-ins k x f rm (lemma rm f insK α)
         ... | inj₁ eqP = inj₁ eqP
         ... | inj₂ anyP = inj₂ (right anyP)
         ∈-ins k x f (node p lm rm bal) prf
@@ -478,7 +489,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
         ... | here _ = inj₂ (here tt)
         ... | left α = inj₂ (left α)
         ∈-ins k x f (node p lm rm bal) prf
-          | ge | 1# , rm' | ~- | right α with ∈-ins k x f rm {!α!}
+          | ge | 1# , rm' | ~- | right α with ∈-ins k x f rm (lemma rm f insK α)
         ... | inj₁ eqP = inj₁ eqP
         ... | inj₂ anyP = inj₂ (right anyP)
     ... | inj₁ e = inj₁ e
