@@ -1,3 +1,4 @@
+{-# OPTIONS --erasure #-}
 module Map.BOBMapImp where
 
 open import Prelude renaming (⊥ to ⊥'; ⊤ to ⊤')
@@ -5,7 +6,7 @@ open import OrdSet
 open import Level using (Level; _⊔_) renaming (suc to s; zero to z)
 open import Map.BasicMap
 import Map.BOBMap
-open import Data.Nat.Base using (ℕ; suc)
+open import Data.Nat.Base using (ℕ; _*_; suc; zero)
 open import Data.Product hiding (map)
 open import Function.Base
 open import Relation.Unary using (Pred)
@@ -52,6 +53,10 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     liftMap : ∀ {l u : Ext K} {h : ℕ} → BOBMap (l , u) h → BOBMap (l , ⊤') h
     liftMap {l} {u} (leaf ⦃ l≤u ⦄) = leaf ⦃ maxEx {l} {u} l≤u ⦄
     liftMap (node p lm rm bal) = node p lm (liftMap rm) bal
+
+    lowerMap : ∀ {l u : Ext K} {h : ℕ} → BOBMap (l , u) h → BOBMap (⊥' , u) h
+    lowerMap {l} {u} (leaf ⦃ l≤u ⦄) = leaf ⦃ minEx {l} {u} l≤u ⦄
+    lowerMap (node p lm rm bal) = node p (lowerMap lm) rm bal
 
     eqFromJust : ∀ {l : Level} {A : Set l} {a b : A} → just a ≡ just b → a ≡ b
     eqFromJust refl = refl
@@ -119,7 +124,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
       | inj₂ (inj₂ (! ⦃ prf ⦄)) with ≺Eq ord prf
     ... | refl = refl
 
-    mapOrd : ∀ {l u : Ext K} {h : ℕ} → BOBMap (l , u) h → l ≺Ex u
+    @erased mapOrd : ∀ {l u : Ext K} {h : ℕ} → BOBMap (l , u) h → l ≺Ex u
     mapOrd (leaf ⦃ l≤u ⦄) = l≤u
     mapOrd {l} (node p lm rm bal) = transEx {l} (mapOrd lm) (mapOrd rm)
 
@@ -182,8 +187,9 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   instance
     -- Assigning map functionality to interface
     BOBMapImp : BMap {K = K} {V}
-    BMap.Map BOBMapImp = Map V R
+    BMap.Map BOBMapImp = Map {K = K} V R
     BMap.∅ BOBMapImp = map (leaf {{tt}})
+
     BMap._∈_ BOBMapImp k m = AnyM {ℓₚ = z} (λ _ → True) k m
     BMap._↦_∈_ BOBMapImp k v m = AnyM (λ v' → v ≡ v') k m
 
@@ -478,23 +484,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     ... | inj₁ e = inj₁ e
     ... | inj₂ r = inj₂ (map r)
 
-    BMap.∪-∅ BOBMapImp m f = helpl , helpr
-      where
-        helpl : ∀ k v
-                → (BMap._↦_∈_ BOBMapImp)
-                    k v (BMap.unionWith BOBMapImp f m (BMap.∅ BOBMapImp))
-                → (BMap._↦_∈_ BOBMapImp)
-                    k v (BMap.unionWith BOBMapImp f (BMap.∅ BOBMapImp) m)
-        helpl k v prf = {!!}
-
-        helpr : ∀ k v
-                → (BMap._↦_∈_ BOBMapImp)
-                    k v (BMap.unionWith BOBMapImp f (BMap.∅ BOBMapImp) m)
-                → (BMap._↦_∈_ BOBMapImp)
-                    k v (BMap.unionWith BOBMapImp f m (BMap.∅ BOBMapImp))
-        helpr k v (map (here refl)) = map (here refl)
-        helpr k v (map (left x)) = {!!}
-        helpr k v (map (right x)) = {!!}
+    BMap.∪-∅ BOBMapImp m f = {!!}
 
     BMap.∪-∈ BOBMapImp (map n) (map m) f k prf with (find k n , find k m)
       where
