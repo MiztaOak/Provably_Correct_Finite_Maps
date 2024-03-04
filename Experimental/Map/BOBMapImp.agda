@@ -5,7 +5,7 @@ open import OrdSet
 open import Level using (Level; _⊔_) renaming (suc to s; zero to z)
 open import Map.BasicMap
 import Map.BOBMap
-open import Data.Nat.Base using (ℕ)
+open import Data.Nat.Base using (ℕ; suc)
 open import Data.Product hiding (map)
 open import Function.Base
 open import Relation.Unary using (Pred)
@@ -123,6 +123,62 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
     mapOrd (leaf ⦃ l≤u ⦄) = l≤u
     mapOrd {l} (node p lm rm bal) = transEx {l} (mapOrd lm) (mapOrd rm)
 
+    ¬Sym : ∀ {ℓ : Level} {A : Set ℓ} {a b : A} → ¬ (a ≡ b) → ¬ (b ≡ a)
+    ¬Sym nEq x = nEq (sym x)
+
+    anyRotRᴸ : ∀ {l u : Ext K} {hr : ℕ} {kᴾ : K}
+             {P : Pred V ℓₚ}
+             → ((k , v) : K × V)
+             → (lm : BOBMap (l , # k) (suc (suc hr)))
+             → (rm : BOBMap (# k , u) hr)
+             → Any P kᴾ lm
+             → Any P kᴾ (proj₂ (rotR (k , v) lm rm))
+    anyRotRᴸ {u = u} {kᴾ = kᴾ} p (node .(_ , _) lmL rmL ~0) rm (here x) =
+      here {{mapOrd lmL}} {{transEx {# kᴾ} {# (proj₁ p)} {u} (mapOrd rmL) (mapOrd rm)}} x
+    anyRotRᴸ p (node pL lmL rmL ~0) rm (left prf) = left prf
+    anyRotRᴸ p (node pL lmL rmL ~0) rm (right prf) = right (left {{{!!}}} prf)
+    anyRotRᴸ {u = u} {kᴾ = kᴾ} p (node .(_ , _) lmL rmL ~-) rm (here x) =
+      here {{mapOrd lmL}} {{transEx {# kᴾ} {# (proj₁ p)} {u} (mapOrd rmL) (mapOrd rm)}} x
+    anyRotRᴸ p (node pL lmL rmL ~-) rm (left prf) = left prf
+    anyRotRᴸ p (node pL lmL rmL ~-) rm (right prf) = right (left {{{!!}}} prf)
+    anyRotRᴸ {u = u} {kᴾ = kᴾ} p (node pL lmL (node pL' lmL' rmL' b) ~+) rm (here x) =
+      left ⦃ mapOrd lmL' ⦄ (here ⦃ mapOrd lmL ⦄ ⦃ mapOrd lmL' ⦄ x)
+    anyRotRᴸ {kᴾ = kᴾ} p (node pL lmL (node pL' lmL' rmL' b) ~+) rm (left ⦃ k≺k' ⦄ x) =
+      left ⦃ transEx {# kᴾ} {# (proj₁ pL)} {# (proj₁ pL')} k≺k' (mapOrd lmL') ⦄ (left x)
+    anyRotRᴸ {l = l} {u} {kᴾ = kᴾ} p (node pL lmL (node pL' lmL' rmL' b) ~+) rm (right ⦃ k'≤k ⦄ (here x)) =
+      here ⦃ l≤k ⦄ ⦃ k≤u ⦄ x
+        where
+          l≤k : l ≺Ex # kᴾ
+          l≤k = transEx {l} {# (proj₁ pL)} {# kᴾ} (mapOrd lmL) k'≤k
+          k≤u : # kᴾ ≺Ex u
+          k≤u = transEx {# kᴾ} {# (proj₁ p)} {u} (mapOrd rmL') (mapOrd rm)
+    anyRotRᴸ p (node pL lmL (node pL' lmL' rmL' b) ~+) rm (right (left x)) = left (right x)
+    anyRotRᴸ p (node pL lmL (node pL' lmL' rmL' b) ~+) rm (right (right x)) = right (left ⦃ {!!} ⦄ x)
+
+    anyRotRᴿ : ∀ {l u : Ext K} {hr : ℕ} {kᴾ : K}
+             {P : Pred V ℓₚ}
+             → ((k , v) : K × V)
+             → (lm : BOBMap (l , # k) (suc (suc hr)))
+             → (rm : BOBMap (# k , u) hr)
+             → Any P kᴾ rm
+             → Any P kᴾ (proj₂ (rotR (k , v) lm rm))
+
+    anyRotLᴿ : ∀ {l u : Ext K} {hl : ℕ} {kᴾ : K}
+             {P : Pred V ℓₚ}
+             → ((k , v) : K × V)
+             → (lm : BOBMap (l , # k) hl)
+             → (rm : BOBMap (# k , u) (suc (suc hl)))
+             → Any P kᴾ rm
+             → Any P kᴾ (proj₂ (rotL (k , v) lm rm))
+
+    anyRotLᴸ : ∀ {l u : Ext K} {hl : ℕ} {kᴾ : K}
+             {P : Pred V ℓₚ}
+             → ((k , v) : K × V)
+             → (lm : BOBMap (l , # k) hl)
+             → (rm : BOBMap (# k , u) (suc (suc hl)))
+             → Any P kᴾ lm
+             → Any P kᴾ (proj₂ (rotL (k , v) lm rm))
+
   instance
     -- Assigning map functionality to interface
     BOBMapImp : BMap {K = K} {V}
@@ -159,9 +215,6 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
         ... | eq = here {{mapOrd lm}} {{mapOrd rm}} (sym $ eqFromJust prf)
         ... | ge = right (∈⇒lookup rm k prf)
 
-    -- Needs a connection between the branches of any and compare to solve
-    -- might be some cleaver way to deduce k's relation to the map using
-    -- left and right
     BMap.lookup⇒∈ BOBMapImp (map m) k v (map prf) = lookup⇒∈ k m prf
       where
         lookup⇒∈ : ∀ {l u : Ext K} {h : ℕ} (k : K) {v : V} (m : BOBMap (l , u) h)
@@ -192,15 +245,10 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
         ... | c with compare k k in rememberMe
         ... | eq with compare k k
         ... | eq = refl
-        lookup-insert∈ k (node p lm rm bal) f (left {{ord}} prf) with lookup-insert∈ k lm f prf
-        ... | lePrf with compareLeft ord
+        lookup-insert∈ k (node p lm rm bal) f (left {{ord}} prf) with compareLeft ord
         ... | c with compare k (proj₁ p)
-        ... | le with insertWith k f {{p≤u = ord}} lm
+        ... | le with insertWith k f ⦃ p≤u = ord ⦄ lm
         ... | x = {!!}
-        {-with insertWith k f (node p lm rm bal)
-        ... | (_ , m) with compareLeft ord
-        ... | c with compare k (proj₁ p)
-        ... | le = {!!} -}
         lookup-insert∈ k (node p lm rm bal) f (right {{ord}} prf) with lookup-insert∈ k rm f prf
         ... | x with insertWith k f (node p lm rm bal)
         ... | (_ , m) with compareRight ord
@@ -256,21 +304,177 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
           | ge | x | 0# , rm' with compare k (proj₁ p)
         ... | ge = x
 
-    BMap.ins-comm BOBMapImp k k' f f' m notEq = {!!}
+    BMap.ins-comm BOBMapImp k k' f f' (map m) notEq =
+      (λ k'' v x → map (ins-comm k k' ⦃ tt ⦄ ⦃ tt ⦄ ⦃ tt ⦄ ⦃ tt ⦄ f f' m notEq k'' v (toAny x))) ,
+      λ k'' v x → map (ins-comm k' k ⦃ tt ⦄ ⦃ tt ⦄ ⦃ tt ⦄ ⦃ tt ⦄ f' f m (¬Sym notEq) k'' v (toAny x))
+      where
+        ins-comm : ∀ {l u : Ext K} {h : ℕ}
+                    → (k k' : K)
+                    → {{l≤k : l ≺Ex # k}} {{k≤u : # k ≺Ex u}}
+                    → {{l≤k' : l ≺Ex # k'}} {{k'≤u : # k' ≺Ex u}}
+                    → (f f' : Maybe V → V)
+                    → (m : BOBMap (l , u) h)
+                    → k ≢ k'
+                    → (∀ k'' v → k'' ↦ v ∈ proj₂ (insertWith k f (proj₂ (insertWith k' f' m)))
+                      → k'' ↦ v ∈ proj₂ (insertWith k' f' (proj₂ (insertWith k f m))))
+        ------ Leaf case
+        ins-comm {l} k k' ⦃ o₁ ⦄ ⦃ o₂ ⦄ ⦃ o₃ ⦄ ⦃ o₄ ⦄ f f' (leaf ⦃ lu ⦄) nEq k'' v prf with
+          insertWith {l} k f {{o₁}} {{o₂}} (leaf ⦃ lu ⦄)
+        ... | _ , m with compare k' k
+        ... | inj₁ (! ⦃ ord ⦄) with compareRight ord
+        ... | x with compare k k'
+        ... | ge with prf
+        ... | here x = left ⦃ ord ⦄ (here ⦃ o₃ ⦄ ⦃ ord ⦄ x)
+        ... | right (here x) = here ⦃ k≤u = o₂ ⦄ x
+        ins-comm {l} k k' ⦃ o₁ ⦄ ⦃ o₂ ⦄ ⦃ o₃ ⦄ ⦃ o₄ ⦄ f f' (leaf ⦃ lu ⦄) nEq k'' v prf
+          | _ , m | inj₂ (inj₂ (! ⦃ ord ⦄)) with compareLeft ord
+        ... | x with compare k k'
+        ... | le with prf
+        ... | here x = right ⦃ ord ⦄ (here ⦃ ord ⦄ ⦃ o₄ ⦄ x)
+        ... | left (here x) = here ⦃ o₁ ⦄ x
+        ins-comm {l} k k' ⦃ o₁ ⦄ ⦃ o₂ ⦄ ⦃ o₃ ⦄ ⦃ o₄ ⦄ f f' (leaf ⦃ lu ⦄) nEq k'' v prf
+          | _ , m | eq with nEq refl
+        ... | ()
 
+        ------ Node case
+        ins-comm k k' ⦃ o₁ ⦄ ⦃ o₂ ⦄ ⦃ o₃ ⦄ ⦃ o₄ ⦄ f f' (node p lm rm b) nEq k'' v prf with
+          compare k' (proj₁ p) in cK'
+        -- k' ≺ (proj₁ p)
+        ... | le with compare k (proj₁ p) in cK
+        ... | le = {!!}
+        ... | eq with compare k' (proj₁ p)
+        ... | inj₁ (! ⦃ ord ⦄) with insertWith k' f' ⦃ p≤u = ord ⦄ lm in insK'
+        ... | 0# , lm' = {!!}
+        ... | 1# , lm' with b
+        ... | ~+ = {!!}
+        ... | ~0 = {!!}
+        ... | ~- with insertWith k' f' ⦃ p≤u = ord ⦄ lm --THE FUCKING LOOP IS BACK OH DEAR GOD
+        ... | 1# , lm'' = {!!}
+        ins-comm k k' ⦃ o₁ ⦄ ⦃ o₂ ⦄ ⦃ o₃ ⦄ ⦃ o₄ ⦄ f f' (node p lm rm b) nEq k'' v prf
+          | le | ge with insertWith k' f' lm
+        ... | 1# , lm' = {!!}
+        ... | 0# , lm' with compare k (proj₁ p)
+        ... | inj₂ (inj₂ (! ⦃ ord ⦄)) with insertWith k f ⦃ ord ⦄ rm
+        ... | 1# , rm' = {!!}
+        ... | 0# , rm' = {!!}
+
+        -- k' ≡ (proj₁ p)
+        ins-comm k k' ⦃ o₁ ⦄ ⦃ o₂ ⦄ ⦃ o₃ ⦄ ⦃ o₄ ⦄ f f' (node p lm rm b) nEq k'' v prf
+          | eq with compare k (proj₁ p)
+        ... | le with insertWith k f lm
+        ... | 0# , lm' with compareSelf (proj₁ p)
+        ... | x with compare (proj₁ p) (proj₁ p)
+        ... | eq = prf
+        ins-comm k k' ⦃ o₁ ⦄ ⦃ o₂ ⦄ ⦃ o₃ ⦄ ⦃ o₄ ⦄ f f' (node p lm rm b) nEq k'' v prf
+          | eq | le | 1# , lm' with b
+        ... | ~+ with compareSelf (proj₁ p)
+        ... | x with compare (proj₁ p) (proj₁ p)
+        ... | eq = prf
+        ins-comm k k' ⦃ o₁ ⦄ ⦃ o₂ ⦄ ⦃ o₃ ⦄ ⦃ o₄ ⦄ f f' (node p lm rm b) nEq k'' v prf
+          | eq | le | 1# , lm' | ~0 with compareSelf (proj₁ p)
+        ... | x with compare (proj₁ p) (proj₁ p)
+        ... | eq = prf
+        ins-comm k k' ⦃ o₁ ⦄ ⦃ o₂ ⦄ ⦃ o₃ ⦄ ⦃ o₄ ⦄ f f' (node p lm rm b) nEq k'' v prf
+          | eq | le | 1# , lm' | ~- = {!!}
+        ins-comm k k' ⦃ o₁ ⦄ ⦃ o₂ ⦄ ⦃ o₃ ⦄ ⦃ o₄ ⦄ f f' (node p lm rm b) nEq k'' v prf
+          | eq | ge with insertWith k f rm
+        ... | 1# , rm' with b
+        ... | ~+ = {!!}
+        ... | ~0 with compareSelf (proj₁ p)
+        ... | x with compare (proj₁ p) (proj₁ p)
+        ... | eq = prf
+        ins-comm k k' ⦃ o₁ ⦄ ⦃ o₂ ⦄ ⦃ o₃ ⦄ ⦃ o₄ ⦄ f f' (node p lm rm b) nEq k'' v prf
+          | eq | ge | 1# , rm' | ~- with compareSelf (proj₁ p)
+        ... | x with compare (proj₁ p) (proj₁ p)
+        ... | eq = prf
+        ins-comm k k' ⦃ o₁ ⦄ ⦃ o₂ ⦄ ⦃ o₃ ⦄ ⦃ o₄ ⦄ f f' (node p lm rm b) nEq k'' v prf
+          | eq | ge | 0# , rm' with compareSelf (proj₁ p)
+        ... | x with compare (proj₁ p) (proj₁ p)
+        ... | eq = prf
+        ins-comm k k' ⦃ o₁ ⦄ ⦃ o₂ ⦄ ⦃ o₃ ⦄ ⦃ o₄ ⦄ f f' (node p lm rm b) nEq k'' v prf
+          | eq | eq with nEq refl
+        ... | ()
+
+        -- k' ≻ (proj₁ p)
+        ins-comm k k' ⦃ o₁ ⦄ ⦃ o₂ ⦄ ⦃ o₃ ⦄ ⦃ o₄ ⦄ f f' (node p lm rm b) nEq k'' v prf
+          | ge with insertWith k' f' rm
+        ... | 1# , n = {!!}
+        ... | 0# , n with compare k (proj₁ p)
+        ... | le = {!!}
+        ... | ge = {!!}
+        ... | eq = {!!}
+
+    -- This proof can be written in a way better way using a helper for the recursion
     BMap.∈-ins BOBMapImp (map m) k x f (map prf) with ∈-ins k x f {{tt}} {{tt}} m prf
       where
         ∈-ins : ∀ {l u : Ext K} {h : ℕ}
                 (k x : K) (f : Maybe V → V)
                 {{l≤k : l ≺Ex # k}} {{k≤u : # k ≺Ex u}}
                 (m : BOBMap (l , u) h)
-                → x ∈ (proj₂ $ insertWith k f m)
+                → x ∈ (proj₂ (insertWith k f m))
                 → (x ≡ k) ⊎ x ∈ m
         ∈-ins {l} {u} k x f {{l≤k}} {{k≤u}} leaf prf with
-          proj₂ $ insertWith {l} {u} k f {{l≤k}} {{k≤u}} leaf
-        ... | node (k' , v) leaf leaf ~0 with prf
-        ... | here eqPrf = {!!}
-        ∈-ins k x f (node p lm rm bal) prf = {!!}
+          insertWith {l} {u} k f {{l≤k}} {{k≤u}} leaf
+        ... | 0# , leaf with prf
+        ... | here tt = inj₁ refl
+        ∈-ins {l} {u} k x f {{l≤k}} {{k≤u}} leaf prf
+          | 1# , node p leaf leaf bal with prf
+        ... | here tt = inj₁ refl
+        ∈-ins k x f (node p lm rm bal) prf with compare k (proj₁ p)
+        ... | le with insertWith k f lm in insK
+        ... | 0# , lm' with prf
+        ... | here _ = inj₂ (here tt)
+        ... | right α = inj₂ (right α)
+        ... | left α with ∈-ins k x f lm {!!}
+        ... | inj₁ eqP = inj₁ eqP
+        ... | inj₂ anyP = inj₂ (left anyP)
+        ∈-ins k x f (node p lm rm bal) prf
+          | le | 1# , lm' with bal
+        ... | ~+ with prf
+        ... | here _ = inj₂ (here tt)
+        ... | right α = inj₂ (right α)
+        ... | left α with ∈-ins k x f lm {!!}
+        ... | inj₁ eqP = inj₁ eqP
+        ... | inj₂ anyP = inj₂ (left anyP)
+        ∈-ins k x f (node p lm rm bal) prf
+          | le | 1# , lm' | ~0 with prf
+        ... | here _ = inj₂ (here tt)
+        ... | right α = inj₂ (right α)
+        ... | left α with ∈-ins k x f lm {!!}
+        ... | inj₁ eqP = inj₁ eqP
+        ... | inj₂ anyP = inj₂ (left anyP)
+        ∈-ins k x f (node p lm rm bal) prf
+          | le | 1# , lm' | ~- = {!!}
+        ∈-ins k x f (node p lm rm bal) prf
+          | eq with prf
+        ... | here _ = inj₁ refl
+        ... | left α = inj₂ (left α)
+        ... | right α = inj₂ (right α)
+        ∈-ins k x f (node p lm rm bal) prf
+          | ge with insertWith k f rm in insK
+        ... | 0# , rm' with prf
+        ... | here _ = inj₂ (here tt)
+        ... | left α = inj₂ (left α)
+        ... | right α with ∈-ins k x f rm {!!}
+        ... | inj₁ eqP = inj₁ eqP
+        ... | inj₂ anyP = inj₂ (right anyP)
+        ∈-ins k x f (node p lm rm bal) prf
+          | ge | 1# , rm' with bal
+        ... | ~+ = {!!}
+        ... | ~0 with prf
+        ... | here _ = inj₂ (here tt)
+        ... | left α = inj₂ (left α)
+        ... | right α with ∈-ins k x f rm {!α!}
+        ... | inj₁ eqP = inj₁ eqP
+        ... | inj₂ anyP = inj₂ (right anyP)
+        ∈-ins k x f (node p lm rm bal) prf
+          | ge | 1# , rm' | ~- with prf
+        ... | here _ = inj₂ (here tt)
+        ... | left α = inj₂ (left α)
+        ∈-ins k x f (node p lm rm bal) prf
+          | ge | 1# , rm' | ~- | right α with ∈-ins k x f rm {!α!}
+        ... | inj₁ eqP = inj₁ eqP
+        ... | inj₂ anyP = inj₂ (right anyP)
     ... | inj₁ e = inj₁ e
     ... | inj₂ r = inj₂ (map r)
 
@@ -288,7 +492,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
                     k v (BMap.unionWith BOBMapImp f (BMap.∅ BOBMapImp) m)
                 → (BMap._↦_∈_ BOBMapImp)
                     k v (BMap.unionWith BOBMapImp f m (BMap.∅ BOBMapImp))
-        helpr k v (map (here x)) = {!!}
+        helpr k v (map (here refl)) = map (here refl)
         helpr k v (map (left x)) = {!!}
         helpr k v (map (right x)) = {!!}
 
@@ -325,18 +529,18 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
           | le with insert∈ k v lm
         ... | x with insertWith k (λ _ → v) lm
         ... | 0# , _ = left x
-        ... | 1# , _ with bal
+        ... | 1# , lm' with bal
         ... | ~+ = left x
         ... | ~0 = left x
-        ... | ~- = {!!}
+        ... | ~- = anyRotRᴸ p lm' rm x
         insert∈ k v (node p lm rm bal)
           | eq = here refl
         insert∈ k v (node p lm rm bal)
           | ge with insert∈ k v rm
         ... | x with insertWith k (λ _ → v) rm
         ... | 0# , _ = right x
-        ... | 1# , _ with bal
-        ... | ~+ = {!!}
+        ... | 1# , rm' with bal
+        ... | ~+ = anyRotLᴿ p lm rm' x
         ... | ~0 = right x
         ... | ~- = right x
 
@@ -365,12 +569,23 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
         noAlterInsert {k} {k'} (here x {lm} {rm} {bal}) nEq
           | eq with nEq refl
         ... | ()
-        noAlterInsert {k} {k'} {v} {v'} {{l≤k'}} {m = node p _ _ _} (left {lm = lm} prf {rm}) nEq with
-          noAlterInsert {v' = v'} {{l≤k'}} {{{!!}}} prf nEq
-        ... | prf' with compare k' (proj₁ p)
-        ... | le = {!!}
-        ... | eq = {!!}
-        ... | ge = {!!}
+        noAlterInsert {k} {k'} {v} {v'} {{l≤k'}} {m = node p _ _ b} (left {lm = lm} ⦃ k≺k' ⦄ prf {rm}) nEq
+          with compare k' (proj₁ p)
+        ... | le with insertWith k' (λ _ → v') lm in insL
+        ... | 0# , lm' with noAlterInsert {v' = v'} prf nEq
+        ... | prf' with proj₂ (insertWith k' (λ _ → v') lm)
+        ... | lm'' = left {!!}
+        noAlterInsert {k} {k'} {v} {v'} {{l≤k'}} {m = node p _ _ b} (left {lm = lm} ⦃ k≺k' ⦄ prf {rm}) nEq
+          | le | 1# , lm' = {!!}
+        noAlterInsert {k} {k'} {v} {v'} {{l≤k'}} {m = node p _ _ b} (left {lm = lm} ⦃ k≺k' ⦄ prf {rm}) nEq
+          | eq = left prf
+        noAlterInsert {k} {k'} {v} {v'} {{l≤k'}} {m = node p _ _ b} (left {lm = lm} ⦃ k≺k' ⦄ prf {rm}) nEq
+          | ge with insertWith k' (λ _ → v') rm
+        ... | 0# , rm' = left prf
+        ... | 1# , rm' with b
+        ... | ~+ = anyRotLᴸ p lm rm' prf
+        ... | ~0 = left prf
+        ... | ~- = left prf
         noAlterInsert {k} {k'} {v} {v'} (right prf) nEq = {!!}
 
     BMap.↦∈To∈ BOBMapImp (map x) = map (↦∈To∈ x)
