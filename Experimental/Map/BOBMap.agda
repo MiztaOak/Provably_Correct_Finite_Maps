@@ -1,156 +1,156 @@
 {-# OPTIONS --erasure #-}
 {-# OPTIONS --allow-unsolved-metas #-}
+open import Relation.Binary.Bundles using (StrictTotalOrder)
+open import OrdSet'
 
-module Map.BOBMap where
+module Map.BOBMap {k ℓ₁} (order : OrdSet k ℓ₁) where
+
+Order : StrictTotalOrder k k ℓ₁
+Order = toStrictTotalOrder order
 
 open import Prelude
-open import OrdSet
 open import Level using (Level; _⊔_) renaming (suc to lsuc)
 open import Data.Nat.Base using (ℕ; zero; suc; _+_; _*_; _<_)
 open import Data.Fin.Base using (Fin) renaming (zero to fzero; suc to fsuc)
 open import Data.Product
 open import Data.Maybe
 open import Relation.Unary using (Pred)
-open import Relation.Binary.PropositionalEquality hiding (trans)
+open import Relation.Binary.PropositionalEquality hiding (trans; [_])
 open import Function using (_∘_; _$_; const; case_of_)
+open import Relation.Binary.Definitions
+
+open StrictTotalOrder Order renaming (Carrier to Key)
+open import Data.Tree.AVL.Key Order public
 
 private
   variable
     ℓ ℓ' ℓₚ : Level
+    v : Level
 
-module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
-  open OSet R
-  open OSet (ext {ℓ} {K} {R}) renaming
-   (_≺_ to _≺Ex_; trans to transEx; compare to compareEx)
+ℕ₂ = Fin 2
+pattern 0# = fzero
+pattern 1# = fsuc fzero
+pattern ## = fsuc (fsuc ())
 
-  ℕ₂ = Fin 2
-  pattern 0# = fzero
-  pattern 1# = fsuc fzero
-  pattern ## = fsuc (fsuc ())
+infixl 6 _⊕_
 
-  infixl 6 _⊕_
+_⊕_ : ℕ₂ → ℕ → ℕ
+0# ⊕ n = n
+1# ⊕ n = 1 + n
 
-  _⊕_ : ℕ₂ → ℕ → ℕ
-  0# ⊕ n = n
-  1# ⊕ n = 1 + n
+pred[_⊕_] : ℕ₂ → ℕ → ℕ
+pred[ i ⊕ zero  ] = 0
+pred[ i ⊕ suc n ] = i ⊕ n
 
-  pred[_⊕_] : ℕ₂ → ℕ → ℕ
-  pred[ i ⊕ zero  ] = 0
-  pred[ i ⊕ suc n ] = i ⊕ n
+infix 4 _~_⊔_
 
-  infix 4 _~_⊔_
+data _~_⊔_ : ℕ → ℕ → ℕ → Set where
+  ~+ : ∀ {n} →     n ~ 1 + n ⊔ 1 + n
+  ~0 : ∀ {n} →     n ~ n     ⊔ n
+  ~- : ∀ {n} → 1 + n ~ n     ⊔ 1 + n
 
-  data _~_⊔_ : ℕ → ℕ → ℕ → Set where
-    ~+ : ∀ {n} →     n ~ 1 + n ⊔ 1 + n
-    ~0 : ∀ {n} →     n ~ n     ⊔ n
-    ~- : ∀ {n} → 1 + n ~ n     ⊔ 1 + n
+max~ : ∀ {i j m} → i ~ j ⊔ m → m ~ i ⊔ m
+max~ ~+ = ~-
+max~ ~0 = ~0
+max~ ~- = ~0
 
-  max~ : ∀ {i j m} → i ~ j ⊔ m → m ~ i ⊔ m
-  max~ ~+ = ~-
-  max~ ~0 = ~0
-  max~ ~- = ~0
+~max : ∀ {i j m} → i ~ j ⊔ m → j ~ m ⊔ m
+~max ~+ = ~0
+~max ~0 = ~0
+~max ~- = ~+
 
-  ~max : ∀ {i j m} → i ~ j ⊔ m → j ~ m ⊔ m
-  ~max ~+ = ~0
-  ~max ~0 = ~0
-  ~max ~- = ~+
+data BOBMap (V : Set v) (l u : Key⁺) : ℕ → Set (k ⊔ v ⊔ ℓ₁) where
+  leaf : {{@erased l<u : l <⁺ u}} → BOBMap V l u 0
+  node : ∀ {hl hr h}
+         → ((k , v) : Key × V)
+         → (lm : BOBMap V l [ k ] hl)
+         → (rm : BOBMap V [ k ] u hr)
+         → (bal : hl ~ hr ⊔ h)
+         → BOBMap V l u (suc h)
 
-  -- B(alanced)O(rdered)B(ST)Map
-  data BOBMap (lu : Ext K × Ext K) : ℕ → Set (ℓ ⊔ ℓ') where
-    leaf : {{@erased l≤u : (proj₁ lu) ≺Ex (proj₂ lu)}} → BOBMap lu 0
-    node : {h hl hr : ℕ}
-           (p : K × V)
-           (let (k , v) = p)
-           (let (l , u) = lu)
-           (lt : BOBMap (l , # k) hl)
-           (rt : BOBMap (# k , u) hr)
-           (bal : hl ~ hr ⊔ h)
-           → BOBMap lu (suc h)
+module _ {v} {V : Set v} where
+  rotR : ∀ {l u : Key⁺} {hr : ℕ}
+         ((k , v) : Key × V)
+         → BOBMap V l [ k ] (suc (suc hr))
+         → BOBMap V [ k ] u hr
+         → ∃ λ i → BOBMap V l u (i ⊕ (suc (suc hr)))
+  rotR kv (node p lmᴸ rmᴸ ~0) rm = 1# , node p lmᴸ (node kv rmᴸ rm ~-) ~+
+  rotR kv (node p lmᴸ rmᴸ ~-) rm = 0# , node p lmᴸ (node kv rmᴸ rm ~0) ~0
+  rotR kv (node p lmᴸ (node pᴿ lmᴸᴿ rmᴸᴿ bal) ~+) rm =
+    0# , (node pᴿ (node p lmᴸ lmᴸᴿ (max~ bal)) (node kv rmᴸᴿ rm (~max bal)) ~0)
 
-  rotR : ∀ {l u : Ext K} {hr : ℕ}
-         (kv : K × V)
-         → BOBMap (l , # (proj₁ kv)) (suc (suc hr))
-         → BOBMap (# (proj₁ kv) , u) hr
-         → ∃ λ i → BOBMap (l , u) (i ⊕ (suc (suc hr)))
-  rotR kv (node p llt lrt ~0) rt = 1# , (node p llt (node kv lrt rt ~-) ~+)
-  rotR kv (node p llt lrt ~-) rt = 0# , (node p llt (node kv lrt rt ~0) ~0)
-  rotR kv (node p llt (node p' lrlt lrrt bal) ~+) rt =
-    0# , (node p' (node p llt lrlt (max~ bal)) (node kv lrrt rt (~max bal)) ~0)
-
-  rotL : ∀ {l u : Ext K} {hl : ℕ}
-         (kv : K × V)
-         → BOBMap (l , # (proj₁ kv)) hl
-         → BOBMap (# (proj₁ kv) , u) (suc (suc hl))
-         → ∃ λ i → BOBMap (l , u) (i ⊕ (suc (suc hl)))
+  rotL : ∀ {l u : Key⁺} {hl : ℕ}
+         ((k , v) : Key × V)
+         → BOBMap V l [ k ] hl
+         → BOBMap V [ k ] u (suc (suc hl))
+         → ∃ λ i → BOBMap V l u (i ⊕ (suc (suc hl)))
   rotL kv lt (node p rlt rrt ~+) = 0# , (node p (node kv lt rlt ~0) rrt ~0)
   rotL kv lt (node p rlt rrt ~0) = 1# , (node p (node kv lt rlt ~+) rrt ~-)
   rotL kv lt (node p (node p' rllt rlrt bal) rrt ~-) =
     0# , (node p' (node kv lt rllt (max~ bal)) (node p rlrt rrt (~max bal)) ~0)
 
-  joinˡ⁺ : ∀ {l u : Ext K} {h} {hl} {hr}
-    → (p : K × V)
-    → ∃ (λ i → BOBMap (l , # (proj₁ p)) (i ⊕ hl))
-    → BOBMap (# (proj₁ p) , u) hr
+  joinˡ⁺ : ∀ {l u : Key⁺} {h} {hl} {hr}
+    → (p : Key × V)
+    → ∃ (λ i → BOBMap V l [ proj₁ p ] (i ⊕ hl))
+    → BOBMap V [ proj₁ p ] u hr
     → hl ~ hr ⊔ h
-    → ∃ (λ i → BOBMap (l , u) (i ⊕ suc h))
+    → ∃ (λ i → BOBMap V l u (i ⊕ suc h))
   joinˡ⁺ p (0# , lt) rt bal = 0# , node p lt rt bal
   joinˡ⁺ p (1# , lt) rt ~+  = 0# , node p lt rt ~0
   joinˡ⁺ p (1# , lt) rt ~0  = 1# , node p lt rt ~-
   joinˡ⁺ p (1# , lt) rt ~-  = rotR p lt rt
 
-  insertWith : {l u : Ext K} {h : ℕ} (k : K) (f : Maybe V → V)
-               {{@erased l≤p : l ≺Ex  # k}} {{@erased p≤u : # k ≺Ex u}}
-               → BOBMap (l , u) h
-               → ∃ λ i → BOBMap (l , u) (i ⊕ h)
+  joinʳ⁺ : ∀ {l u : Key⁺} {h} {hl} {hr}
+    → (p : Key × V)
+    → BOBMap V l [ proj₁ p ] hl
+    → ∃ (λ i → BOBMap V [ proj₁ p ] u (i ⊕ hr))
+    → hl ~ hr ⊔ h
+    → ∃ (λ i → BOBMap V l u (i ⊕ suc h))
+  joinʳ⁺ p lt (0# , rt) bal = 0# , node p lt rt bal
+  joinʳ⁺ p lt (1# , rt) ~+ = rotL p lt rt
+  joinʳ⁺ p lt (1# , rt) ~0 = 1# , node p lt rt ~+
+  joinʳ⁺ p lt (1# , rt) ~- = 0# , node p lt rt ~0
+
+  insertWith : {l u : Key⁺} {h : ℕ} (k : Key) (f : Maybe V → V)
+               {{@erased l≤p : l <⁺ [ k ]}} {{@erased p≤u : [ k ] <⁺ u}}
+               → BOBMap V l u h
+               → ∃ λ i → BOBMap V l u (i ⊕ h)
   insertWith k f leaf = 1# , node (k , f nothing) leaf leaf ~0
   insertWith k f (node p lt rt bal) with compare k (proj₁ p)
-  insertWith k f (node p lt rt bal)
-    | le = joinˡ⁺ p (insertWith k f lt) rt bal
-  --   | le with insertWith k f lt
-  -- ... | 0# , t = 0# , (node p t rt bal)
-  -- ... | 1# , t with bal
-  -- ... | ~+ = 0# , (node p t rt ~0)
-  -- ... | ~0 = 1# , (node p t rt ~-)
-  -- ... | ~- = rotR p t rt
-  insertWith k f (node p lt rt bal)
-    | eq = 0# , (node (k , f (just (proj₂ p))) lt rt bal)
-  insertWith k f (node p lt rt bal)
-    | ge with insertWith k f rt
-  ... | 0# , t = 0# , (node p lt t bal)
-  ... | 1# , t with bal
-  ... | ~+ = rotL p lt t
-  ... | ~0 = 1# , (node p lt t ~+)
-  ... | ~- = 0# , (node p lt t ~0)
+  ... | tri< k<p _ _ = joinˡ⁺ p (insertWith k f {{p≤u = [ k<p ]ᴿ}} lt) rt bal
+  ... | tri≈ _ refl _ = 0# , node (k , f (just (proj₂ p))) lt rt bal
+  ... | tri> _ _ p<k = joinʳ⁺ p lt (insertWith k f {{[ p<k ]ᴿ}} rt) bal
 
-  insert : {l u : Ext K} {h : ℕ} (kv : K × V)
-           {{@erased l≤p : l ≺Ex  (# (proj₁ kv))}}
-           {{@erased p≤u :(# (proj₁ kv)) ≺Ex u}}
-           → BOBMap (l , u) h
-           → ∃ λ i → BOBMap (l , u) (i ⊕ h)
+  insert : {l u : Key⁺} {h : ℕ} (kv : Key × V)
+           {{@erased l≤p : l <⁺ [ (proj₁ kv) ]}}
+           {{@erased p≤u : [ (proj₁ kv) ] <⁺ u}}
+           → BOBMap V l u h
+           → ∃ λ i → BOBMap V l u (i ⊕ h)
   insert (k , v) m = insertWith k (λ _ → v) m
 
-  lookup : ∀ {l u : Ext K} {h : ℕ}
-           → BOBMap (l , u) h
-           → K
+  lookup : ∀ {l u : Key⁺} {h : ℕ}
+           → BOBMap V l u h
+           → Key
            → Maybe V
   lookup leaf k = nothing
   lookup (node p lt rt bal) k with compare k (proj₁ p)
-  ... | le = lookup lt k
-  ... | eq = just (proj₂ p)
-  ... | ge = lookup rt k
+  ... | tri< k<p _ _ = lookup lt k
+  ... | tri≈ _ refl _ = just (proj₂ p)
+  ... | tri> _ _ p<k = lookup rt k
 
-  record Cons (p : K × V) (l u : Ext K) (h : ℕ) : Set (ℓ ⊔ ℓ') where
+
+  record Cons (p : Key × V) (l u : Key⁺) (h : ℕ) : Set (k ⊔ v ⊔ ℓ₁) where
     constructor cons
     field
-      head : K × V
-      @erased l<u : l ≺Ex # (proj₁ head)
-      tail : ∃ λ i → BOBMap (# (proj₁ head) , u) (i ⊕ h)
+      head : Key × V
+      @erased l<u : l <⁺ [ proj₁ head ]
+      tail : ∃ λ i → BOBMap V [ proj₁ head ] u (i ⊕ h)
 
   uncons : ∀ {l u h h1 h2}
-           → ((k , v) : K × V)
+           → ((k , v) : Key × V)
            → h1 ~ h2 ⊔ h
-           → BOBMap (l , # k) h1
-           → BOBMap (# k , u) h2
+           → BOBMap V l [ k ] h1
+           → BOBMap V [ k ] u h2
            → Cons (k , v) l u h
   uncons p b (leaf {{l<u}}) r = cons p l<u (case b of
     λ { ~+ → 0# , r
@@ -164,27 +164,27 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
           ; ~+ → rotL p t r } })
 
   reduce : ∀ {l y u h}
-          → {{@erased l≤y : l ≺Ex y}}
-          → BOBMap (y , u) h
-          → BOBMap (l , u) h
-  reduce {l} {y} {u} {{a}} (leaf {{b}}) = leaf {{transEx {l} {y} {u} a b}}
+          → {{@erased l≤y : l <⁺ y}}
+          → BOBMap V y u h
+          → BOBMap V l u h
+  reduce {l} {y} {u} {{a}} (leaf {{b}}) = leaf {{trans⁺ l a b}}
   reduce {{a}} (node p l r bal) = node p (reduce {{a}} l) r bal
 
   raise : ∀ {l y u h}
-          → {{@erased y≤u : y ≺Ex u}}
-          → BOBMap (l , y) h
-          → BOBMap (l , u) h
-  raise {x} {y} {z} {{a}} (leaf {{b}}) = leaf {{transEx {x} {y} {z} b a}}
+          → {{@erased y≤u : y <⁺ u}}
+          → BOBMap V l y h
+          → BOBMap V l u h
+  raise {x} {y} {z} {{a}} (leaf {{b}}) = leaf {{trans⁺ x b a}}
   raise {{a}} (node p l r bal) = node p l (raise {{a}} r) bal
 
-  join : {l u : Ext K} {k : K} {hl hr h : ℕ}
-         → BOBMap (# k , u) hr
+  join : {l u : Key⁺} {k : Key} {hl hr h : ℕ}
+         → BOBMap V [ k ] u hr
          → hl ~ hr ⊔ h
-         → BOBMap (l , # k) hl
-         → ∃ λ i → BOBMap (l , u) (i ⊕ h)
+         → BOBMap V l [ k ] hl
+         → ∃ λ i → BOBMap V l u (i ⊕ h)
   join leaf ~- lt = 0# , (raise lt)
   join {l} {u} {k} (leaf {{k<u}}) ~0 (leaf {{l<k}}) =
-    0# , (leaf {{transEx {l} {# k} {u} l<k k<u}})
+    0# , (leaf {{trans⁺ l l<k k<u}})
   join (node p rlt rrt br) b tl with uncons p br rlt rrt
   ... | cons head l<u (1# , tr') = 1# , node head (raise {{l<u}} tl) tr' b
   ... | cons head l<u (0# , tr') with b
@@ -196,12 +196,12 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
 
   -- O(n) operation, not good!
   @erased mklim : ∀ {l u h}
-          → BOBMap (l , u) h
-          → l ≺Ex u
+          → BOBMap V l u h
+          → l <⁺ u
   mklim (leaf {{p}}) = p
-  mklim {l} {u} (node p lt rt bal) = transEx {l} {_} {u} (mklim lt) (mklim rt)
+  mklim {l} {u} (node p lt rt bal) = trans⁺ l (mklim lt) (mklim rt)
 
-  heightBM : ∀ {h l u} → BOBMap (l , u) h → ℕ
+  heightBM : ∀ {h l u} → BOBMap V l u h → ℕ
   heightBM {h} _ = h
 
   ratio : ℕ
@@ -225,11 +225,11 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
 
   {-# TERMINATING #-}
   concat3 : {h1 h2 : ℕ}
-            → ((k , v) : K × V)
-            → {l u : Ext K}
-            → BOBMap (l , # k) h1
-            → BOBMap (# k , u) h2
-            → ∃ λ n → BOBMap (l , u) n
+            → ((k , v) : Key × V)
+            → {l u : Key⁺}
+            → BOBMap V l [ k ] h1
+            → BOBMap V [ k ] u h2
+            → ∃ λ n → BOBMap V l u n
   concat3 p n (leaf {{pf}}) with insert p {{mklim n}} {{pf}} (raise {{pf}} n)
   ... | _ , t = _ , t
   concat3 p (leaf {{pf}}) m with insert p {{pf}} {{mklim m}} (reduce {{pf}} m)
@@ -243,36 +243,34 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
              in {!!} --balance p1 l1 cc
 
   splitLT : ∀ {l u h}
-            → ((k , v) : K × V)
-            → {{@erased l≤k : l ≺Ex  (# k)}}
-            → BOBMap (l , u) h
-            → ∃ λ n → BOBMap (l , # k) n
+            → ((k , v) : Key × V)
+            → {{@erased l≤k : l <⁺ [ k ]}}
+            → BOBMap V l u h
+            → ∃ λ n → BOBMap V l [ k ] n
   splitLT x (leaf {{l<u}}) = 0 , leaf
   splitLT (k , v) (node (k' , v') lt rt bal) with compare k k'
-  ... | le = splitLT (k , v) lt
-  ... | ge = let (n , m) = splitLT (k , v) rt
-             in concat3 (k' , v') lt m
-  ... | eq = _ , lt
+  ... | tri< k<p _ _ = splitLT (k , v) lt
+  ... | tri≈ _ refl _ = _ , lt
+  ... | tri> _ _ p<k = let (n , m) = splitLT (k , v) {{[ p<k ]ᴿ}} rt
+                       in concat3 (k' , v') lt m
 
   splitGT : ∀ {l u h}
-            → ((k , v) : K × V)
-            → {{@erased l≤u : # k ≺Ex u}}
-            → BOBMap (l , u) h
-            → ∃ λ n → BOBMap (# k , u) n
+            → ((k , v) : Key × V)
+            → {{@erased l≤u : [ k ] <⁺ u}}
+            → BOBMap V l u h
+            → ∃ λ n → BOBMap V [ k ] u n
   splitGT x (leaf {{l<u}})= 0 , leaf
   splitGT (k , v) (node (k' , v') lt rt bal) with compare k k'
-  ... | le = let (n , m) = splitGT (k , v) lt
-             in concat3 (k' , v') m rt
-  ... | eq = _ , rt
-  ... | ge = splitGT (k , v) rt
+  ... | tri< k<p _ _ = let (n , m) = splitGT (k , v) {{[ k<p ]ᴿ}} lt
+                       in concat3 (k' , v') m rt
+  ... | tri≈ _ refl _ = _ , rt
+  ... | tri> _ _ p<k = splitGT (k , v) rt
 
   union : {h1 h2 : ℕ} → ∀ {l u}
           → (V → Maybe V → V)
-          → BOBMap (l , u) h1
-          → BOBMap (l , u) h2
-          -- real heightBM is i ⊕ max h1 h2
-          -- but this caused issues in the n leaf case
-          → ∃ λ n → BOBMap (l , u) (n ⊕ (max h1 h2))
+          → BOBMap V l u h1
+          → BOBMap V l u h2
+          → ∃ λ n → BOBMap V l u (n ⊕ (max h1 h2))
   union f leaf (leaf ⦃ l≤u ⦄) = 0# , leaf ⦃ l≤u ⦄
   union f leaf (node p lm rm b) = 0# , node p lm rm b
   union f (node p lm rm b) leaf = 0# , node p lm rm b
@@ -285,71 +283,72 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 
-  delete : ∀ {l u : Ext K} {h : ℕ} (k : K)
-           {{l≤p : l ≺Ex  (# k)}} {{p≤u :(# k) ≺Ex u}}
-           → BOBMap (l , u) h
-           → ∃ λ i → BOBMap (l , u) pred[ i ⊕ h ]
+  joinˡ⁻ : ∀ {l u} {hl hr h}
+          → ((k , v) : Key × V)
+          → ∃ (λ i → BOBMap V l [ k ] pred[ i ⊕ hl ])
+          → BOBMap V [ k ] u hr
+          → hl ~ hr ⊔ h
+          → ∃ λ i → BOBMap V l u (i ⊕ h)
+  joinˡ⁻ {hl = zero} kv (0# , lt) rt b = 1# , node kv lt rt b
+  joinˡ⁻ {hl = zero} kv (1# , lt) rt b = 1# , node kv lt rt b
+  joinˡ⁻ {hl = suc hl} kv (0# , lt) rt ~+ = rotL kv lt rt
+  joinˡ⁻ {hl = suc hl} kv (0# , lt) rt ~0 = 1# , (node kv lt rt ~+)
+  joinˡ⁻ {hl = suc hl} kv (0# , lt) rt ~- = 0# , (node kv lt rt ~0)
+  joinˡ⁻ {hl = suc hl} kv (1# , lt) rt b = 1# , (node kv lt rt b)
+
+  joinʳ⁻ : ∀ {l u} {hl hr h}
+           → ((k , v) : Key × V)
+           → BOBMap V l [ k ] hl
+           → ∃ (λ i → BOBMap V [ k ] u pred[ i ⊕ hr ])
+           → hl ~ hr ⊔ h
+           → ∃ λ i → BOBMap V l u (i ⊕ h)
+  joinʳ⁻ {hr = zero} kv lt (0# , rt) b = 1# , node kv lt rt b
+  joinʳ⁻ {hr = zero} kv lt (1# , rt) b = 1# , node kv lt rt b
+  joinʳ⁻ {hr = suc hr} kv lt (0# , rt) ~+ = 0# , node kv lt rt ~0
+  joinʳ⁻ {hr = suc hr} kv lt (0# , rt) ~0 = 1# , node kv lt rt ~-
+  joinʳ⁻ {hr = suc hr} kv lt (0# , rt) ~- = rotR kv lt rt
+  joinʳ⁻ {hr = suc hr} kv lt (1# , rt) b = 1# , node kv lt rt b
+
+  delete : ∀ {l u : Key⁺} {h : ℕ} (k : Key)
+           {{l≤p : l <⁺ [ k ]}} {{p≤u : [ k ] <⁺ u}}
+           → BOBMap V l u h
+           → ∃ λ i → BOBMap V l u pred[ i ⊕ h ]
   delete k leaf = 0# , leaf
   delete k (node p lt rt bal) with compare k (proj₁ p)
-  delete k (node p lt rt bal)
-    | le with lt
-  ... | leaf = 1# , (node p leaf rt bal)
-  ... | node pL ltL rtL balL with delete k (node pL ltL rtL balL)
-  ... | 0# , lt' with bal
-  ... | ~+ = rotL p lt' rt
-  ... | ~0 = 1# , (node p lt' rt ~+)
-  ... | ~- = 0# , (node p lt' rt ~0)
-  delete k (node p lt rt bal)
-    | le | node pL ltL rtL balL | 1# , lt' with bal
-  ... | ~+ = 1# , (node p lt' rt ~+)
-  ... | ~0 = 1# , node p lt' rt ~0
-  ... | ~- = 1# , (node p lt' rt ~-)
-  delete k (node p lt rt bal)
-    | eq = join rt bal lt
-  delete k (node p lt rt bal)
-    | ge with rt
-  ... | leaf = _ , (node p lt leaf bal )
-  ... | node pR ltR rtR balR with delete k (node pR ltR rtR balR)
-  ... | 0# , rt' with bal
-  ... | ~+ = 0# , (node p lt rt' ~0)
-  ... | ~0 = 1# , (node p lt rt' ~-)
-  ... | ~- = rotR p lt rt'
-  delete k (node p lt rt bal)
-    | get | node pR ltR rtR balR | 1# , rt' with bal
-  ... | ~+ = 1# , node p lt rt' ~+
-  ... | ~0 = 1# , node p lt rt' ~0
-  ... | ~- = 1# , node p lt rt' ~-
+  ... | tri< k<p _ _ = joinˡ⁻ p (delete k {{p≤u = [ k<p ]ᴿ}} lt) rt bal
+  ... | tri≈ _ refl _ = join rt bal lt
+  ... | tri> _ _ p<k = joinʳ⁻ p lt (delete k {{[ p<k ]ᴿ}} rt) bal
 
-  data Any (P : Pred V ℓₚ) {l u : Ext K} (k : K) :
-    ∀ {h : ℕ} → BOBMap (l , u) h → Set (ℓ ⊔ ℓ' ⊔ ℓₚ) where
+  data Any (P : Pred V ℓₚ) {l u : Key⁺} (kₚ : Key) :
+    ∀ {h : ℕ} → BOBMap V l u h → Set (k ⊔ ℓ₁ ⊔ v ⊔ ℓₚ) where
     here : ∀ {h hl hr} {v : V}
-           {{@erased l≤k : l ≺Ex # k}} {{@erased k≤u : # k ≺Ex u}}
+           {{@erased l≤k : l <⁺ [ kₚ ]}} {{@erased k≤u : [ kₚ ] <⁺ u}}
            → P v
-           → {lm : BOBMap (l , # k) hl}
-           {rm : BOBMap (# k , u) hr}
+           → {lm : BOBMap V l [ kₚ ] hl}
+           {rm : BOBMap V [ kₚ ] u hr}
            {bal : hl ~ hr ⊔ h}
-           → Any P k (node (k , v) lm rm bal)
+           → Any P kₚ (node (kₚ , v) lm rm bal)
 
-    left : ∀ {h hl hr} {(k' , v) : K × V}
-           {lm : BOBMap (l , # k') hl}
-           {{k≺k' : # k ≺Ex # k'}}
-           → Any P k lm
-           → {rm : BOBMap (# k' , u) hr}
+    left : ∀ {h hl hr} {(k' , v) : Key × V}
+           {lm : BOBMap V l [ k' ] hl}
+           {{k≺k' : [ kₚ ] <⁺ [ k' ]}}
+           → Any P kₚ lm
+           → {rm : BOBMap V [ k' ] u hr}
            {bal : hl ~ hr ⊔ h}
-           → Any P k (node (k' , v) lm rm bal)
+           → Any P kₚ (node (k' , v) lm rm bal)
 
-    right : ∀ {h hl hr} {(k' , v) : K × V}
-           {lm : BOBMap (l , # k') hl}
-           {rm : BOBMap (# k' , u) hr}
-           {{k'≤k : # k' ≺Ex # k}}
-           → Any P k rm
+    right : ∀ {h hl hr} {(k' , v) : Key × V}
+           {lm : BOBMap V l [ k' ] hl}
+           {rm : BOBMap V [ k' ] u hr}
+           {{k'≤k : [ k' ] <⁺ [ kₚ ]}}
+           → Any P kₚ rm
            → {bal : hl ~ hr ⊔ h}
-           → Any P k (node (k' , v) lm rm bal)
+           → Any P kₚ (node (k' , v) lm rm bal)
 
   foldr : ∀ {l u} {h : ℕ} {n : Level} {A : Set n}
-          → (K × V → A → A)
+          → (Key × V → A → A)
           → A
-          → BOBMap (l , u) h
+          → BOBMap V l u h
           → A
   foldr f g leaf = g
   foldr f g (node p l r bal) = foldr f (f p (foldr f g r)) l
@@ -392,7 +391,7 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   ... | EQ = {!!}
   ... | GT = {!!}
 
--- -}
+-}
 -- -}
 -- -}
 -- -}
