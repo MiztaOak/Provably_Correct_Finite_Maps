@@ -21,7 +21,7 @@ data False : Set where
 -- no evidence is needed to construct this proposition.
 
 record True : Set ℓ where
-  constructor tt
+  instance constructor tt
 
 -- C-c C-l load
 -- C-c C-c case split
@@ -43,4 +43,3 @@ data Ext (A : Set ℓ) : Set ℓ where
 pattern le = inj₁ !
 pattern ge = inj₂ (inj₂ !)
 pattern eq = inj₂ (inj₁ refl)
-  

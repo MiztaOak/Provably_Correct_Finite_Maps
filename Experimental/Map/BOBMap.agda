@@ -87,6 +87,17 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   rotL kv lt (node p (node p' rllt rlrt bal) rrt ~-) =
     0# , (node p' (node kv lt rllt (max~ bal)) (node p rlrt rrt (~max bal)) ~0)
 
+  joinˡ⁺ : ∀ {l u : Ext K} {h} {hl} {hr}
+    → (p : K × V)
+    → ∃ (λ i → BOBMap (l , # (proj₁ p)) (i ⊕ hl))
+    → BOBMap (# (proj₁ p) , u) hr
+    → hl ~ hr ⊔ h
+    → ∃ (λ i → BOBMap (l , u) (i ⊕ suc h))
+  joinˡ⁺ p (0# , lt) rt bal = 0# , node p lt rt bal
+  joinˡ⁺ p (1# , lt) rt ~+  = 0# , node p lt rt ~0
+  joinˡ⁺ p (1# , lt) rt ~0  = 1# , node p lt rt ~-
+  joinˡ⁺ p (1# , lt) rt ~-  = rotR p lt rt
+
   insertWith : {l u : Ext K} {h : ℕ} (k : K) (f : Maybe V → V)
                {{@erased l≤p : l ≺Ex  # k}} {{@erased p≤u : # k ≺Ex u}}
                → BOBMap (l , u) h
@@ -94,12 +105,13 @@ module Map {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
   insertWith k f leaf = 1# , node (k , f nothing) leaf leaf ~0
   insertWith k f (node p lt rt bal) with compare k (proj₁ p)
   insertWith k f (node p lt rt bal)
-    | le with insertWith k f lt
-  ... | 0# , t = 0# , (node p t rt bal)
-  ... | 1# , t with bal
-  ... | ~+ = 0# , (node p t rt ~0)
-  ... | ~0 = 1# , (node p t rt ~-)
-  ... | ~- = rotR p t rt
+    | le = joinˡ⁺ p (insertWith k f lt) rt bal
+  --   | le with insertWith k f lt
+  -- ... | 0# , t = 0# , (node p t rt bal)
+  -- ... | 1# , t with bal
+  -- ... | ~+ = 0# , (node p t rt ~0)
+  -- ... | ~0 = 1# , (node p t rt ~-)
+  -- ... | ~- = rotR p t rt
   insertWith k f (node p lt rt bal)
     | eq = 0# , (node (k , f (just (proj₂ p))) lt rt bal)
   insertWith k f (node p lt rt bal)

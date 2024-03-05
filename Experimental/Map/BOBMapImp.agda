@@ -167,6 +167,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
              → (rm : BOBMap (# k , u) hr)
              → Any P kᴾ rm
              → Any P kᴾ (proj₂ (rotR (k , v) lm rm))
+    anyRotRᴿ = {!!}
 
     anyRotLᴿ : ∀ {l u : Ext K} {hl : ℕ} {kᴾ : K}
              {P : Pred V ℓₚ}
@@ -175,6 +176,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
              → (rm : BOBMap (# k , u) (suc (suc hl)))
              → Any P kᴾ rm
              → Any P kᴾ (proj₂ (rotL (k , v) lm rm))
+    anyRotLᴿ = {!!}
 
     anyRotLᴸ : ∀ {l u : Ext K} {hl : ℕ} {kᴾ : K}
              {P : Pred V ℓₚ}
@@ -183,6 +185,8 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
              → (rm : BOBMap (# k , u) (suc (suc hl)))
              → Any P kᴾ lm
              → Any P kᴾ (proj₂ (rotL (k , v) lm rm))
+    anyRotLᴸ = {!!}
+
 
   instance
     -- Assigning map functionality to interface
@@ -237,29 +241,52 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
         ... | x with compare (proj₁ p) (proj₁ p)
         ... | eq = refl
 
-    BMap.lookup-insert∈ BOBMapImp k (map m) f (map prf) = lookup-insert∈ k {{tt}} {{tt}} m f prf
+    BMap.lookup-insert∈ BOBMapImp k (map m) f (map prf) = {! lookup-insert∈ k {{tt}} {{tt}} m f prf !}
       where
+        variable
+          p : K × V
+          l r : Ext K
+          h hl hr : ℕ
+          bal : hl ~ hr ⊔ h
+          lt rt : BOBMap (l , r) h
+          lt⁺ :  ∃ (λ i → BOBMap (l , r) (i ⊕ hl))
+        postulate
+          lem : ∀ {k} → k ≺ proj₁ p → lookup (proj₂ (joinˡ⁺ p lt⁺ rt bal)) k ≡ lookup (proj₂ lt⁺) k
         lookup-insert∈ : ∀ {l u : Ext K} {h : ℕ} (k : K)
                          {{l≤k : l ≺Ex # k}} {{k≤u : # k ≺Ex u}}
                          (m : BOBMap (l , u) h)
                          → (f : Maybe V → V)
-                         → k ∈ m
                          → lookup (proj₂ (insertWith k f m)) k ≡ just (f (lookup m k))
-        lookup-insert∈ k (node .(k , v) lm rm bal) f (here {v = v} {{l≤k}} {{k≤u}} x)
-          with insertWith k f {{l≤k}} {{k≤u}} (node (k , v) lm rm bal)
-        ... | x with compareSelf k
-        ... | c with compare k k in rememberMe
-        ... | eq with compare k k
-        ... | eq = refl
-        lookup-insert∈ k (node p lm rm bal) f (left {{ord}} prf) with compareLeft ord
-        ... | c with compare k (proj₁ p)
-        ... | le with insertWith k f ⦃ p≤u = ord ⦄ lm
-        ... | x = {!!}
-        lookup-insert∈ k (node p lm rm bal) f (right {{ord}} prf) with lookup-insert∈ k rm f prf
-        ... | x with insertWith k f (node p lm rm bal)
-        ... | (_ , m) with compareRight ord
-        ... | c with compare k (proj₁ p)
+        lookup-insert∈ k Map.BOBMap.Map.leaf f rewrite compareSelf k = refl
+        -- lookup-insert∈ k Map.BOBMap.Map.leaf f with compare k k | compareSelf k
+        -- ... | .eq | refl = refl
+        lookup-insert∈ k (Map.BOBMap.Map.node p m m₁ bal) f with compare k (proj₁ p)
+        ... | eq rewrite compareSelf (proj₁ p) = refl
+        ... | inj₁ (! {{prf}}) rewrite lem {p = p} {lt⁺ = insertWith k f m} {rt = m₁} {bal = bal}  prf = lookup-insert∈ k m f
         ... | ge = {!!}
+
+{-
+        -- lookup-insert∈ : ∀ {l u : Ext K} {h : ℕ} (k : K)
+        --                  {{l≤k : l ≺Ex # k}} {{k≤u : # k ≺Ex u}}
+        --                  (m : BOBMap (l , u) h)
+        --                  → (f : Maybe V → V)
+        --                  → k ∈ m
+        --                  → lookup (proj₂ (insertWith k f m)) k ≡ just (f (lookup m k))
+        -- lookup-insert∈ k (node .(k , v) lm rm bal) f (here {v = v} {{l≤k}} {{k≤u}} x)
+        --   with insertWith k f {{l≤k}} {{k≤u}} (node (k , v) lm rm bal)
+        -- ... | x with compareSelf k
+        -- ... | c with compare k k in rememberMe
+        -- ... | eq with compare k k
+        -- ... | eq = refl
+        -- lookup-insert∈ k (node p lm rm bal) f (left {{ord}} prf) with compareLeft ord
+        -- ... | c with compare k (proj₁ p)
+        -- ... | le with insertWith k f ⦃ p≤u = ord ⦄ lm
+        -- ... | x = {!!}
+        -- lookup-insert∈ k (node p lm rm bal) f (right {{ord}} prf) with lookup-insert∈ k rm f prf
+        -- ... | x with insertWith k f (node p lm rm bal)
+        -- ... | (_ , m) with compareRight ord
+        -- ... | c with compare k (proj₁ p)
+        -- ... | ge = {!!}
 
     -- THIS IS MADNESS THERE HAS TO BE A BETTER WAY TO DO THIS
     BMap.lookup-insert∉ BOBMapImp k (map m) f prf =
@@ -596,3 +623,7 @@ module _ {K : Set ℓ} (V : Set ℓ') (R : OSet K) where
         ↦∈To∈ (here x) = here tt
         ↦∈To∈ (left prf) = left (↦∈To∈ prf)
         ↦∈To∈ (right prf) = right (↦∈To∈ prf)
+-- -}
+-- -}
+-- -}
+-- -}

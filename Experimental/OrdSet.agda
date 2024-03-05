@@ -31,10 +31,10 @@ module OrdSet where
       compare : ∀ x y → ⌜ (x ≺ y)⌝ ⊎ ((x ≡ y) ⊎ ⌜ (y ≺ x)⌝ )
 
       -- invariants of ≺
-      trans : ∀ {x y z : Carrier} → x ≺ y → y ≺ z → x ≺ z
+      trans    : ∀ {x y z : Carrier} → x ≺ y → y ≺ z → x ≺ z
       inreflex : ∀ {x y : Carrier} → x ≺ y → ¬ (x ≡ y)
-      ≺Eq : ∀ {x y : Carrier} → (a : x ≺ y) → (b : x ≺ y) → a ≡ b
-      ≺Absurd : ∀ {x y : Carrier} → x ≺ y → ¬ (y ≺ x)
+      ≺Eq      : ∀ {x y : Carrier} → (a b : x ≺ y) → a ≡ b
+      ≺Absurd  : ∀ {x y : Carrier} → x ≺ y → ¬ (y ≺ x)
 
   module _ {A : Set ℓ} {R : OSet A} where
     open OSet R
@@ -57,16 +57,16 @@ module OrdSet where
     OSet.trans (ext) {⊥} {⊥} {# z} e1 e2     = tt
     OSet.trans (ext) {⊥} {⊥} {⊥} e1 e2       = e1
     OSet.compare ext ⊤ ⊤ = inr (inl refl)
-    OSet.compare ext ⊤ (# x) = inr (inr (!{{tt}}))
-    OSet.compare ext ⊤ ⊥ = inr (inr (!{{tt}}))
-    OSet.compare ext (# x) ⊤ = inl (!{{tt}})
+    OSet.compare ext ⊤ (# x) = inr (inr !)
+    OSet.compare ext ⊤ ⊥ = inr (inr !)
+    OSet.compare ext (# x) ⊤ = inl !
     OSet.compare ext (# x) (# y) with compare x y
     ... | le = le
     ... | eq = eq
     ... | ge = ge
-    OSet.compare ext (# x) ⊥ = inr (inr (!{{tt}}))
-    OSet.compare ext ⊥ ⊤ = inl (!{{tt}})
-    OSet.compare ext ⊥ (# x) = inl (!{{tt}})
+    OSet.compare ext (# x) ⊥ = inr (inr !)
+    OSet.compare ext ⊥ ⊤ = inl !
+    OSet.compare ext ⊥ (# x) = inl !
     OSet.compare ext ⊥ ⊥ = inr (inl refl)
     OSet.inreflex ext {# x} {.(# x)} prf refl = OSet.inreflex R {x} prf refl
     OSet.inreflex ext {⊥} {.⊥} () refl
