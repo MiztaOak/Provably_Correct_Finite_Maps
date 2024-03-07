@@ -1,7 +1,7 @@
 {-# OPTIONS --erasure #-}
 {-# OPTIONS --allow-unsolved-metas #-}
 open import Relation.Binary.Bundles using (StrictTotalOrder)
-open import OrdSet'
+open import OrdSet
 
 module Map.BOBMap {k ℓ₁} (order : OrdSet k ℓ₁) where
 
@@ -98,7 +98,11 @@ module _ {v} {V : Set v} where
   joinˡ⁺ p (0# , lt) rt bal = 0# , node p lt rt bal
   joinˡ⁺ p (1# , lt) rt ~+  = 0# , node p lt rt ~0
   joinˡ⁺ p (1# , lt) rt ~0  = 1# , node p lt rt ~-
-  joinˡ⁺ p (1# , lt) rt ~-  = rotR p lt rt
+  joinˡ⁺ p (1# , node pᴸ ltᴸ rtᴸ ~0) rt ~- = 1# , node pᴸ ltᴸ (node p rtᴸ rt ~-) ~+
+  joinˡ⁺ p (1# , node pᴸ ltᴸ rtᴸ ~-) rt ~- = 0# , (node pᴸ ltᴸ (node p rtᴸ rt ~0) ~0)
+  joinˡ⁺ p (1# , node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ b) ~+) rt ~- =
+    0# , (node pᴿ (node pᴸ ltᴸ ltᴿ (max~ b)) (node p rtᴿ rt (~max b)) ~0)
+  --joinˡ⁺ p (1# , lt) rt ~-  = rotR p lt rt
 
   joinʳ⁺ : ∀ {l u : Key⁺} {h} {hl} {hr}
     → (p : Key × V)
@@ -107,12 +111,16 @@ module _ {v} {V : Set v} where
     → hl ~ hr ⊔ h
     → ∃ (λ i → BOBMap V l u (i ⊕ suc h))
   joinʳ⁺ p lt (0# , rt) bal = 0# , node p lt rt bal
-  joinʳ⁺ p lt (1# , rt) ~+ = rotL p lt rt
   joinʳ⁺ p lt (1# , rt) ~0 = 1# , node p lt rt ~+
   joinʳ⁺ p lt (1# , rt) ~- = 0# , node p lt rt ~0
+  joinʳ⁺ p lt (1# , node pᴿ ltᴿ rtᴿ ~+) ~+ = 0# , (node pᴿ (node p lt ltᴿ ~0) rtᴿ ~0)
+  joinʳ⁺ p lt (1# , node pᴿ ltᴿ rtᴿ ~0) ~+ = 1# , node pᴿ (node p lt ltᴿ ~+) rtᴿ ~-
+  joinʳ⁺ p lt (1# , node pᴿ (node pᴸ ltᴸ rtᴸ b) rtᴿ ~-) ~+ =
+    0# , node pᴸ (node p lt ltᴸ (max~ b)) (node pᴿ rtᴸ rtᴿ (~max b)) ~0
+  --joinʳ⁺ p lt (1# , rt) ~+ = rotL p lt rt
 
   insertWith : {l u : Key⁺} {h : ℕ} (k : Key) (f : Maybe V → V)
-               {{@erased l≤p : l <⁺ [ k ]}} {{@erased p≤u : [ k ] <⁺ u}}
+               {{@erased l≤u : l <⁺ [ k ]}} {{@erased p≤u : [ k ] <⁺ u}}
                → BOBMap V l u h
                → ∃ λ i → BOBMap V l u (i ⊕ h)
   insertWith k f leaf = 1# , node (k , f nothing) leaf leaf ~0
@@ -219,9 +227,13 @@ module _ {v} {V : Set v} where
   cmp (suc n) (suc m) = cmp n m
 
   max : ℕ → ℕ → ℕ
-  max n zero = n
   max zero n = n
-  max (suc n) (suc m) = max n m
+  max (suc n) zero = suc n
+  max (suc n) (suc m) = suc (max n m)
+
+  lemma : ∀ {n m : ℕ} → max (suc (m + n)) m ≡ suc (m + n)
+  lemma {n} {zero} = refl
+  lemma {n} {suc m} rewrite lemma {n} {m} = refl
 
   {-# TERMINATING #-}
   concat3 : {h1 h2 : ℕ}

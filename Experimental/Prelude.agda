@@ -34,7 +34,7 @@ record ⌜_⌝ (P : Set ℓ) : Set ℓ where
   field {{prf}} : P
 
 -- Extension by a least and a greatest element
-
+{-
 data Ext (A : Set ℓ) : Set ℓ where
   ⊤ : Ext A
   # : A → Ext A
@@ -43,3 +43,4 @@ data Ext (A : Set ℓ) : Set ℓ where
 pattern le = inj₁ !
 pattern ge = inj₂ (inj₂ !)
 pattern eq = inj₂ (inj₁ refl)
+-}

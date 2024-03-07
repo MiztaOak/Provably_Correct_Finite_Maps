@@ -14,15 +14,15 @@ private
   variable
     ℓ ℓ' : Level
 
-module _ {K : Set ℓ} {V : Set ℓ'} where
+module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
 
-  record BMap : Set (lsuc (ℓ ⊔ ℓ')) where
+  record BMap : Set (lsuc (ℓ ⊔ ℓ' ⊔ ℓ₁)) where
     constructor mkMap
     field
-      Map    : Set (ℓ ⊔ ℓ')
+      Map    : Set (ℓ ⊔ ℓ' ⊔ ℓ₁)
       ∅      : Map                 -- Empty
-      _∈_   : K → Map → Set (ℓ ⊔ ℓ')
-      _↦_∈_ : K → V → Map → Set (ℓ ⊔ ℓ') -- Domain
+      _∈_   : K → Map → Set (ℓ ⊔ ℓ' ⊔ ℓ₁)
+      _↦_∈_ : K → V → Map → Set (ℓ ⊔ ℓ' ⊔ ℓ₁) -- Domain
       unionWith : (V → Maybe V → V) → Map → Map → Map
       lookup : Map → K → Maybe V   -- Apply
       insertWith : K → (Maybe V → V) → Map → Map
@@ -39,16 +39,16 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
     [_↦_]_ : K → V → Map → Set ℓ'
     [ k ↦ v ] m = lookup m k ≡ just v
 
-    _↦_∉_ : K → V → Map → Set (ℓ ⊔ ℓ')
+    _↦_∉_ : K → V → Map → Set (ℓ ⊔ ℓ' ⊔ ℓ₁)
     k ↦ v ∉ m = ¬ (k ↦ v ∈ m)
 
-    _∉_ : K → Map → Set (ℓ ⊔ ℓ')
+    _∉_ : K → Map → Set (ℓ ⊔ ℓ' ⊔ ℓ₁)
     k ∉ m = ¬ (k ∈ m)
 
-    _⊆_ : Map → Map → Set (ℓ ⊔ ℓ')
+    _⊆_ : Map → Map → Set (ℓ ⊔ ℓ' ⊔ ℓ₁)
     n ⊆ m = ∀ k v → k ↦ v ∈ n → k ↦ v ∈ m
 
-    _≐_ : Map → Map → Set (ℓ ⊔ ℓ')
+    _≐_ : Map → Map → Set (ℓ ⊔ ℓ' ⊔ ℓ₁)
     n ≐ m = (n ⊆ m) × (m ⊆ n)
 
     field
