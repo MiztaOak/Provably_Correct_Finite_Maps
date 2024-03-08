@@ -54,7 +54,9 @@ module _ (V : Set ℓ) where
     fldr f g (map m) = foldr f g m
 
   instance
+    ---------------------------------------------------------------------------------
     -- Assigning map functionality to interface
+    ---------------------------------------------------------------------------------
     BOBMapImp : BMap {ℓ₁ = ℓ₁} {K = Key} {V}
     BMap.Map BOBMapImp = Map V
     BMap.∅ BOBMapImp = map (leaf {{⊥⁺<⊤⁺}})
@@ -68,11 +70,27 @@ module _ (V : Set ℓ) where
       fldr (λ (k , v) t → map $ proj₂ $ insertWith k (f v) {{⊥⁺<[ k ]}} {{[ k ]<⊤⁺}} (toBMap t)) m n
 
     BMap.lookup BOBMapImp (map m) = lookup m
+    BMap.lookup∈ BOBMapImp (map prf) = lookup∈ prf
+
     BMap.insertWith BOBMapImp k f (map x) = map (proj₂ $ insertWith k f {{⊥⁺<[ k ]}} {{[ k ]<⊤⁺}} x)
 
+    BMap.delete BOBMapImp k (map m) = map (proj₂ $ delete k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m)
+
+    ---------------------------------------------------------------------------------
+    -- Relational properties
+    ---------------------------------------------------------------------------------
+    BMap.refl≐ BOBMapImp = (λ k₁ v x₁ → x₁) , (λ k₁ v x₁ → x₁)
+
+    BMap.sym≐ BOBMapImp (α , β) = (λ k v x → β k v x ) , (λ k v x → α k v x)
+
+    BMap.trans≐ BOBMapImp (a , b) (c , d) = (λ k v x → c k v (a k v x)) , (λ k v x → b k v (d k v x))
+
+    BMap.↦∈To∈ BOBMapImp (map x) = map (↦∈To∈ x)
+
+    ---------------------------------------------------------------------------------
+    -- Insertion and lookup proofs
+    ---------------------------------------------------------------------------------
     -- Leaving these for later as we are not 100% sure that they are relevant or correct
-    BMap.ip BOBMapImp _ (base , _) (map leaf) = {!!}
-    BMap.ip BOBMapImp P (base , step) (map (node p ls rs bal)) = {!!}
     BMap.ips BOBMapImp = {!!}
 
     BMap.lookup-∅ BOBMapImp _ = refl
@@ -84,37 +102,12 @@ module _ (V : Set ℓ) where
 
     BMap.lookup⇒∈ BOBMapImp (map m) k v (map prf) = lookup⇒∈ k m prf -- lookup⇒∈ k m prf
 
-    BMap.lookup-insert∈ BOBMapImp k (map m) f (map prf) = lookup-insert k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m f
-
-{-
-        -- lookup-insert∈ : ∀ {l u : Ext K} {h : ℕ} (k : K)
-        --                  {{l≤k : l ≺Ex # k}} {{k≤u : # k ≺Ex u}}
-        --                  (m : BOBMap (l , u) h)
-        --                  → (f : Maybe V → V)
-        --                  → k ∈ m
-        --                  → lookup (proj₂ (insertWith k f m)) k ≡ just (f (lookup m k))
-        -- lookup-insert∈ k (node .(k , v) lm rm bal) f (here {v = v} {{l≤k}} {{k≤u}} x)
-        --   with insertWith k f {{l≤k}} {{k≤u}} (node (k , v) lm rm bal)
-        -- ... | x with compareSelf k
-        -- ... | c with compare k k in rememberMe
-        -- ... | eq with compare k k
-        -- ... | eq = refl
-        -- lookup-insert∈ k (node p lm rm bal) f (left {{ord}} prf) with compareLeft ord
-        -- ... | c with compare k (proj₁ p)
-        -- ... | le with insertWith k f ⦃ p≤u = ord ⦄ lm
-        -- ... | x = {!!}
-        -- lookup-insert∈ k (node p lm rm bal) f (right {{ord}} prf) with lookup-insert∈ k rm f prf
-        -- ... | x with insertWith k f (node p lm rm bal)
-        -- ... | (_ , m) with compareRight ord
-        -- ... | c with compare k (proj₁ p)
-        -- ... | ge = {!!}
--}
-    BMap.lookup-insert∉ BOBMapImp k (map m) f prf =
-      {! lookup-insert k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m f !}
+    BMap.lookup-insert BOBMapImp k (map m) f = lookup-insert k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m f
 
     BMap.ins-comm BOBMapImp k k' f f' (map m) notEq =
       {! (λ k'' v x → map (ins-comm k k' ⦃ tt ⦄ ⦃ tt ⦄ ⦃ tt ⦄ ⦃ tt ⦄ f f' m notEq k'' v (toAny x))) ,
       λ k'' v x → map (ins-comm k' k ⦃ tt ⦄ ⦃ tt ⦄ ⦃ tt ⦄ ⦃ tt ⦄ f' f m (¬Sym notEq) k'' v (toAny x)) !}
+
 {-      where
         ins-comm : ∀ {l u : Ext K} {h : ℕ}
                     → (k k' : K)
@@ -297,29 +290,6 @@ module _ (V : Set ℓ) where
     ... | inj₁ e = inj₁ e
     ... | inj₂ r = inj₂ (map r)
 -}
-    BMap.∪-∅ BOBMapImp m f = {!!}
-
-    BMap.∪-∈ BOBMapImp (map n) (map m) f k prf = {!!} {- with (find k n , find k m)
-      where
-        find : ∀ {l u h} (x : K)
-               → (a : BOBMap (l , u) h)
-               → Maybe (x ∈ a)
-        find x leaf = nothing
-        find x (node p lt rt bal) with compare x (proj₁ p)
-        ... | le = (find x lt) >>= λ α → just (left α)
-        ... | eq = just $ here {{mapOrd lt}} {{mapOrd rt}} tt
-        ... | ge = (find x rt) >>= λ α → just (right α)
-    ... | just α , just β = inj₁ (map α)
-    ... | just α , nothing = inj₁ (map α)
-    ... | nothing , just β = inj₂ (map β)
-    ... | nothing , nothing = {!!} -}
-
-    BMap.∪-∈' BOBMapImp n m f k (inj₁ prf) = {!!}
-    BMap.∪-∈' BOBMapImp n m f k (inj₂ prf) = {!!}
-
-    BMap.eq? BOBMapImp (map m) (map n) fn
-      = (λ k v _ → proj₂ (fn k v)) , (λ k v _ → proj₁ (fn k v))
-
     BMap.insert∈ BOBMapImp k v (map m) = {!!} {- map (insert∈ k v ⦃ tt ⦄ ⦃ tt ⦄ m) -}
     {-  where
         insert∈ : ∀ {l u : Ext K} {h : ℕ} → (k : K) → (v : V)
@@ -347,7 +317,7 @@ module _ (V : Set ℓ) where
         ... | ~0 = right x
         ... | ~- = right x
 -}
-    BMap.noAlterInsert BOBMapImp (map prf) nEq = {! map (noAlterInsert {{tt}} {{tt}} prf nEq) !}
+    BMap.insert-safe BOBMapImp (map prf) nEq = {! map (noAlterInsert {{tt}} {{tt}} prf nEq) !}
       {-where
         noAlterInsert : {k k' : K} {v v' : V} {l u : Ext K} {h : ℕ}
                         {{l≤k' : l ≺Ex # k'}} {{k'≤u : # k' ≺Ex u}}
@@ -391,7 +361,40 @@ module _ (V : Set ℓ) where
         ... | ~- = left prf
         noAlterInsert {k} {k'} {v} {v'} (right prf) nEq = {!!}
 -}
-    BMap.↦∈To∈ BOBMapImp (map x) = map (↦∈To∈ x)
+
+    ---------------------------------------------------------------------------------
+    -- Union proofs
+    ---------------------------------------------------------------------------------
+    BMap.∪-∅ᴸ BOBMapImp m f = {!!}
+    BMap.∪-∅ᴿ BOBMapImp m f = {!!}
+    BMap.∪-∅ BOBMapImp m f = {!!}
+
+    BMap.∪-∈ BOBMapImp (map n) (map m) f k prf = {!!} {- with (find k n , find k m)
+      where
+        find : ∀ {l u h} (x : K)
+               → (a : BOBMap (l , u) h)
+               → Maybe (x ∈ a)
+        find x leaf = nothing
+        find x (node p lt rt bal) with compare x (proj₁ p)
+        ... | le = (find x lt) >>= λ α → just (left α)
+        ... | eq = just $ here {{mapOrd lt}} {{mapOrd rt}} tt
+        ... | ge = (find x rt) >>= λ α → just (right α)
+    ... | just α , just β = inj₁ (map α)
+    ... | just α , nothing = inj₁ (map α)
+    ... | nothing , just β = inj₂ (map β)
+    ... | nothing , nothing = {!!} -}
+
+    BMap.∪-∈' BOBMapImp n m f k (inj₁ prf) = {!!}
+    BMap.∪-∈' BOBMapImp n m f k (inj₂ prf) = {!!}
+
+    ---------------------------------------------------------------------------------
+    -- Deletion proofs
+    ---------------------------------------------------------------------------------
+    BMap.del-∉ BOBMapImp prf = {!!}
+
+    BMap.del-∈ BOBMapImp prf = {!!}
+
+    BMap.del-safe BOBMapImp prf nEq = {!!}
 -- -}
 -- -}
 -- -}

@@ -6,9 +6,10 @@ open import Data.Maybe.Base using (Maybe; just; nothing; is-just)
 open import Data.Product
 open import Level renaming (suc to lsuc; zero to lzero)
 open import Relation.Nullary using (¬_)
-open import Prelude renaming (⊥ to bot; ⊤ to top)
+open import Prelude
 open import Relation.Binary.PropositionalEquality
 open import Data.Sum
+open import Relation.Binary.Definitions
 
 private
   variable
@@ -25,7 +26,9 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
       _↦_∈_ : K → V → Map → Set (ℓ ⊔ ℓ' ⊔ ℓ₁) -- Domain
       unionWith : (V → Maybe V → V) → Map → Map → Map
       lookup : Map → K → Maybe V   -- Apply
+      lookup∈ : ∀ {k m} → k ∈ m → V
       insertWith : K → (Maybe V → V) → Map → Map
+      delete : K → Map → Map
 
     syntax Map {K = K} {V = V} = Map⟨ K ↦ V ⟩
 
@@ -52,15 +55,12 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
     n ≐ m = (n ⊆ m) × (m ⊆ n)
 
     field
-      -- induction principle (weak)
-      {-
-      ⊢ ∀ P . P ∅ ∧ (∀ f . P f ⊃ (∀ x y . P (insert f (x , y))))
-          ⊃
-        ∀ f . P f
-      -}
-      ip : (P : Map → Set)
-           → P ∅ × (∀ m → P m → ∀ k v → P (insertWith k (λ _ → v) m))
-           → (∀ m → P m)
+      refl≐ : Reflexive _≐_
+      sym≐  : Symmetric _≐_
+      trans≐ : Transitive _≐_
+
+    field
+      ↦∈To∈ : ∀ {k v m} → k ↦ v ∈ m → k ∈ m
 
       -- induction principle (stronger)
       {-
@@ -71,10 +71,13 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
           ∀ f . P f
       -}
       ips : (P : Map → Set (ℓ ⊔ ℓ'))
-            → P ∅ × (∀ m → P m → ∀ k v → k ↦ v ∉ m → ∀ v
-              → P (insertWith k (λ _ → v) m))
+            → P ∅ × (∀ m → P m → ∀ k v → k ↦ v ∉ m
+                       → P (insertWith k (λ _ → v) m))
             → (∀ m → P m)
 
+      ---------------------------------------------------------------------------------
+      -- Insertion and lookup properties
+      ---------------------------------------------------------------------------------
       lookup-∅ : ∀ k → lookup ∅ k ≡ nothing
       ∈↦-∅ : ∀ k v → ¬ (k ↦ v ∈ ∅)
       ∈-∅ : ∀ k → k ∉ ∅
@@ -85,13 +88,8 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
       {-
       ⊢ ∀ f a b . lookup (insert f (a , b)) a = b
       -}
-      lookup-insert∈ : ∀ k m f
-                       → k ∈ m
+      lookup-insert : ∀ k m f
                        → [ k ↦ f (lookup m k) ] (insertWith k f m)
-
-      lookup-insert∉ : ∀ k m f
-                       → k ∉ m
-                       → [ k ↦ f nothing ] (insertWith k f m)
 
       {-
       ⊢ ∀ a c . (a ≠ c) ⊃
@@ -111,31 +109,42 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
               → x ∈ (insertWith k f m)
               → (x ≡ k) ⊎ x ∈ m
 
+      insert∈ : ∀ k v m → k ↦ v ∈ (insert k v m)
+
+      insert-safe : ∀ {k k' v v' m} → k ↦ v ∈ m → k ≢ k' → k ↦ v ∈ (insert k' v' m)
+
+      ---------------------------------------------------------------------------------
+      -- Union Properties
+      ---------------------------------------------------------------------------------
       -- is this possible? Issue with L/R bias in implementation
+      ∪-∅ᴸ : ∀ m f → unionWith f m ∅ ≐ m
+      ∪-∅ᴿ : ∀ m f → unionWith f ∅ m ≐ m
       ∪-∅ : ∀ m f → unionWith f m ∅ ≐ unionWith f ∅ m
 
       ∪-∈ : ∀ m1 m2 f k
             → k ∈ unionWith f m1 m2
             → k ∈ m1 ⊎ k ∈ m2
 
+      -- safety prop of above?
       ∪-∈' : ∀ m1 m2 f k
             → k ∈ m1 ⊎ k ∈ m2
             → k ∈ unionWith f m1 m2
-
       -- eq
       {-
       ⊢ ∀ f g x . (x ∈ f ∧ x ∈ g) ∧ (lookup x f ≡ lookup x g) → f ≡ g
       -}
-      -- consider whether these are equivalent
-      eq? : (f g : Map) → (∀ k v → k ↦ v ∈ f × k ↦ v ∈ g) → f ≐ g
+      -- should be covered by refl, sym and trans?
+      --eq? : (f g : Map) → (∀ k v → k ↦ v ∈ f × k ↦ v ∈ g) → f ≐ g
 
-      insert∈ : ∀ k v m → k ↦ v ∈ (insert k v m)
 
-      noAlterInsert : ∀ {k k' v v' m} → k ↦ v ∈ m → ¬ (k ≡ k') → k ↦ v ∈ (insert k' v' m)
+      ---------------------------------------------------------------------------------
+      -- Deleteion properties
+      ---------------------------------------------------------------------------------
+      del-∉ : ∀ {k m} → k ∉ m → delete k m ≐ m
+      del-∈ : ∀ {k m} → k ∈ m → k ∉ delete k m
+      del-safe : ∀ {k k' v m} → k' ↦ v ∈ m → k ≢ k' → k' ↦ v ∈ delete k m
 
-      ↦∈To∈ : ∀ {k v m} → k ↦ v ∈ m → k ∈ m
-
-    ip' : (P : Map → Set (ℓ ⊔ ℓ'))
+    ip : (P : Map → Set (ℓ ⊔ ℓ'))
           → P ∅ × (∀ m → P m → ∀ k v → P (insertWith k (λ _ → v) m))
           → (∀ m → P m)
-    ip' P (b , s) mp = ips P (b , λ m x k _ _ v → s m x k v ) mp
+    ip P (b , s) mp = ips P (b , λ m x k v _ → s m x k v ) mp

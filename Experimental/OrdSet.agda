@@ -5,6 +5,7 @@ open import Relation.Binary.Structures using (IsStrictPartialOrder; IsStrictTota
 open import Relation.Binary.Core
 open import Level
 open import Relation.Binary.PropositionalEquality hiding (trans)
+open import Relation.Binary.Definitions
 
 record OrdSet c ℓ : Set (suc (c ⊔ ℓ)) where
   infix 4 _<_
@@ -21,3 +22,7 @@ StrictTotalOrder._<_ (toStrictTotalOrder ord) = _<_
   where open OrdSet ord
 StrictTotalOrder.isStrictTotalOrder (toStrictTotalOrder ord) = isStrictTotalOrder
   where open OrdSet ord
+
+pattern le a {¬b} {¬c} = tri< a ¬b ¬c
+pattern eq {¬a} b {¬c} = tri≈ ¬a b ¬c
+pattern ge {¬a} {¬b} c = tri> ¬a ¬b c

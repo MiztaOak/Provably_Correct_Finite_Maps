@@ -23,6 +23,15 @@ open StrictTotalOrder (toStrictTotalOrder order) renaming (Carrier to Key)
 open import Map.Proofs.Proofs order V
 
 ---------------------------------------------------------------------------------
+-- lookup∈ : Lookup function that uses a proof of membership to gurantee a value
+---------------------------------------------------------------------------------
+lookup∈ : ∀ {l u : Key⁺} {h : ℕ} {k : Key} {m : BOBMap V l u h}
+          → k ∈ m → V
+lookup∈ {k = k} {node .(k , _) lm rm bal} (here {v = v} x) = v
+lookup∈ {k = k} {node p lm rm bal} (left prf) = lookup∈ prf
+lookup∈ {k = k} {node p lm rm bal} (right prf) = lookup∈ prf
+
+---------------------------------------------------------------------------------
 -- ∈⇒lookup
 ---------------------------------------------------------------------------------
 ∈⇒lookup : ∀ {l u : Key⁺} {h : ℕ} (m : BOBMap V l u h) (k : Key) {v : V}
@@ -106,7 +115,7 @@ joinˡ⁺-lookup k p (1# , (node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ b) ~+)) rt ~-
 ... | tri> ¬a _ _ = ⊥-elim (¬a ord)
 ... | tri< k<p _ _ with compare k (proj₁ pᴸ)
 ... | tri< k<L ¬b ¬c = {!!} -- yea no clue how to solve this hole right now
-... | tri≈ _ refl _ = ⊥-elim (asym k>R {!mapOrd ltᴿ!})
+... | tri≈ _ refl _ = ⊥-elim (asym k>R {!!})
 ... | tri> _ _ _ rewrite cmpᴿ = refl
 
 postulate
