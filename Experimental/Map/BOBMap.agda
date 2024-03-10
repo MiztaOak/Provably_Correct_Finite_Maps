@@ -322,7 +322,7 @@ module _ {v} {V : Set v} where
   joinʳ⁻ {hr = suc hr} kv lt (1# , rt) b = 1# , node kv lt rt b
 
   delete : ∀ {l u : Key⁺} {h : ℕ} (k : Key)
-           {{l≤p : l <⁺ [ k ]}} {{p≤u : [ k ] <⁺ u}}
+           {{@erased l≤p : l <⁺ [ k ]}} {{@erased p≤u : [ k ] <⁺ u}}
            → BOBMap V l u h
            → ∃ λ i → BOBMap V l u pred[ i ⊕ h ]
   delete k leaf = 0# , leaf
@@ -343,7 +343,7 @@ module _ {v} {V : Set v} where
 
     left : ∀ {h hl hr} {(k' , v) : Key × V}
            {lm : BOBMap V l [ k' ] hl}
-           {{k≺k' : [ kₚ ] <⁺ [ k' ]}}
+           {{@erased k≺k' : [ kₚ ] <⁺ [ k' ]}}
            → Any P kₚ lm
            → {rm : BOBMap V [ k' ] u hr}
            {bal : hl ~ hr ⊔ h}
@@ -352,7 +352,7 @@ module _ {v} {V : Set v} where
     right : ∀ {h hl hr} {(k' , v) : Key × V}
            {lm : BOBMap V l [ k' ] hl}
            {rm : BOBMap V [ k' ] u hr}
-           {{k'≤k : [ k' ] <⁺ [ kₚ ]}}
+           {{@erased k'≤k : [ k' ] <⁺ [ kₚ ]}}
            → Any P kₚ rm
            → {bal : hl ~ hr ⊔ h}
            → Any P kₚ (node (k' , v) lm rm bal)

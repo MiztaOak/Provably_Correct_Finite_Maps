@@ -51,6 +51,9 @@ n ≐ m = (n ⊆ m) × (m ⊆ n)
 
 irreflex : ∀ {k k'} → k < k' → ¬ (k ≡ k')
 irreflex ord refl = irrefl refl ord
+
+⊥-elimErased : ∀ {w} {Whatever : Set w} → @erased ⊥ → Whatever
+⊥-elimErased ()
 {-
 ¬Left : ∀ {l u : Ext K} {hl hr h : ℕ} {P : Pred V ℓₚ} {k kₚ : K } {v : V}
           {lm : BOBMap (l , # k) hl} {rm : BOBMap (# k , u) hr}
