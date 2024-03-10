@@ -42,11 +42,9 @@ lookup∈ {k = k} {node p lm rm bal} (right prf) = lookup∈ prf
 ... | tri≈ _ refl _ = here ⦃ mapOrd lm ⦄ ⦃ mapOrd rm ⦄ (sym $ eqFromJust prf)
 ... | tri> _ _ c    = right ⦃ [ c ]ᴿ ⦄ (∈⇒lookup rm k prf)
 
-
 ---------------------------------------------------------------------------------
 -- lookup⇒∈
 ---------------------------------------------------------------------------------
-
 lookup⇒∈ : ∀ {l u : Key⁺} {h : ℕ} (k : Key) {v : V} (m : BOBMap V l u h)
             → k ↦ v ∈ m
             → lookup m k ≡ just v
@@ -149,85 +147,111 @@ lookup-insert k ⦃ l<k ⦄ ⦃ k<u ⦄ (node p lm rm b) f with compare k (proj�
 ... | tri≈ _ refl _ rewrite cmp = refl
 ... | tri> _ _ c rewrite lemR k p lm (insertWith k f ⦃ [ c ]ᴿ ⦄ ⦃ k<u ⦄ rm) b c =
   lookup-insert k ⦃ [ c ]ᴿ ⦄ rm f
-{-
-variable
-  p : K × V
-  l r : Ext K
-  h hl hr : ℕ
-  bal : hl ~ hr ⊔ h
-  lt rt : BOBMap (l , r) h
-  lt⁺ :  ∃ (λ i → BOBMap (l , r) (i ⊕ hl))
-lookup-insert∈ : ∀ {l u : Ext K} {h : ℕ} (k : K)
-                 {{l≤k : l ≺Ex # k}} {{k≤u : # k ≺Ex u}}
-                 (m : BOBMap (l , u) h)
-                 → (f : Maybe V → V)
-                 → lookup (proj₂ (insertWith k f m)) k ≡ just (f (lookup m k))
-lookup-insert∈ k Map.BOBMap.Map.leaf f rewrite compareSelf k = refl
--- lookup-insert∈ k Map.BOBMap.Map.leaf f with compare k k | compareSelf k
--- ... | .eq | refl = refl
-lookup-insert∈ k (Map.BOBMap.Map.node p m m₁ bal) f with compare k (proj₁ p)
-... | eq rewrite compareSelf (proj₁ p) = refl
-... | inj₁ (! {{prf}}) rewrite lem {p = p} {lt⁺ = insertWith k f m} {rt = m₁} {bal = bal}  prf = lookup-insert∈ k m f
-... | ge = {!!}
-
-lookup-insert∉ : ∀ {l u : Ext K} {h : ℕ} → (k : K)
-                 → {{l≤k : l ≺Ex # k}} {{k≤u : # k ≺Ex u}}
-                 → (m : BOBMap (l , u) h)
-                 → (f : Maybe V → V)
-                 → k ∉ m
-                 → lookup (proj₂ (insertWith k f m)) k ≡ just (f nothing)
-lookup-insert∉ {l} {u} k {{l≤k}} {{k≤u}} leaf f prf
-  with insertWith {l} {u} k f {{l≤k}} {{k≤u}} leaf
-... | _ , res with compare k k | compareSelf k
-... | .eq | refl = refl
-lookup-insert∉ k (node p lm rm bal) f prf with compare k (proj₁ p) in comp
-lookup-insert∉ k (node p lm rm bal) f prf
-  | le with lookup-insert∉ k lm f (¬Left prf)
-... | x with insertWith k f lm
-... | 1# , lm' with bal
-lookup-insert∉ k (node p lm rm bal) f prf
-  | le | x | 1# , lm' | ~+ with compare k (proj₁ p)
-... | le = x
-lookup-insert∉ k (node p lm rm bal) f prf
-  | le | x | 1# , lm' | ~0 with compare k (proj₁ p)
-... | le = x
-lookup-insert∉ k (node p lm rm bal) f prf
-  | le | x | 1# , lm' | ~- = {!!}
-lookup-insert∉ k (node p lm rm bal) f prf
-  | le | x | 0# , lm' with compare k (proj₁ p)
-... | le = x
-lookup-insert∉ k (node p lm rm bal) f prf
-  | eq with prf (here tt)
-... | ()
-lookup-insert∉ k (node p lm rm bal) f prf
-  | ge with lookup-insert∉ k rm f (¬Right prf)
-... | x with insertWith k f rm
-... | 1# , rm' with bal
-lookup-insert∉ k (node p lm rm bal) f prf
-  | ge | x | 1# , rm' | ~+ = {!!}
-lookup-insert∉ k (node p lm rm bal) f prf
-  | ge | x | 1# , rm' | ~0 with compare k (proj₁ p)
-... | ge = x
-lookup-insert∉ k (node p lm rm bal) f prf
-  | ge | x | 1# , rm' | ~- with compare k (proj₁ p)
-... | ge = x
-lookup-insert∉ k (node p lm rm bal) f prf
-  | ge | x | 0# , rm' with compare k (proj₁ p)
-... | ge = x
--}
 
 ---------------------------------------------------------------------------------
 -- Prove that Insert results in ∈
 ---------------------------------------------------------------------------------
+anyᴸjoinᴸ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    {k : Key}
+    {v : V}
+    {p : Key × V}
+    (lt⁺ : ∃ (λ i → BOBMap V l [ proj₁ p ] (i ⊕ hl)))
+    (rt : BOBMap V [ proj₁ p ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → [ k ] <⁺ [ proj₁ p ]
+    → Any (_≡_ v) k (proj₂ lt⁺)
+    → Any (_≡_ v) k (proj₂ (joinˡ⁺ p lt⁺ rt bal))
+anyᴸjoinᴸ⁺ (0# , lt) rt bal ord prf = left ⦃ ord ⦄ prf
+anyᴸjoinᴸ⁺ (1# , lt) rt ~+ ord prf = left ⦃ ord ⦄ prf
+anyᴸjoinᴸ⁺ (1# , lt) rt ~0 ord prf = left ⦃ ord ⦄ prf
+anyᴸjoinᴸ⁺ (1# , (node pᴸ ltᴸ rtᴸ ~-)) rt ~- ord (here ⦃ o₁ ⦄ refl) = here ⦃ o₁ ⦄ ⦃ {!!} ⦄ refl
+anyᴸjoinᴸ⁺ (1# , (node pᴸ ltᴸ rtᴸ ~-)) rt ~- ord (left prf) = left prf
+anyᴸjoinᴸ⁺ (1# , (node pᴸ ltᴸ rtᴸ ~-)) rt ~- ord (right prf) = right (left ⦃ ord ⦄ prf)
+anyᴸjoinᴸ⁺ (1# , (node pᴸ ltᴸ rtᴸ ~0)) rt ~- ord (here ⦃ o₁ ⦄ refl) = here ⦃ o₁ ⦄ ⦃ {!!} ⦄ refl
+anyᴸjoinᴸ⁺ (1# , (node pᴸ ltᴸ rtᴸ ~0)) rt ~- ord (left prf) = left prf
+anyᴸjoinᴸ⁺ (1# , (node pᴸ ltᴸ rtᴸ ~0)) rt ~- ord (right prf) = right (left ⦃ ord ⦄ prf)
+anyᴸjoinᴸ⁺ (1# , (node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ b) ~+)) rt ~- ord (here ⦃ o₁ ⦄ refl) =
+  left ⦃ {!!} ⦄ (here ⦃ o₁ ⦄ ⦃ {!!} ⦄ refl)
+anyᴸjoinᴸ⁺ (1# , (node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ b) ~+)) rt ~- ord (left prf) = left ⦃ {!!} ⦄ (left prf)
+anyᴸjoinᴸ⁺ (1# , (node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ b) ~+)) rt ~- ord (right (here refl)) =
+  here ⦃ {!!} ⦄ ⦃ {!!} ⦄ refl
+anyᴸjoinᴸ⁺ (1# , (node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ b) ~+)) rt ~- ord (right (left prf)) = left (right prf)
+anyᴸjoinᴸ⁺ (1# , (node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ b) ~+)) rt ~- ord (right (right prf)) = right (left ⦃ ord ⦄ prf)
+
+anyᴿjoinᴸ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    {k : Key}
+    {v : V}
+    {p : Key × V}
+    (lt⁺ : ∃ (λ i → BOBMap V l [ proj₁ p ] (i ⊕ hl)))
+    (rt : BOBMap V [ proj₁ p ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → [ proj₁ p ] <⁺ [ k ]
+    → Any (_≡_ v) k rt
+    → Any (_≡_ v) k (proj₂ (joinˡ⁺ p lt⁺ rt bal))
+anyᴿjoinᴸ⁺ (0# , lt) rt b ord prf = right ⦃ ord ⦄ prf
+anyᴿjoinᴸ⁺ (1# , lt) rt ~+ ord prf = right ⦃ ord ⦄ prf
+anyᴿjoinᴸ⁺ (1# , lt) rt ~0 ord prf = right ⦃ ord ⦄ prf
+anyᴿjoinᴸ⁺ (1# , (node pᴸ ltᴸ rtᴸ ~-)) rt ~- ord prf = right ⦃ {!!} ⦄ (right ⦃ ord ⦄ prf)
+anyᴿjoinᴸ⁺ (1# , (node pᴸ ltᴸ rtᴸ ~0)) rt ~- ord prf = right ⦃ {!!} ⦄ (right ⦃ ord ⦄ prf)
+anyᴿjoinᴸ⁺ (1# , (node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ _) ~+)) rt ~- ord prf = right ⦃ {!!} ⦄ (right ⦃ ord ⦄ prf)
+
+postulate
+  anyJoinL : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    (k : Key)
+    (v : V)
+    (p : Key × V)
+    (lt⁺ : ∃ (λ i → BOBMap V l [ proj₁ p ] (i ⊕ hl)))
+    (rt : BOBMap V [ proj₁ p ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → Any (_≡_ v) k (proj₂ lt⁺)
+    → Any (_≡_ v) k (proj₂ (joinˡ⁺ p lt⁺ rt bal))
+  anyJoinR : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    (k : Key)
+    (v : V)
+    (p : Key × V)
+    (lt : BOBMap V l [ proj₁ p ] hl)
+    (rt⁺ : ∃ (λ i → BOBMap V [ proj₁ p ] u (i ⊕ hr)))
+    (bal : hl ~ hr ⊔ h)
+    → Any (_≡_ v) k (proj₂ rt⁺)
+    → Any (_≡_ v) k (proj₂ (joinʳ⁺ p lt rt⁺ bal))
+
 insert∈ : ∀ {l u : Key⁺} {h : ℕ} (k : Key) (v : V)
           {{l<k : l <⁺ [ k ]}} {{ k<u : [ k ] <⁺ u}}
           → (m : BOBMap V l u h)
           → k ↦ v ∈ (proj₂ $ insertWith k (λ _ → v) m)
 insert∈ k v leaf = here refl
-insert∈ k v (node p lm rm bal) with compare k (proj₁ p) in cmp
-... | tri< a ¬b ¬c = {!insert∈ k v ⦃ ? ⦄ ⦃ ? ⦄ lm!}
+insert∈ k v ⦃ l<k ⦄ ⦃ k<u ⦄ (node p lm rm bal) with compare k (proj₁ p) in cmp
+... | tri< a ¬b ¬c =
+   anyᴸjoinᴸ⁺ (insertWith k (λ _ → v) ⦃ l<k ⦄ ⦃ [ a ]ᴿ ⦄ lm) rm bal [ a ]ᴿ (insert∈ k v ⦃ l<k ⦄ ⦃ [ a ]ᴿ ⦄ lm)
 ... | tri≈ ¬a refl ¬c rewrite cmp = here refl
-... | tri> ¬a ¬b c = {!!}
+... | tri> ¬a ¬b c =
+  anyJoinR k v p lm (insertWith k (λ _ → v) ⦃ [ c ]ᴿ ⦄ ⦃ k<u ⦄ rm) bal (insert∈ k v ⦃ [ c ]ᴿ ⦄ ⦃ k<u ⦄ rm)
+
+---------------------------------------------------------------------------------
+-- Insert-Safe
+---------------------------------------------------------------------------------
+insert-safe : ∀ {k k' : Key} {v v' : V} {l u : Key⁺} {h : ℕ}
+              {{l<k' : l <⁺ [ k' ]}} {{k'<u : [ k' ] <⁺ u}}
+              {m : BOBMap V l u h}
+              → k ↦ v ∈ m
+              → k ≢ k'
+              → k ↦ v ∈ proj₂ (insert (k' , v') m)
+insert-safe {k} {k'} {v} {v'} {m = node .(k , _) lm rm bal} (here ⦃ l<k ⦄ ⦃ k<u ⦄ refl) nEq with
+  compare k' k
+... | tri< a _ _    = {!!}
+... | tri≈ _ refl _ = ⊥-elim (nEq refl)
+... | tri> _ _ c    = {!!}
+insert-safe {k} {k'} {v} {v'} ⦃ l<k' ⦄ {m = node p lm rm bal} (left prf) nEq with compare k' (proj₁ p)
+... | tri< a ¬b ¬c =
+  anyJoinL k v p (insertWith k' (λ _ → v') ⦃ p≤u = [ a ]ᴿ ⦄ lm) rm bal
+    (insert-safe ⦃ k'<u =  [ a ]ᴿ ⦄ prf nEq)
+... | tri≈ ¬a refl ¬c = left prf
+... | tri> ¬a ¬b c = {! !}
+insert-safe {k} {k'} {v} {v'} {m = node p lm rm bal} (right ⦃ ord ⦄ prf) nEq with compare k' (proj₁ p)
+... | tri< a ¬b ¬c = anyᴿjoinᴸ⁺ (insertWith k' (λ _ → v') ⦃ p≤u = {!!} ⦄ lm) rm bal [ [ ord ]-lower ]ᴿ prf
+... | tri≈ ¬a refl ¬c = right prf
+... | tri> ¬a ¬b c =
+  anyJoinR k v p lm (insertWith k' (λ _ → v') ⦃ [ c ]ᴿ ⦄ rm) bal (insert-safe ⦃ [ c ]ᴿ ⦄ prf nEq)
 
 -- -}
 -- -}

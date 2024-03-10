@@ -290,34 +290,10 @@ module _ (V : Set ℓ) where
     ... | inj₁ e = inj₁ e
     ... | inj₂ r = inj₂ (map r)
 -}
-    BMap.insert∈ BOBMapImp k v (map m) = {!!} {- map (insert∈ k v ⦃ tt ⦄ ⦃ tt ⦄ m) -}
-    {-  where
-        insert∈ : ∀ {l u : Ext K} {h : ℕ} → (k : K) → (v : V)
-                  {{l≤p : l ≺Ex # k}} {{p≤u : # k ≺Ex u}}
-                  → (m : BOBMap (l , u) h)
-                  → k ↦ v ∈ (proj₂ $ insertWith k (λ _ → v) m)
-        insert∈ k v leaf = here refl
-        insert∈ k v (node p lm rm bal) with compare k (proj₁ p)
-        insert∈ k v (node p lm rm bal)
-          | le with insert∈ k v lm
-        ... | x with insertWith k (λ _ → v) lm
-        ... | 0# , _ = left x
-        ... | 1# , lm' with bal
-        ... | ~+ = left x
-        ... | ~0 = left x
-        ... | ~- = anyRotRᴸ p lm' rm x
-        insert∈ k v (node p lm rm bal)
-          | eq = here refl
-        insert∈ k v (node p lm rm bal)
-          | ge with insert∈ k v rm
-        ... | x with insertWith k (λ _ → v) rm
-        ... | 0# , _ = right x
-        ... | 1# , rm' with bal
-        ... | ~+ = anyRotLᴿ p lm rm' x
-        ... | ~0 = right x
-        ... | ~- = right x
--}
-    BMap.insert-safe BOBMapImp (map prf) nEq = {! map (noAlterInsert {{tt}} {{tt}} prf nEq) !}
+    BMap.insert∈ BOBMapImp k v (map m) = map (insert∈ k v ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m)
+
+    BMap.insert-safe BOBMapImp {k' = k'} (map prf) nEq =
+      map (insert-safe ⦃ ⊥⁺<[ k' ] ⦄ ⦃ [ k' ]<⊤⁺ ⦄ prf nEq)
       {-where
         noAlterInsert : {k k' : K} {v v' : V} {l u : Ext K} {h : ℕ}
                         {{l≤k' : l ≺Ex # k'}} {{k'≤u : # k' ≺Ex u}}
