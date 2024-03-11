@@ -1,7 +1,7 @@
 {-# OPTIONS --erasure #-}
-{-# OPTIONS --allow-unsolved-metas #-}
+--{-# OPTIONS --allow-unsolved-metas #-}
 open import Relation.Binary.Bundles using (StrictTotalOrder)
-open import OrdSet'
+open import OrdSet
 
 module Map.BOBMap {k ℓ₁} (order : OrdSet k ℓ₁) where
 
@@ -10,12 +10,18 @@ Order = toStrictTotalOrder order
 
 open import Prelude
 open import Level using (Level; _⊔_) renaming (suc to lsuc)
-open import Data.Nat.Base using (ℕ; zero; suc; _+_; _*_; _<_)
+open import Data.Nat.Base using (ℕ; zero; suc; _+_; _*_; ∣_-_∣; _≡ᵇ_; s≤s⁻¹; s<s⁻¹)
+  renaming (_≤_ to _≤ℕ_; s<s to <ℕ-step; z<s to <ℕ-base; _<_ to _<ℕ_; compare to compareℕ; Ordering to Ordℕ; _⊔_ to max; s≤s to ≤ℕ-step; z≤n to ≤ℕ-base)
+open import Data.Nat.Properties renaming (_≤?_ to _≤ℕ?_; _<?_ to _<ℕ?_)
+open import Data.Empty renaming (⊥ to nil; ⊥-elim to nil-elim)
 open import Data.Fin.Base using (Fin) renaming (zero to fzero; suc to fsuc)
 open import Data.Product
 open import Data.Maybe
+open import Data.Sum using (_⊎_) renaming (inj₁ to inl; inj₂ to inr)
 open import Relation.Unary using (Pred)
 open import Relation.Binary.PropositionalEquality hiding (trans; [_])
+open import Relation.Nullary.Decidable.Core using (yes; no)
+open import Relation.Nullary.Negation.Core using (¬_; contradiction)
 open import Function using (_∘_; _$_; const; case_of_)
 open import Relation.Binary.Definitions
 
@@ -138,7 +144,6 @@ module _ {v} {V : Set v} where
   ... | tri≈ _ refl _ = just (proj₂ p)
   ... | tri> _ _ p<k = lookup rt k
 
-
   record Cons (p : Key × V) (l u : Key⁺) (h : ℕ) : Set (k ⊔ v ⊔ ℓ₁) where
     constructor cons
     field
@@ -194,53 +199,127 @@ module _ {v} {V : Set v} where
 
 -- * UNION STARTS HERE -----------------------------------------------------
 
-  -- O(n) operation, not good!
   @erased mklim : ∀ {l u h}
           → BOBMap V l u h
           → l <⁺ u
   mklim (leaf {{p}}) = p
   mklim {l} {u} (node p lt rt bal) = trans⁺ l (mklim lt) (mklim rt)
 
-  heightBM : ∀ {h l u} → BOBMap V l u h → ℕ
-  heightBM {h} _ = h
+  lemR : {n m : ℕ} → max (suc (m + n)) m ≡ suc (m + n)
+  lemR {n} {zero} = refl
+  lemR {n} {suc m} rewrite lemR {n} {m} = refl
 
-  ratio : ℕ
-  ratio = 5 -- source?
+  lemL : {n m : ℕ} → max m (suc (m + n)) ≡ suc (m + n)
+  lemL {n} {zero} = refl
+  lemL {n} {suc m} rewrite lemL {n} {m} = refl
 
-  data CmpResult : Set where
-    LT : CmpResult
-    EQ : CmpResult
-    GT : CmpResult
+  lemC : {m : ℕ} → max m m ≡ m
+  lemC {zero} = refl
+  lemC {suc m} rewrite lemC {m} = refl
 
-  cmp : ℕ → ℕ → CmpResult
-  cmp zero    zero    = EQ
-  cmp zero    _       = LT
-  cmp _       zero    = GT
-  cmp (suc n) (suc m) = cmp n m
+  lem4L : ∀ {a} → max (suc a) a ≡ suc a
+  lem4L {zero} = refl
+  lem4L {suc a} rewrite lem4L {a} = refl
 
-  max : ℕ → ℕ → ℕ
-  max n zero = n
-  max zero n = n
-  max (suc n) (suc m) = max n m
+  lem4R : ∀ {a} → max a (suc a) ≡ suc a
+  lem4R {zero} = refl
+  lem4R {suc a} rewrite lem4R {a} = refl
 
-  {-# TERMINATING #-}
-  concat3 : {h1 h2 : ℕ}
-            → ((k , v) : Key × V)
-            → {l u : Key⁺}
-            → BOBMap V l [ k ] h1
-            → BOBMap V [ k ] u h2
-            → ∃ λ n → BOBMap V l u n
-  concat3 p n (leaf {{pf}}) with insert p {{mklim n}} {{pf}} (raise {{pf}} n)
-  ... | _ , t = _ , t
-  concat3 p (leaf {{pf}}) m with insert p {{pf}} {{mklim m}} (reduce {{pf}} m)
-  ... | _ , t = _ , t
-  concat3 p@(k , v) n@(node p1 l1 r1 b1) m@(node p2 l2 r2 b2)
-    with cmp (ratio * heightBM n) (heightBM m)
-  ... | LT = let (i , cc) = concat3 p n l2
-             in {!!} --balance p2 cc r2
-  ... | EQ = {!!} , {!!}
-  ... | GT = let (i , cc) = concat3 p r1 m
-             in {!!} --balance p1 l1 cc
+  hof : {h : ℕ} {l u : Key⁺} → BOBMap V l u h → ℕ
+  hof {h} _ = h
+
+  gJoinRight : {hl hr : ℕ} {l u : Key⁺}
+               → (suc hr) <ℕ hl
+               → ((k , v) : Key × V)
+               → BOBMap V l [ k ] hl
+               → BOBMap V [ k ] u hr
+               → ∃ λ i → BOBMap V l u (i ⊕ suc hl)
+  gJoinRight {suc h} {hr} {ₗ} {ᵘ} prf (k , v) (node {hl = hl} {hr = hc} p l c b) r
+    with hc ≤ℕ? (suc hr)
+  ... | yes a = joinʳ⁺ p l (T' b) {!!} -- confirm this is right
+    where
+      postulate -- look over these (and prove)
+        lem1 : ∀ {a b} → suc a ≤ℕ suc b → a ≤ℕ b
+        lem2 : ∀ {a b} → a ≤ℕ b → b ≤ℕ a → a ≡ b
+        lem3 : ∀ {a b} → a ≡ b → max (suc b) a ≡ suc b
+        lem5 : ∀ {a b} → a ≤ℕ b → b ≤ℕ suc a → (b ≡ a) ⊎ (b ≡ suc a)
+
+      -- ???
+      T' : hl ~ hc ⊔ h → ∃ λ i → BOBMap V [ proj₁ p ] ᵘ (i ⊕ max hc hr)
+      T' ~+ with lem2 (lem1 (lem1 prf)) (lem1 a)
+      ... | ξ rewrite ξ rewrite lem4L {hl} = 1# , node (k , v) c r ~-
+      T' ~0 with lem2 a (lem1 prf)
+      ... | ξ rewrite ξ rewrite lem4L {hr} = 1# , node (k , v) c r ~-
+      T' ~- with lem5 (lem1 (lem1 prf)) a
+      ... | inl x rewrite x rewrite lemC {hr} = 1# , node (k , v) c r ~0
+      ... | inr y rewrite y rewrite lem4L {hr} = 1# , node (k , v) c r ~-
+
+  ... | no a = joinʳ⁺ p l T' {!!} -- confirm this is right
+    where
+      lem1 : {a b : ℕ} → ¬ a ≤ℕ b → b <ℕ a
+      lem1 = ≰⇒>
+
+      T' : ∃ λ i → BOBMap V [ proj₁ p ] ᵘ (i ⊕ suc hc)
+      T' = gJoinRight (lem1 a) (k , v) c r
+
+  gJoinLeft : {hl hr : ℕ} {l u : Key⁺}
+              → (suc hl) <ℕ hr
+              → ((k , v) : Key × V)
+              → BOBMap V l [ k ] hl
+              → BOBMap V [ k ] u hr
+              → ∃ λ i → BOBMap V l u (i ⊕ suc hr)
+  gJoinLeft {hl} {suc h} {ₗ} {ᵘ} prf (k , v) l (node {hl = hc} {hr = hr} p c r b)
+    with hc ≤ℕ? (suc hl)
+  ... | yes a = joinˡ⁺ p (T' b) r {!!}
+    where
+      postulate
+        lem1 : ∀ {a b} → suc a ≤ℕ suc b → a ≤ℕ b
+        lem2 : ∀ {a b} → a ≤ℕ b → b ≤ℕ a → a ≡ b
+        lem3 : ∀ {a b} → a ≡ b → max (suc b) a ≡ suc b
+        lem5 : ∀ {a b} → a ≤ℕ b → b ≤ℕ suc a → (b ≡ a) ⊎ (b ≡ suc a)
+
+      T' : hc ~ hr ⊔ h → ∃ λ i → BOBMap V ₗ [ proj₁ p ] (i ⊕ hc)
+      T' ~- with lem2 (lem1 (lem1 prf)) (lem1 a)
+      ... | ξ rewrite ξ rewrite lem4R {hr} = 1# , node (k , v) l c ~+
+      T' ~0 with lem2 a (lem1 prf)
+      ... | ξ rewrite ξ rewrite lem4R {hl} = 1# , node (k , v) l c ~+
+      T' ~+ with lem5 (lem1 (lem1 prf)) a
+      ... | inl x rewrite x rewrite lemC {hl} = 1# , node (k , v) l c ~0
+      ... | inr y rewrite y rewrite lem4R {hl} = 1# , node (k , v) l c ~+
+
+  ... | no a = joinˡ⁺ p T' r {!!}
+    where
+      lem1 : {a b : ℕ} → ¬ a ≤ℕ b → b <ℕ a
+      lem1 = ≰⇒>
+
+      T' : ∃ λ i → BOBMap V ₗ [ proj₁ p ] (i ⊕ suc hc)
+      T' = gJoinLeft (lem1 a) (k , v) l c
+
+  lem6L : ∀ {a b} → suc a <ℕ b → max b a ≡ b
+  lem6L {zero} {suc b} prf = refl
+  lem6L {suc a} {suc b} prf rewrite lem6L {a} {b} (s<s⁻¹ prf) = refl
+
+  lem6R : ∀ {a b} → suc a <ℕ b → max a b ≡ b
+  lem6R {zero} {suc b} prf = refl
+  lem6R {suc a} {suc b} prf rewrite lem6R {a} {b} (s<s⁻¹ prf) = refl
+
+  gJoin : {hl hr : ℕ} {l u : Key⁺}
+          → ((k , v) : Key × V)
+          → BOBMap V l [ k ] hl
+          → BOBMap V [ k ] u hr
+          → ∃ λ i → BOBMap V l u (i ⊕ suc (max hl hr))
+  gJoin {hl} {hr} p l r with (suc hr) <ℕ? hl
+  ... | yes a rewrite lem6L a = gJoinRight a p l r
+  ... | no  a with (suc hl) <ℕ? hr
+  ... | yes b rewrite lem6R b = gJoinLeft b p l r
+  ... | no  b = 0# , node p l r {!!}
+    where
+      lem2 : ∀ {a b} → ¬ (suc a <ℕ b) → b ≤ℕ suc a
+      lem2 = ≮⇒≥
+
+      lem1 : ∀ {a b} → ¬ (suc a <ℕ b) → ¬ (suc b <ℕ a) → a ~ b ⊔ max a b
+      lem1 {a} {b} o p with lem2 o , lem2 p
+      ... | ξ , γ = {!!}
 
   splitLT : ∀ {l u h}
             → ((k , v) : Key × V)
@@ -252,7 +331,8 @@ module _ {v} {V : Set v} where
   ... | tri< k<p _ _ = splitLT (k , v) lt
   ... | tri≈ _ refl _ = _ , lt
   ... | tri> _ _ p<k = let (n , m) = splitLT (k , v) {{[ p<k ]ᴿ}} rt
-                       in concat3 (k' , v') lt m
+                           (i , t) = gJoin (k' , v') lt m
+                       in _ , t
 
   splitGT : ∀ {l u h}
             → ((k , v) : Key × V)
@@ -261,25 +341,34 @@ module _ {v} {V : Set v} where
             → ∃ λ n → BOBMap V [ k ] u n
   splitGT x (leaf {{l<u}})= 0 , leaf
   splitGT (k , v) (node (k' , v') lt rt bal) with compare k k'
-  ... | tri< k<p _ _ = let (n , m) = splitGT (k , v) {{[ k<p ]ᴿ}} lt
-                       in concat3 (k' , v') m rt
   ... | tri≈ _ refl _ = _ , rt
   ... | tri> _ _ p<k = splitGT (k , v) rt
+  ... | tri< k<p _ _ = let (n , m) = splitGT (k , v) {{[ k<p ]ᴿ}} lt
+                           (i , t) = gJoin (k' , v') m rt
+                       in _ , t
 
-  union : {h1 h2 : ℕ} → ∀ {l u}
-          → (V → Maybe V → V)
-          → BOBMap V l u h1
-          → BOBMap V l u h2
-          → ∃ λ n → BOBMap V l u (n ⊕ (max h1 h2))
-  union f leaf (leaf ⦃ l≤u ⦄) = 0# , leaf ⦃ l≤u ⦄
-  union f leaf (node p lm rm b) = 0# , node p lm rm b
-  union f (node p lm rm b) leaf = 0# , node p lm rm b
-  union {h1} {h2} f (node p1 lm1 rm1 b1) (node p2 lm2 rm2 b2) with
-    splitLT p2 {{mklim lm2}} (node p1 lm1 rm1 b1)
-  ... | lsh , ls with splitGT p2 {{mklim rm2}} (node p1 lm1 rm1 b1)
-  ... | rsh , rs with union f ls lm2
-  ... | llh , ll with union f rs rm2
-  ... | rrh , rr = join {h = max h1 h2} rr {!!} ll
+  unionWith : {h1 h2 : ℕ} → ∀ {l u}
+              → (V → Maybe V → V)
+              → BOBMap V l u h1
+              → BOBMap V l u h2
+              → ∃ λ n → BOBMap V l u (n ⊕ max h1 h2)
+  unionWith {h1} {h2} f n m with compareℕ h1 h2
+  ... | Ordℕ.less    .h1 k rewrite lemL {k} {h1} = {!!}
+  ... | Ordℕ.equal   .h1   rewrite lemC {h1}     = {!!}
+  ... | Ordℕ.greater .h2 k rewrite lemR {k} {h2} = unionRight f m n
+    where
+      -- express h2 in terms of h1 (see above)
+      unionRight : {h1 h2 : ℕ} → {l u : Key⁺}
+               → (V → Maybe V → V)
+               → BOBMap V l u h1
+               → BOBMap V l u h2
+                → ∃ λ i → BOBMap V l u (i ⊕ h2)
+      unionRight f leaf (leaf {{prf}}) = 0# , leaf {{prf}}
+      unionRight f leaf (node p l r b) = 0# , (node p l r b)
+      unionRight f (node p l r b) m with (splitLT p {{mklim l}} m) , (splitGT p {{mklim r}} m)
+      ... | (hl1 , l1) , (hr1 , r1) with unionWith f l1 l
+      ... | hl2 , l2 with unionWith f r1 r
+      ... | hr2 , r2 = {!l2 , r2!}
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 
@@ -318,6 +407,8 @@ module _ {v} {V : Set v} where
   ... | tri< k<p _ _ = joinˡ⁻ p (delete k {{p≤u = [ k<p ]ᴿ}} lt) rt bal
   ... | tri≈ _ refl _ = join rt bal lt
   ... | tri> _ _ p<k = joinʳ⁻ p lt (delete k {{[ p<k ]ᴿ}} rt) bal
+
+  -- * DELETE ENDS HERE ------------------------------------------------
 
   data Any (P : Pred V ℓₚ) {l u : Key⁺} (kₚ : Key) :
     ∀ {h : ℕ} → BOBMap V l u h → Set (k ⊔ ℓ₁ ⊔ v ⊔ ℓₚ) where

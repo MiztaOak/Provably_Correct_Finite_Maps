@@ -24,8 +24,10 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
       _∈_   : K → Map → Set (ℓ ⊔ ℓ')
       _↦_∈_ : K → V → Map → Set (ℓ ⊔ ℓ') -- Domain
       unionWith : (V → Maybe V → V) → Map → Map → Map
-      lookup : Map → K → Maybe V   -- Apply
+      lookup : Map → K → Maybe V
+      lookup∈ : {m : Map} → {k : K} → k ∈ m → V
       insertWith : K → (Maybe V → V) → Map → Map
+      delete : K → Map → Map
 
     syntax Map {K = K} {V = V} = Map⟨ K ↦ V ⟩
 
@@ -52,15 +54,17 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
     n ≐ m = (n ⊆ m) × (m ⊆ n)
 
     field
-      -- induction principle (weak)
+      -- induction principle (weak) TODO: KILL
       {-
       ⊢ ∀ P . P ∅ ∧ (∀ f . P f ⊃ (∀ x y . P (insert f (x , y))))
           ⊃
         ∀ f . P f
       -}
       ip : (P : Map → Set)
-           → P ∅ × (∀ m → P m → ∀ k v → P (insertWith k (λ _ → v) m))
+           → P ∅ × (∀ m → P m → ∀ k v → P (insert k v m))
            → (∀ m → P m)
+--           → P ∅ × (∀ lm → P lm → ∀ k v rm b → P (node k v lm rm b))
+--           → (∀ m → P m)
 
       -- induction principle (stronger)
       {-
@@ -71,8 +75,8 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
           ∀ f . P f
       -}
       ips : (P : Map → Set (ℓ ⊔ ℓ'))
-            → P ∅ × (∀ m → P m → ∀ k v → k ↦ v ∉ m → ∀ v
-              → P (insertWith k (λ _ → v) m))
+            → P ∅ × (∀ m → P m → ∀ k v → k ↦ v ∉ m
+              → P (insert k v m))
             → (∀ m → P m)
 
       lookup-∅ : ∀ k → lookup ∅ k ≡ nothing
@@ -85,13 +89,7 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
       {-
       ⊢ ∀ f a b . lookup (insert f (a , b)) a = b
       -}
-      lookup-insert∈ : ∀ k m f
-                       → k ∈ m
-                       → [ k ↦ f (lookup m k) ] (insertWith k f m)
-
-      lookup-insert∉ : ∀ k m f
-                       → k ∉ m
-                       → [ k ↦ f nothing ] (insertWith k f m)
+      lookup-insert : ∀ k m f → [ k ↦ f (lookup m k) ] (insertWith k f m)
 
       {-
       ⊢ ∀ a c . (a ≠ c) ⊃
@@ -111,13 +109,15 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
               → x ∈ (insertWith k f m)
               → (x ≡ k) ⊎ x ∈ m
 
-      -- is this possible? Issue with L/R bias in implementation
+      ∪-∅ᴸ : ∀ m f → unionWith f m ∅ ≐ m
+      ∪-∅ᴿ : ∀ m f → unionWith f ∅ m ≐ m
       ∪-∅ : ∀ m f → unionWith f m ∅ ≐ unionWith f ∅ m
 
       ∪-∈ : ∀ m1 m2 f k
             → k ∈ unionWith f m1 m2
             → k ∈ m1 ⊎ k ∈ m2
 
+      -- safety prop of above?
       ∪-∈' : ∀ m1 m2 f k
             → k ∈ m1 ⊎ k ∈ m2
             → k ∈ unionWith f m1 m2
@@ -131,11 +131,15 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
 
       insert∈ : ∀ k v m → k ↦ v ∈ (insert k v m)
 
-      noAlterInsert : ∀ {k k' v v' m} → k ↦ v ∈ m → ¬ (k ≡ k') → k ↦ v ∈ (insert k' v' m)
+      insert-safe : ∀ {k k' v v' m} → k ↦ v ∈ m → k ≢ k' → k ↦ v ∈ (insert k' v' m)
 
       ↦∈To∈ : ∀ {k v m} → k ↦ v ∈ m → k ∈ m
+
+      del-∉ : ∀ {k m} → k ∉ m → delete k m ≐ m
+      del-∈ : ∀ {k m} → k ∈ m → k ∉ delete k m
+      del-safe : ∀ {k k' v m} → k' ↦ v ∈ m → k ≢ k' → k' ↦ v ∈ delete k m
 
     ip' : (P : Map → Set (ℓ ⊔ ℓ'))
           → P ∅ × (∀ m → P m → ∀ k v → P (insertWith k (λ _ → v) m))
           → (∀ m → P m)
-    ip' P (b , s) mp = ips P (b , λ m x k _ _ v → s m x k v ) mp
+    ip' P (b , s) mp = ips P (b , λ m x k v _ → s m x k v ) mp
