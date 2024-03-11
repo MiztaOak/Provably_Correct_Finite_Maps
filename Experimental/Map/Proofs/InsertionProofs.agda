@@ -357,6 +357,67 @@ insert-safe {k} {k'} {v} {v'} {m = node p lm rm bal} (right ⦃ ord ⦄ prf) nEq
 ... | tri> _ _ c =
   anyᴿjoinᴿ⁺ lm (insertWith k' (λ _ → v') ⦃ [ c ]ᴿ ⦄ rm) bal ord (insert-safe ⦃ [ c ]ᴿ ⦄ prf nEq)
 
+---------------------------------------------------------------------------------
+-- ∈-ins
+---------------------------------------------------------------------------------
+postulate
+  in-joinᴸ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+              (x : Key)
+              (p : Key × V)
+              ⦃ @erased l<p : l <⁺ [ proj₁ p ] ⦄ ⦃ @erased p<u : [ proj₁ p ] <⁺ u ⦄
+              (lt⁺ : ∃ λ i → BOBMap V l [ proj₁ p ] (i ⊕ hl))
+              (rt : BOBMap V [ proj₁ p ] u hr)
+              (bal : hl ~ hr ⊔ h)
+              → x ∈ (proj₂ (joinˡ⁺ p lt⁺ rt bal))
+              → x ∈ proj₂ lt⁺
+  in-joinᴿ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+              (x : Key)
+              (p : Key × V)
+              ⦃ @erased l<p : l <⁺ [ proj₁ p ] ⦄ ⦃ @erased p<u : [ proj₁ p ] <⁺ u ⦄
+              (lt : BOBMap V l [ proj₁ p ] hl)
+              (rt⁺ : ∃ λ i → BOBMap V [ proj₁ p ] u (i ⊕ hr))
+              (bal : hl ~ hr ⊔ h)
+              → x ∈ (proj₂ (joinʳ⁺ p lt rt⁺ bal))
+              → x ∈ proj₂ rt⁺
+
+∈-ins : ∀ {l u : Key⁺} {h : ℕ}
+        (k x : Key)
+        (f : Maybe V → V)
+        {{@erased l<k : l <⁺ [ k ]}} {{@erased k<u : [ k ] <⁺ u}}
+        (m : BOBMap V l u h)
+        → x ∈ proj₂ (insertWith k f m)
+        → (x ≡ k) ⊎ x ∈ m
+∈-ins k .k f leaf (here x) = inj₁ refl
+∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf with compare k (proj₁ p)
+... | tri< a _ _ with in-joinᴸ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ (insertWith k f ⦃ p≤u = [ a ]ᴿ ⦄ lm) rm bal prf
+... | prfᴸ with ∈-ins k x f ⦃ l<k ⦄ ⦃ [ a ]ᴿ ⦄ lm prfᴸ
+... | inj₁ prf = inj₁ prf
+... | inj₂ prf = inj₂ (left ⦃ {!!} ⦄ prf)
+∈-ins k x f ⦃ k<u = k<u ⦄ (node p lm rm bal) prf
+  | tri> _ _ c with in-joinᴿ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm (insertWith k f ⦃ [ c ]ᴿ ⦄ rm) bal prf
+... | prfᴿ with ∈-ins k x f ⦃ [ c ]ᴿ ⦄ ⦃ k<u ⦄ rm prfᴿ
+... | inj₁ prf = inj₁ prf
+... | inj₂ prf = inj₂ (right ⦃ {!!} ⦄ prf)
+∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf
+  | tri≈ _ refl _ with prf
+... | left pf = inj₂ (left pf)
+... | here tt = inj₁ refl
+... | right pf = inj₂ (right pf)
+
+---------------------------------------------------------------------------------
+-- ins-comm
+---------------------------------------------------------------------------------
+{-
+ins-comm : ∀ {l u : Key⁺} {h : ℕ}
+           (x y : Key)
+           {{l<x : l <⁺ [ x ]}} {{x<u : [ x ] <⁺ u}}
+           {{l<y : l <⁺ [ y ]}} {{y<u : [ y ] <⁺ u}}
+           (fˣ fʸ : Maybe V → V)
+           (m : BOBMap V l u h)
+           → x ≢ y
+           → (∀ z v → z ↦ v ∈ proj₂ (insertWith x fˣ (proj₂ (insertWith y fʸ m)))
+             → z ↦ v ∈ proj₂ (insertWith y fʸ (proj₂ (insertWith x fˣ m))))
+ins-comm x y fˣ fʸ m nEq z v prf = {!!}
 -- -}
 -- -}
 -- -}
