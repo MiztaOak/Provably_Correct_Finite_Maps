@@ -1,65 +1,28 @@
-open import Prelude hiding (Rel; _≡_) 
-open import Level renaming (suc to s)
-open import Relation.Binary.Core
-open import Relation.Binary.PropositionalEquality hiding (trans)
-
 module OrdSet where
-  pattern le = inl !
-  pattern ge = inr (inr !)
-  pattern eq = inr (inl refl)
-  
-  private
-    variable
-      ℓ : Level
 
-  record OSet (Carrier : Set ℓ) : Set (s (s ℓ)) where
-    infix 4 _≤_
-    field
-      --Carrier : Set
+open import Relation.Binary.Bundles using (StrictTotalOrder)
+open import Relation.Binary.Structures using (IsStrictPartialOrder; IsStrictTotalOrder)
+open import Relation.Binary.Core
+open import Level
+open import Relation.Binary.PropositionalEquality hiding (trans)
+open import Relation.Binary.Definitions
 
-      -- relation
-      _≤_     : Rel Carrier ℓ
+record OrdSet c ℓ : Set (suc (c ⊔ ℓ)) where
+  infix 4 _<_
+  field
+    Carrier            : Set c
+    _<_                : Rel Carrier ℓ
+    isStrictTotalOrder : IsStrictTotalOrder _≡_ _<_
 
-      -- invariants of ≤
-      trans : ∀ {x y z : Carrier} → x ≤ y → y ≤ z → x ≤ z
-      compare : ∀ x y → ⌜ (x ≤ y)⌝ ⊎ ((x ≡ y) ⊎ ⌜ (y ≤ x)⌝ )
+toStrictTotalOrder : {c ℓ : Level} → OrdSet c ℓ → StrictTotalOrder c c ℓ
+StrictTotalOrder.Carrier (toStrictTotalOrder ord) = Carrier
+  where open OrdSet ord
+StrictTotalOrder._≈_ (toStrictTotalOrder ord) = _≡_
+StrictTotalOrder._<_ (toStrictTotalOrder ord) = _<_
+  where open OrdSet ord
+StrictTotalOrder.isStrictTotalOrder (toStrictTotalOrder ord) = isStrictTotalOrder
+  where open OrdSet ord
 
-  module _ {A : Set ℓ} {R : OSet A} where
-    open OSet R
-
-    ext : OSet (Ext A)
-    (ext OSet.≤ _) ⊤         = True
-    (ext OSet.≤ (# x)) (# y) = x ≤ y
-    (ext OSet.≤ ⊥) _         = True
-    (ext OSet.≤ _) _         = Lift ℓ False 
-    OSet.trans (ext) {x} {y} {⊤} e1 e2       = record {}
-    OSet.trans (ext) {# x} {# y} {# z} e1 e2 = trans e1 e2
-    OSet.trans (ext) {⊥} {# y} {# z} e1 e2   = record {}
-    OSet.trans (ext) {⊥} {⊥} {# z} e1 e2     = record {}
-    OSet.trans (ext) {⊥} {⊥} {⊥} e1 e2       = record {}
-    OSet.compare (ext) ⊤ ⊤ = inr (inl refl)
-    OSet.compare (ext) ⊤ _ = inr (inr (!{{record {}}})) 
-    OSet.compare (ext) (# x) ⊤ = inl (!{{record {}}})
-    OSet.compare (ext) (# x) (# y) with compare x y
-    ... | le = le
-    ... | eq = eq
-    ... | ge = ge
-    OSet.compare (ext) (# x) ⊥ = inr (inr (!{{record {}}}))
-    OSet.compare (ext) ⊥ ⊤ = inl (!{{record {}}})
-    OSet.compare (ext) ⊥ (# x) = inl (!{{record {}}})
-    OSet.compare (ext) ⊥ ⊥ = inr (inl refl)
-
-  module _ where
-    OSetℕ : OSet Nat 
-    OSet._≤_ OSetℕ = LEℕ
-    OSet.trans OSetℕ {x} {zero} {zero} e e' = e
-    OSet.trans OSetℕ {zero} {zero} {suc z} e e' = e
-    OSet.trans OSetℕ {zero} {suc y} {suc z} e e' = e
-    OSet.trans OSetℕ {suc x} {suc y} {suc z} e e' = OSet.trans OSetℕ {x} {y} {z} e e'
-    OSet.compare OSetℕ zero zero = eq
-    OSet.compare OSetℕ (suc x) zero = inr (inr (!{{record {}}}))
-    OSet.compare OSetℕ zero (suc y) = inl (!{{record {}}})
-    OSet.compare OSetℕ (suc x) (suc y) with OSet.compare OSetℕ x y
-    ... | le = le
-    ... | eq = eq
-    ... | ge = ge
+pattern le a {¬b} {¬c} = tri< a ¬b ¬c
+pattern eq {¬a} b {¬c} = tri≈ ¬a b ¬c
+pattern ge {¬a} {¬b} c = tri> ¬a ¬b c
