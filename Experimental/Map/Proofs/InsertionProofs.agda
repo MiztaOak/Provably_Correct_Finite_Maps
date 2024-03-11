@@ -40,7 +40,7 @@ lookup∈ {k = k} {node p lm rm bal} (right prf) = lookup∈ prf
                    → k ↦ v ∈ m
 ∈⇒lookup (node p lm rm bal) k prf with compare k (proj₁ p)
 ... | tri< a _ _    = left ⦃ [ a ]ᴿ ⦄ (∈⇒lookup lm k prf)
-... | tri≈ _ refl _ = here ⦃ mapOrd lm ⦄ ⦃ mapOrd rm ⦄ (sym $ eqFromJust prf)
+... | tri≈ _ refl _ = here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ (sym $ eqFromJust prf)
 ... | tri> _ _ c    = right ⦃ [ c ]ᴿ ⦄ (∈⇒lookup rm k prf)
 
 ---------------------------------------------------------------------------------
@@ -106,7 +106,7 @@ joinˡ⁺-lookup k p (1# , (node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ b) ~+)) rt ~-
 joinˡ⁺-lookup k p (1# , (node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ b) ~+)) rt ~- ord
   | tri≈ _ refl _ with compare (proj₁ pᴿ) (proj₁ pᴸ)
 ... | tri< a ¬b ¬c = ⊥-elim (asym a [ mklim ltᴿ ]-lower)
-... | tri≈ ¬a refl _ = ⊥-elim (¬a [ mapOrd ltᴿ ]-lower)
+... | tri≈ ¬a refl _ = ⊥-elim (¬a [ mklim ltᴿ ]-lower)
 ... | tri> _ _ _ rewrite cmpᴿ = refl
 joinˡ⁺-lookup k p (1# , (node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ b) ~+)) rt ~- ord
   | tri> ¬k<R _ k>R with compare k (proj₁ p)
@@ -117,14 +117,58 @@ joinˡ⁺-lookup k p (1# , (node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ b) ~+)) rt ~-
 ... | tri≈ _ refl _ = ⊥-elim (asym k>R [ mklim ltᴿ ]-lower)
 ... | tri> _ _ _ rewrite cmpᴿ = refl
 
-postulate
-  lemR : ∀ {l u : Key⁺} {hl hr h : ℕ}
-    (k : Key)
-    (p : Key × V)
-    (lt : BOBMap V l [ proj₁ p ] hl)
-    (rt⁺ : ∃ (λ i → BOBMap V [ proj₁ p ] u (i ⊕ hr)))
-    (bal : hl ~ hr ⊔ h)
-    → proj₁ p < k → lookup (proj₂ (joinʳ⁺ p lt rt⁺ bal)) k ≡ lookup (proj₂ rt⁺) k
+joinʳ⁺-lookup : ∀ {l u : Key⁺} {hl hr h : ℕ}
+  (k : Key)
+  (p : Key × V)
+  (lt : BOBMap V l [ proj₁ p ] hl)
+  (rt⁺ : ∃ (λ i → BOBMap V [ proj₁ p ] u (i ⊕ hr)))
+  (bal : hl ~ hr ⊔ h)
+  → proj₁ p < k
+  → lookup (proj₂ (joinʳ⁺ p lt rt⁺ bal)) k ≡ lookup (proj₂ rt⁺) k
+joinʳ⁺-lookup k p lt (0# , rt) bal ord with compare k (proj₁ p)
+... | tri< _ _ ¬c = ⊥-elim (¬c ord)
+... | tri≈ _ _ ¬c = ⊥-elim (¬c ord)
+... | tri> _ _ _  = refl
+joinʳ⁺-lookup k p lt (1# , rt) ~0 ord with compare k (proj₁ p)
+... | tri< _ _ ¬c = ⊥-elim (¬c ord)
+... | tri≈ _ _ ¬c = ⊥-elim (¬c ord)
+... | tri> _ _ _ = refl
+joinʳ⁺-lookup k p lt (1# , rt) ~- ord with compare k (proj₁ p)
+... | tri< _ _ ¬c = ⊥-elim (¬c ord)
+... | tri≈ _ _ ¬c = ⊥-elim (¬c ord)
+... | tri> _ _ _ = refl
+joinʳ⁺-lookup k p lt (1# , (node pᴿ ltᴿ rtᴿ ~+)) ~+ ord with compare k (proj₁ pᴿ)
+... | tri≈ _ refl _ = refl
+... | tri> _ _ _ = refl
+... | tri< _ _ _ with compare k (proj₁ p)
+... | tri< _ _ ¬k<p = ⊥-elim (¬k<p ord)
+... | tri≈ _ _ ¬k<p = ⊥-elim (¬k<p ord)
+... | tri> _ _ _ = refl
+joinʳ⁺-lookup k p lt (1# , (node pᴿ ltᴿ rtᴿ ~0)) ~+ ord with compare k (proj₁ pᴿ)
+... | tri≈ _ refl _ = refl
+... | tri> _ _ _ = refl
+... | tri< _ _ _ with compare k (proj₁ p)
+... | tri< _ _ ¬k<p = ⊥-elim (¬k<p ord)
+... | tri≈ _ _ ¬k<p = ⊥-elim (¬k<p ord)
+... | tri> _ _ _ = refl
+joinʳ⁺-lookup k p lt (1# , (node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-)) ~+ ord with compare k (proj₁ pᴸ) in compL
+... | tri< a _ ¬l<r with compare k (proj₁ p)
+... | tri< _ _ ¬c = ⊥-elim (¬c ord)
+... | tri≈ _ _ ¬c = ⊥-elim (¬c ord)
+... | tri> _ _ _ with compare k (proj₁ pᴿ)
+... | tri< _ _ _ rewrite compL = refl
+... | tri≈ _ refl _ = ⊥-elim (¬l<r [ mklim rtᴸ ]-lower)
+... | tri> ¬a _ _ = ⊥-elim (¬a (trans a [ mklim rtᴸ ]-lower))
+joinʳ⁺-lookup k p lt (1# , (node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-)) ~+ ord
+  | tri≈ _ refl _ with compare (proj₁ pᴸ) (proj₁ pᴿ)
+... | tri< _ _ _ rewrite compL = refl
+... | tri≈ _ refl _ = ⊥-elim (irrefl refl [ mklim rtᴸ ]-lower)
+... | tri> ¬l<r _ _ = ⊥-elim (¬l<r [ mklim rtᴸ ]-lower)
+joinʳ⁺-lookup k p lt (1# , (node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-)) ~+ ord
+  | tri> _ _ _ with compare k (proj₁ pᴿ)
+... | tri< _ _ _ rewrite compL = refl
+... | tri≈ _ refl _ = refl
+... | tri> _ _ _ = refl
 
 lookup-insert : ∀ {l u : Key⁺} {h : ℕ} (k : Key)
                 {{l≤k : l <⁺ [ k ]}} {{k≤u : [ k ] <⁺ u}}
@@ -139,7 +183,7 @@ lookup-insert k ⦃ l<k ⦄ ⦃ k<u ⦄ (node p lm rm b) f with compare k (proj�
 ... | tri< a _ _ rewrite joinˡ⁺-lookup k p (insertWith k f ⦃ l<k ⦄ ⦃ [ a ]ᴿ ⦄ lm) rm b a =
   lookup-insert k ⦃ k≤u = [ a ]ᴿ ⦄ lm f
 ... | tri≈ _ refl _ rewrite cmp = refl
-... | tri> _ _ c rewrite lemR k p lm (insertWith k f ⦃ [ c ]ᴿ ⦄ ⦃ k<u ⦄ rm) b c =
+... | tri> _ _ c rewrite joinʳ⁺-lookup k p lm (insertWith k f ⦃ [ c ]ᴿ ⦄ ⦃ k<u ⦄ rm) b c =
   lookup-insert k ⦃ [ c ]ᴿ ⦄ rm f
 
 ---------------------------------------------------------------------------------
@@ -261,17 +305,47 @@ insert∈ k v ⦃ l<k ⦄ ⦃ k<u ⦄ (node p lm rm bal) with compare k (proj₁
 ---------------------------------------------------------------------------------
 -- Insert-Safe
 ---------------------------------------------------------------------------------
+herejoinᴸ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    {k : Key}
+    {v : V}
+    (lt⁺ : ∃ (λ i → BOBMap V l [ k ] (i ⊕ hl)))
+    (rt : BOBMap V [ k ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → Any (_≡_ v) k (proj₂ (joinˡ⁺ (k , v) lt⁺ rt bal))
+herejoinᴸ⁺ (0# , lm) rm bal = here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ refl
+herejoinᴸ⁺ (1# , lm) rm ~+ = here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ refl
+herejoinᴸ⁺ (1# , lm) rm ~0 = here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ refl
+herejoinᴸ⁺ (1# , (node pᴸ ltᴸ rtᴸ ~-)) rm ~- = right ⦃ mklim rtᴸ ⦄ (here ⦃ mklim rtᴸ ⦄ ⦃ mklim rm ⦄ refl)
+herejoinᴸ⁺ (1# , (node pᴸ ltᴸ rtᴸ ~0)) rm ~- = right ⦃ mklim rtᴸ ⦄ (here ⦃ mklim rtᴸ ⦄ ⦃ mklim rm ⦄ refl)
+herejoinᴸ⁺ (1# , (node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ _) ~+)) rm ~- =
+  right ⦃ mklim rtᴿ ⦄ (here ⦃ mklim rtᴿ ⦄ ⦃ mklim rm ⦄ refl)
+
+herejoinᴿ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    {k : Key}
+    {v : V}
+    (lt : BOBMap V l [ k ] hl)
+    (rt⁺ : ∃ (λ i → BOBMap V [ k ] u (i ⊕ hr)))
+    (bal : hl ~ hr ⊔ h)
+    → Any (_≡_ v) k (proj₂ (joinʳ⁺ (k , v) lt rt⁺ bal))
+herejoinᴿ⁺ lm (0# , rm) bal = here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ refl
+herejoinᴿ⁺ lm (1# , rm) ~- = here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ refl
+herejoinᴿ⁺ lm (1# , rm) ~0 = here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ refl
+herejoinᴿ⁺ lm (1# , (node pᴿ ltᴿ rtᴿ ~+)) ~+ = left ⦃ mklim ltᴿ ⦄ (here ⦃ mklim lm ⦄ ⦃ mklim ltᴿ ⦄ refl)
+herejoinᴿ⁺ lm (1# , (node pᴿ ltᴿ rtᴿ ~0)) ~+ = left ⦃ mklim ltᴿ ⦄ (here ⦃ mklim lm ⦄ ⦃ mklim ltᴿ ⦄ refl)
+herejoinᴿ⁺ lm (1# , (node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-)) ~+ =
+  left ⦃ mklim ltᴸ ⦄ (here ⦃ mklim lm ⦄ ⦃ mklim ltᴸ ⦄ refl)
+
 insert-safe : ∀ {k k' : Key} {v v' : V} {l u : Key⁺} {h : ℕ}
-              {{l<k' : l <⁺ [ k' ]}} {{k'<u : [ k' ] <⁺ u}}
+              {{@erased l<k' : l <⁺ [ k' ]}} {{@erased k'<u : [ k' ] <⁺ u}}
               {m : BOBMap V l u h}
               → k ↦ v ∈ m
               → k ≢ k'
               → k ↦ v ∈ proj₂ (insert (k' , v') m)
-insert-safe {k} {k'} {v} {v'} {m = node .(k , _) lm rm bal} (here ⦃ l<k ⦄ ⦃ k<u ⦄ refl) nEq with
+insert-safe {k} {k'} {v} {v'} ⦃ l<k' = l<k' ⦄ {m = node .(k , _) lm rm bal} (here refl) nEq with
   compare k' k
-... | tri< a _ _    = {!!}
+... | tri< a _ _    = herejoinᴸ⁺ (insertWith k' (λ _ → v') ⦃ l<k' ⦄ ⦃ [ a ]ᴿ ⦄ lm) rm bal
 ... | tri≈ _ refl _ = ⊥-elim (nEq refl)
-... | tri> _ _ c    = {!!}
+... | tri> _ _ c    = herejoinᴿ⁺ lm (insertWith k' (λ _ → v') ⦃ [ c ]ᴿ ⦄ rm) bal
 insert-safe {k} {k'} {v} {v'} ⦃ l<k' ⦄ {m = node p lm rm bal} (left ⦃ o ⦄ prf) nEq with compare k' (proj₁ p)
 ... | tri< a _ _ = anyᴸjoinᴸ⁺ (insertWith k' (λ _ → v') ⦃ p≤u = [ a ]ᴿ ⦄ lm) rm bal o
                              (insert-safe ⦃ k'<u =  [ a ]ᴿ ⦄ prf nEq)

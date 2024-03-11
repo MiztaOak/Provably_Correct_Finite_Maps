@@ -294,49 +294,6 @@ module _ (V : Set ℓ) where
 
     BMap.insert-safe BOBMapImp {k' = k'} (map prf) nEq =
       map (insert-safe ⦃ ⊥⁺<[ k' ] ⦄ ⦃ [ k' ]<⊤⁺ ⦄ prf nEq)
-      {-where
-        noAlterInsert : {k k' : K} {v v' : V} {l u : Ext K} {h : ℕ}
-                        {{l≤k' : l ≺Ex # k'}} {{k'≤u : # k' ≺Ex u}}
-                        {m : BOBMap (l , u) h}
-                        → k ↦ v ∈ m → ¬ (k ≡ k')
-                        → k ↦ v ∈ proj₂ (insert (k' , v') m)
-        noAlterInsert {k} {k'} (here x {lm} {rm} {bal}) nEq with compare k' k
-        noAlterInsert {k} {k'} {v' = v'} (here x {lm} {rm} {bal}) nEq
-          | le with insertWith k' (λ _ → v') lm
-        ... | 0# , lm' = here x
-        ... | 1# , lm' with bal
-        ... | ~+ = here x
-        ... | ~0 = here x
-        ... | ~- = {!!}
-        noAlterInsert {k} {k'} {v' = v'} (here x {lm} {rm} {bal}) nEq
-          | ge with insertWith k' (λ _ → v') rm
-        ... | 0# , rm' = here x
-        ... | 1# , rm' with bal
-        ... | ~+ = {!!}
-        ... | ~0 = here x
-        ... | ~- = here x
-        noAlterInsert {k} {k'} (here x {lm} {rm} {bal}) nEq
-          | eq with nEq refl
-        ... | ()
-        noAlterInsert {k} {k'} {v} {v'} {{l≤k'}} {m = node p _ _ b} (left {lm = lm} ⦃ k≺k' ⦄ prf {rm}) nEq
-          with compare k' (proj₁ p)
-        ... | le with insertWith k' (λ _ → v') lm in insL
-        ... | 0# , lm' with noAlterInsert {v' = v'} prf nEq
-        ... | prf' with proj₂ (insertWith k' (λ _ → v') lm)
-        ... | lm'' = left {!!}
-        noAlterInsert {k} {k'} {v} {v'} {{l≤k'}} {m = node p _ _ b} (left {lm = lm} ⦃ k≺k' ⦄ prf {rm}) nEq
-          | le | 1# , lm' = {!!}
-        noAlterInsert {k} {k'} {v} {v'} {{l≤k'}} {m = node p _ _ b} (left {lm = lm} ⦃ k≺k' ⦄ prf {rm}) nEq
-          | eq = left prf
-        noAlterInsert {k} {k'} {v} {v'} {{l≤k'}} {m = node p _ _ b} (left {lm = lm} ⦃ k≺k' ⦄ prf {rm}) nEq
-          | ge with insertWith k' (λ _ → v') rm
-        ... | 0# , rm' = left prf
-        ... | 1# , rm' with b
-        ... | ~+ = anyRotLᴸ p lm rm' prf
-        ... | ~0 = left prf
-        ... | ~- = left prf
-        noAlterInsert {k} {k'} {v} {v'} (right prf) nEq = {!!}
--}
 
     ---------------------------------------------------------------------------------
     -- Union proofs
