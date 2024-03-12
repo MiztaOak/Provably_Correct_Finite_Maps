@@ -9,7 +9,7 @@ Order : StrictTotalOrder k k ℓ₁
 Order = toStrictTotalOrder order
 
 open import Prelude
-open import Level using (Level; _⊔_) renaming (suc to lsuc)
+open import Level using (Level; _⊔_; 0ℓ) renaming (suc to lsuc)
 open import Data.Nat.Base using (ℕ; zero; suc; _+_; _*_; ∣_-_∣; _≡ᵇ_; s≤s⁻¹; s<s⁻¹)
   renaming (_≤_ to _≤ℕ_; s<s to <ℕ-step; z<s to <ℕ-base; _<_ to _<ℕ_; compare to compareℕ; Ordering to Ordℕ; _⊔_ to max; s≤s to ≤ℕ-step; z≤n to ≤ℕ-base)
 open import Data.Nat.Properties renaming (_≤?_ to _≤ℕ?_; _<?_ to _<ℕ?_)
@@ -19,6 +19,7 @@ open import Data.Product
 open import Data.Maybe
 open import Data.Sum using (_⊎_) renaming (inj₁ to inl; inj₂ to inr)
 open import Relation.Unary using (Pred)
+open import Relation.Binary.Core using (Rel)
 open import Relation.Binary.PropositionalEquality hiding (trans; [_])
 open import Relation.Nullary.Decidable.Core using (yes; no)
 open import Relation.Nullary.Negation.Core using (¬_; contradiction)
@@ -209,9 +210,17 @@ module _ {v} {V : Set v} where
   lemR {n} {zero} = refl
   lemR {n} {suc m} rewrite lemR {n} {m} = refl
 
+  lemRR : {n m : ℕ} → max (suc (suc (m + n))) m ≡ suc (suc (m + n))
+  lemRR {n} {zero} = refl
+  lemRR {n} {suc m} rewrite lemRR {n} {m} = refl
+
   lemL : {n m : ℕ} → max m (suc (m + n)) ≡ suc (m + n)
   lemL {n} {zero} = refl
   lemL {n} {suc m} rewrite lemL {n} {m} = refl
+
+  lemLL : {n m : ℕ} → max m (suc (suc (m + n))) ≡ suc (suc (m + n))
+  lemLL {n} {zero} = refl
+  lemLL {n} {suc m} rewrite lemLL {n} {m} = refl
 
   lemC : {m : ℕ} → max m m ≡ m
   lemC {zero} = refl
@@ -225,101 +234,95 @@ module _ {v} {V : Set v} where
   lem4R {zero} = refl
   lem4R {suc a} rewrite lem4R {a} = refl
 
-  hof : {h : ℕ} {l u : Key⁺} → BOBMap V l u h → ℕ
-  hof {h} _ = h
+  data Balancing : Rel ℕ 0ℓ where
+    left : ∀ hr k → Balancing (suc (suc (hr + k))) hr
+    1-offL : ∀ h → Balancing (suc h) h
+    balanced : ∀ h → Balancing h h
+    1-offR : ∀ h → Balancing h (suc h)
+    right : ∀ hl k → Balancing hl (suc (suc (hl + k)))
 
-  gJoinRight : {hl hr : ℕ} {l u : Key⁺}
-               → (suc hr) <ℕ hl
+  compareBalance : ∀ hl hr → Balancing hl hr
+  compareBalance zero zero = balanced zero
+  compareBalance zero (suc zero) = 1-offR zero
+  compareBalance zero (suc (suc b)) = right zero b
+  compareBalance (suc zero) zero = 1-offL zero
+  compareBalance (suc (suc a)) zero = left zero a
+  {-# CATCHALL #-}
+  compareBalance (suc a) (suc b) with compareBalance a b
+  ... | left .b k = left (suc b) k
+  ... | 1-offL .b = 1-offL (suc b)
+  ... | balanced .a = balanced (suc a)
+  ... | 1-offR .a = 1-offR (suc a)
+  ... | right .a k = right (suc a) k
+
+  postulate
+    illegal~⊔2L : ∀ {a b c} → a ~ b ⊔ suc (suc a + c) → nil
+    illegal~⊔2R : ∀ {a b c} → a ~ b ⊔ suc (suc b + c) → nil
+    illegal~⊔3L : ∀ {a b c d} → a ~ b ⊔ suc (suc (suc a + c + d)) → nil
+    illegal~⊔3R : ∀ {a b c d} → a ~ b ⊔ suc (suc (suc b + c + d)) → nil
+
+  gJoinRight : {hr x : ℕ} {l u : Key⁺}
+                → ((k , v) : Key × V)
+                → BOBMap V l [ k ] (suc (suc (hr + x)))
+                → BOBMap V [ k ] u hr
+                → ∃ λ i → BOBMap V l u (i ⊕ suc (suc (hr + x)))
+  gJoinRight {hr} {x} {ₗ} {ᵘ} p (node {hl = hl} {hr = hc} p2 l c b) r
+    with compareBalance hc hr
+  ... | left .hr k = joinʳ⁺ p2 l T' b
+    where
+      T' : ∃ λ i → BOBMap V [ proj₁ p2 ] ᵘ (i ⊕ hc)
+      T' = gJoinRight p c r
+
+  ... | 1-offL .hr = joinʳ⁺ p2 l T' b
+    where
+      T' : ∃ λ i → BOBMap V [ proj₁ p2 ] ᵘ (i ⊕ hc)
+      T' = 1# , node p c r ~-
+
+  ... | balanced .hr = joinʳ⁺ p2 l T' b
+    where
+      T' : ∃ λ i → BOBMap V [ proj₁ p2 ] ᵘ (i ⊕ hc)
+      T' = 1# , node p c r ~0
+
+  ... | right .hc k = nil-elim (illegal~⊔3R b )
+  ... | 1-offR .hc = nil-elim (illegal~⊔2R b)
+
+  gJoinLeft : {hl x : ℕ} {l u : Key⁺}
                → ((k , v) : Key × V)
                → BOBMap V l [ k ] hl
-               → BOBMap V [ k ] u hr
-               → ∃ λ i → BOBMap V l u (i ⊕ suc hl)
-  gJoinRight {suc h} {hr} {ₗ} {ᵘ} prf (k , v) (node {hl = hl} {hr = hc} p l c b) r
-    with hc ≤ℕ? (suc hr)
-  ... | yes a = joinʳ⁺ p l (T' b) {!!} -- confirm this is right
+               → BOBMap V [ k ] u (suc (suc (hl + x)))
+               → ∃ λ i → BOBMap V l u (i ⊕ suc (suc (hl + x)))
+  gJoinLeft {hl} {x} {ₗ} {ᵘ} p l (node {hl = hc} {hr = hr} p2 c r b)
+    with compareBalance hc hl
+  ... | left     .hl k = joinˡ⁺ p2 T' r b
     where
-      postulate -- look over these (and prove)
-        lem1 : ∀ {a b} → suc a ≤ℕ suc b → a ≤ℕ b
-        lem2 : ∀ {a b} → a ≤ℕ b → b ≤ℕ a → a ≡ b
-        lem3 : ∀ {a b} → a ≡ b → max (suc b) a ≡ suc b
-        lem5 : ∀ {a b} → a ≤ℕ b → b ≤ℕ suc a → (b ≡ a) ⊎ (b ≡ suc a)
+      T' : ∃ λ i → BOBMap V ₗ [ proj₁ p2 ] (i ⊕ hc)
+      T' = gJoinLeft p l c
 
-      -- ???
-      T' : hl ~ hc ⊔ h → ∃ λ i → BOBMap V [ proj₁ p ] ᵘ (i ⊕ max hc hr)
-      T' ~+ with lem2 (lem1 (lem1 prf)) (lem1 a)
-      ... | ξ rewrite ξ rewrite lem4L {hl} = 1# , node (k , v) c r ~-
-      T' ~0 with lem2 a (lem1 prf)
-      ... | ξ rewrite ξ rewrite lem4L {hr} = 1# , node (k , v) c r ~-
-      T' ~- with lem5 (lem1 (lem1 prf)) a
-      ... | inl x rewrite x rewrite lemC {hr} = 1# , node (k , v) c r ~0
-      ... | inr y rewrite y rewrite lem4L {hr} = 1# , node (k , v) c r ~-
-
-  ... | no a = joinʳ⁺ p l T' {!!} -- confirm this is right
+  ... | 1-offL   .hl   = joinˡ⁺ p2 T' r b
     where
-      lem1 : {a b : ℕ} → ¬ a ≤ℕ b → b <ℕ a
-      lem1 = ≰⇒>
+      T' : ∃ λ i → BOBMap V ₗ [ proj₁ p2 ] (i ⊕ hc)
+      T' = 1# , node p l c ~+
 
-      T' : ∃ λ i → BOBMap V [ proj₁ p ] ᵘ (i ⊕ suc hc)
-      T' = gJoinRight (lem1 a) (k , v) c r
-
-  gJoinLeft : {hl hr : ℕ} {l u : Key⁺}
-              → (suc hl) <ℕ hr
-              → ((k , v) : Key × V)
-              → BOBMap V l [ k ] hl
-              → BOBMap V [ k ] u hr
-              → ∃ λ i → BOBMap V l u (i ⊕ suc hr)
-  gJoinLeft {hl} {suc h} {ₗ} {ᵘ} prf (k , v) l (node {hl = hc} {hr = hr} p c r b)
-    with hc ≤ℕ? (suc hl)
-  ... | yes a = joinˡ⁺ p (T' b) r {!!}
+  ... | balanced .hl   = joinˡ⁺ p2 T' r b
     where
-      postulate
-        lem1 : ∀ {a b} → suc a ≤ℕ suc b → a ≤ℕ b
-        lem2 : ∀ {a b} → a ≤ℕ b → b ≤ℕ a → a ≡ b
-        lem3 : ∀ {a b} → a ≡ b → max (suc b) a ≡ suc b
-        lem5 : ∀ {a b} → a ≤ℕ b → b ≤ℕ suc a → (b ≡ a) ⊎ (b ≡ suc a)
+      T' : ∃ λ i → BOBMap V ₗ [ proj₁ p2 ] (i ⊕ hc)
+      T' = _ , node p l c ~0
 
-      T' : hc ~ hr ⊔ h → ∃ λ i → BOBMap V ₗ [ proj₁ p ] (i ⊕ hc)
-      T' ~- with lem2 (lem1 (lem1 prf)) (lem1 a)
-      ... | ξ rewrite ξ rewrite lem4R {hr} = 1# , node (k , v) l c ~+
-      T' ~0 with lem2 a (lem1 prf)
-      ... | ξ rewrite ξ rewrite lem4R {hl} = 1# , node (k , v) l c ~+
-      T' ~+ with lem5 (lem1 (lem1 prf)) a
-      ... | inl x rewrite x rewrite lemC {hl} = 1# , node (k , v) l c ~0
-      ... | inr y rewrite y rewrite lem4R {hl} = 1# , node (k , v) l c ~+
-
-  ... | no a = joinˡ⁺ p T' r {!!}
-    where
-      lem1 : {a b : ℕ} → ¬ a ≤ℕ b → b <ℕ a
-      lem1 = ≰⇒>
-
-      T' : ∃ λ i → BOBMap V ₗ [ proj₁ p ] (i ⊕ suc hc)
-      T' = gJoinLeft (lem1 a) (k , v) l c
-
-  lem6L : ∀ {a b} → suc a <ℕ b → max b a ≡ b
-  lem6L {zero} {suc b} prf = refl
-  lem6L {suc a} {suc b} prf rewrite lem6L {a} {b} (s<s⁻¹ prf) = refl
-
-  lem6R : ∀ {a b} → suc a <ℕ b → max a b ≡ b
-  lem6R {zero} {suc b} prf = refl
-  lem6R {suc a} {suc b} prf rewrite lem6R {a} {b} (s<s⁻¹ prf) = refl
+  ... | 1-offR .hc = nil-elim (illegal~⊔2L b)
+  ... | right .hc k = nil-elim (illegal~⊔3L b)
 
   gJoin : {hl hr : ℕ} {l u : Key⁺}
           → ((k , v) : Key × V)
           → BOBMap V l [ k ] hl
           → BOBMap V [ k ] u hr
-          → ∃ λ i → BOBMap V l u (i ⊕ suc (max hl hr))
-  gJoin {hl} {hr} p l r with (suc hr) <ℕ? hl
-  ... | yes a rewrite lem6L a = gJoinRight a p l r
-  ... | no  a with (suc hl) <ℕ? hr
-  ... | yes b rewrite lem6R b = gJoinLeft b p l r
-  ... | no  b = 0# , node p l r {!!}
-    where
-      lem2 : ∀ {a b} → ¬ (suc a <ℕ b) → b ≤ℕ suc a
-      lem2 = ≮⇒≥
-
-      lem1 : ∀ {a b} → ¬ (suc a <ℕ b) → ¬ (suc b <ℕ a) → a ~ b ⊔ max a b
-      lem1 {a} {b} o p with lem2 o , lem2 p
-      ... | ξ , γ = {!!}
+          → ∃ λ i → BOBMap V l u (i ⊕ max hl hr)
+  gJoin {hl} {hr} p l r
+    with compareBalance hl hr
+  ... | left     .hr k rewrite lemRR {k} {hr} = gJoinRight p l r
+  ... | 1-offL   .hr   rewrite lem4L {hr} = 1# , node p l r ~-
+  ... | balanced .hl   rewrite lemC {hl}  = 1# , node p l r ~0
+  ... | 1-offR   .hl   rewrite lem4R {hl} = 1# , node p l r ~+
+  ... | right    .hl k rewrite lemLL {k} {hl} = gJoinLeft p l r
 
   splitLT : ∀ {l u h}
             → ((k , v) : Key × V)

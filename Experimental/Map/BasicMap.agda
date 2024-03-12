@@ -75,7 +75,7 @@ module _ {K : Set ℓ} {V : Set ℓ'} where
           ∀ f . P f
       -}
       ips : (P : Map → Set (ℓ ⊔ ℓ'))
-            → P ∅ × (∀ m → P m → ∀ k v → k ↦ v ∉ m
+            → P ∅ × (∀ m → P m → ∀ k v → k ∉ m
               → P (insert k v m))
             → (∀ m → P m)
 
