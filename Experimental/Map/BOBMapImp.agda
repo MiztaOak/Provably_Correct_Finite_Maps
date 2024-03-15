@@ -18,6 +18,7 @@ open import Data.Sum hiding (map)
 open import Relation.Nullary using (¬_)
 open import Relation.Binary.Definitions
 
+
 import Map.BOBMap order as BOB
 open StrictTotalOrder (toStrictTotalOrder order) renaming (Carrier to Key)
 
@@ -36,6 +37,7 @@ data AnyM {V : Set ℓ'} (P : Pred V ℓₚ) (kₚ : Key) :
 
 module _ (V : Set ℓ) where
   open import Map.Proofs.InsertionProofs order V
+  open import Map.Proofs.Proofs order V
 
   private
     height : Map V → ℕ
@@ -94,7 +96,10 @@ module _ (V : Set ℓ) where
     -- Insertion and lookup proofs
     ---------------------------------------------------------------------------------
     -- Leaving these for later as we are not 100% sure that they are relevant or correct
-    BMap.ips BOBMapImp = {!!}
+    BMap.ips BOBMapImp P (base , step) (map m) = ip-insert (bobP P) ((λ leaf → {!base!}) , {!!}) m
+      where
+        bobP : (Map V → Set (k ⊔ ℓ)) → (∀ {h : ℕ} → BOBMap V ⊥⁺ ⊤⁺ h → Set (k ⊔ ℓ))
+        bobP P m = P (map m)
 
     BMap.lookup-∅ BOBMapImp _ = refl
     BMap.∈↦-∅ BOBMapImp k v (map ())
@@ -107,13 +112,26 @@ module _ (V : Set ℓ) where
 
     BMap.lookup-insert BOBMapImp k (map m) f = lookup-insert k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m f
 
-    BMap.ins-comm BOBMapImp k k' f f' (map m) notEq = {!!}
-{-      where
-        x = λ k'' v x → map (
-          ins-comm k k' ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ ⦃ ⊥⁺<[ k' ] ⦄ ⦃ [ k' ]<⊤⁺ ⦄ f f' m notEq k'' v (toAny x))
-        y = λ k'' v x → map (
-          ins-comm k' k ⦃ ⊥⁺<[ k' ] ⦄ ⦃ [ k' ]<⊤⁺ ⦄ ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ f' f m (¬Sym notEq) k'' v (toAny x))
--}
+    BMap.ins-comm BOBMapImp k k' f f' (map m) notEq =
+      (λ z v x → map (leftSide z (toAny x))) , λ z v x → map (rightSide z (toAny x))
+      where
+       l<k' : ⊥⁺ <⁺ BOB.[ k' ]
+       l<k' = ⊥⁺<[ k' ]
+       k'<u : BOB.[ k' ] <⁺ ⊤⁺
+       k'<u = [ k' ]<⊤⁺
+       l<k : ⊥⁺ <⁺ BOB.[ k ]
+       l<k = ⊥⁺<[ k ]
+       k<u : BOB.[ k ] <⁺ ⊤⁺
+       k<u = [ k ]<⊤⁺
+       leftSide : ∀ (z : Key) → {v : V}
+         → z ↦ v ∈ proj₂ (insertWith k f ⦃ l<k ⦄ ⦃ k<u ⦄ (proj₂ (insertWith k' f' ⦃ l<k' ⦄ ⦃ k'<u ⦄ m)))
+         → z ↦ v ∈ proj₂ (insertWith k' f' ⦃ l<k' ⦄ ⦃ k'<u ⦄ (proj₂ (insertWith k f ⦃ l<k ⦄ ⦃ k<u ⦄ m)))
+       leftSide z prf = ins-comm k k' z ⦃ l<k ⦄ ⦃ k<u ⦄ ⦃ l<k' ⦄ ⦃ k'<u ⦄ f f' m notEq prf
+       rightSide : ∀ (z : Key) → {v : V}
+         → z ↦ v ∈ proj₂ (insertWith k' f' ⦃ l<k' ⦄ ⦃ k'<u ⦄ (proj₂ (insertWith k f ⦃ l<k ⦄ ⦃ k<u ⦄ m)))
+         → z ↦ v ∈ proj₂ (insertWith k f ⦃ l<k ⦄ ⦃ k<u ⦄ (proj₂ (insertWith k' f' ⦃ l<k' ⦄ ⦃ k'<u ⦄ m)))
+       rightSide z prf = ins-comm k' k z ⦃ l<k' ⦄ ⦃ k'<u ⦄ ⦃ l<k ⦄ ⦃ k<u ⦄ f' f m (¬Sym notEq) prf
+
     BMap.∈-ins BOBMapImp (map m) k x f (map prf) with ∈-ins k x f ⦃ ⊥⁺<[ k ] ⦄  ⦃ [ k ]<⊤⁺ ⦄ m prf
     ... | inj₁ x = inj₁ x
     ... | inj₂ y = inj₂ (map y)

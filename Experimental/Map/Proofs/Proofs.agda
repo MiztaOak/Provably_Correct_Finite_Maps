@@ -92,6 +92,3 @@ compareRight {k} {k'} ord
   | inj₂ (inj₂ (! ⦃ prf ⦄)) with ≺Eq ord prf
 ... | refl = refl
 -}
-
-¬Sym : ∀ {ℓ : Level} {A : Set ℓ} {a b : A} → ¬ (a ≡ b) → ¬ (b ≡ a)
-¬Sym nEq x = nEq (sym x)
