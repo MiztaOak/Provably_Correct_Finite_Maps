@@ -76,6 +76,51 @@ data BOBMap (V : Set v) (l u : Key⁺) : ℕ → Set (k ⊔ v ⊔ ℓ₁) where
          → BOBMap V l u (suc h)
 
 module _ {v} {V : Set v} where
+
+  data Any (P : Pred V ℓₚ) {l u : Key⁺} (kₚ : Key) :
+    ∀ {h : ℕ} → BOBMap V l u h → Set (k ⊔ ℓ₁ ⊔ v ⊔ ℓₚ) where
+    here : ∀ {h hl hr} {v : V}
+           {{@erased l≤k : l <⁺ [ kₚ ]}} {{@erased k≤u : [ kₚ ] <⁺ u}}
+           → P v
+           → {lm : BOBMap V l [ kₚ ] hl}
+           {rm : BOBMap V [ kₚ ] u hr}
+           {bal : hl ~ hr ⊔ h}
+           → Any P kₚ (node (kₚ , v) lm rm bal)
+
+    left : ∀ {h hl hr} {(k' , v) : Key × V}
+           {lm : BOBMap V l [ k' ] hl}
+           {{k≺k' : [ kₚ ] <⁺ [ k' ]}}
+           → Any P kₚ lm
+           → {rm : BOBMap V [ k' ] u hr}
+           {bal : hl ~ hr ⊔ h}
+           → Any P kₚ (node (k' , v) lm rm bal)
+
+    right : ∀ {h hl hr} {(k' , v) : Key × V}
+           {lm : BOBMap V l [ k' ] hl}
+           {rm : BOBMap V [ k' ] u hr}
+           {{k'≤k : [ k' ] <⁺ [ kₚ ]}}
+           → Any P kₚ rm
+           → {bal : hl ~ hr ⊔ h}
+           → Any P kₚ (node (k' , v) lm rm bal)
+
+  @erased mklim : ∀ {l u h}
+          → BOBMap V l u h
+          → l <⁺ u
+  mklim (leaf {{p}}) = p
+  mklim {l} {u} (node p lt rt bal) = trans⁺ l (mklim lt) (mklim rt)
+
+  _∈_ : Key → {l u : Key⁺} {h : ℕ} → BOBMap V l u h → Set (k ⊔ ℓ₁ ⊔ v)
+  k ∈ m = Any {ℓₚ = 0ℓ} (λ _ → True) k m
+
+  _∈?_ : ∀ {l u h} (x : Key)
+         → (a : BOBMap V l u h)
+         → Maybe (x ∈ a)
+  _∈?_ x leaf = nothing
+  _∈?_ x (node p lt rt bal) with compare x (proj₁ p)
+  ... | tri< prf _ _ = _∈?_ x lt >>= λ α → just (left {{[ prf ]ᴿ}} α)
+  ... | tri≈ _ refl _ = just $ here {{mklim lt}} {{mklim rt}} tt
+  ... | tri> _ _ prf = (_∈?_ x rt) >>= λ α → just (right {{[ prf ]ᴿ}} α)
+
   rotR : ∀ {l u : Key⁺} {hr : ℕ}
          ((k , v) : Key × V)
          → BOBMap V l [ k ] (suc (suc hr))
@@ -200,12 +245,6 @@ module _ {v} {V : Set v} where
 
 -- * UNION STARTS HERE -----------------------------------------------------
 
-  @erased mklim : ∀ {l u h}
-          → BOBMap V l u h
-          → l <⁺ u
-  mklim (leaf {{p}}) = p
-  mklim {l} {u} (node p lt rt bal) = trans⁺ l (mklim lt) (mklim rt)
-
   lemR : {n m : ℕ} → max (suc (m + n)) m ≡ suc (m + n)
   lemR {n} {zero} = refl
   lemR {n} {suc m} rewrite lemR {n} {m} = refl
@@ -306,7 +345,7 @@ module _ {v} {V : Set v} where
   ... | balanced .hl   = joinˡ⁺ p2 T' r b
     where
       T' : ∃ λ i → BOBMap V ₗ [ proj₁ p2 ] (i ⊕ hc)
-      T' = _ , node p l c ~0
+      T' = 1# , node p l c ~0
 
   ... | 1-offR .hc = nil-elim (illegal~⊔2L b)
   ... | right .hc k = nil-elim (illegal~⊔3L b)
@@ -324,31 +363,87 @@ module _ {v} {V : Set v} where
   ... | 1-offR   .hl   rewrite lem4R {hl} = 1# , node p l r ~+
   ... | right    .hl k rewrite lemLL {k} {hl} = gJoinLeft p l r
 
-  splitLT : ∀ {l u h}
-            → ((k , v) : Key × V)
-            → {{@erased l≤k : l <⁺ [ k ]}}
-            → BOBMap V l u h
-            → ∃ λ n → BOBMap V l [ k ] n
-  splitLT x (leaf {{l<u}}) = 0 , leaf
-  splitLT (k , v) (node (k' , v') lt rt bal) with compare k k'
-  ... | tri< k<p _ _ = splitLT (k , v) lt
-  ... | tri≈ _ refl _ = _ , lt
-  ... | tri> _ _ p<k = let (n , m) = splitLT (k , v) {{[ p<k ]ᴿ}} rt
-                           (i , t) = gJoin (k' , v') lt m
-                       in _ , t
+  -- can we somehow show that h is the original height?
+  -- bundle height conditions
+  record Split (x : Key) (l u : Key⁺) (h : ℕ) : Set (k ⊔ v ⊔ ℓ₁) where
+    constructor split
+    field
+      value : V
+      leftT : ∃ λ hl → hl <ℕ h × ∃ λ i → BOBMap V l [ x ] (i ⊕ hl)
+      rightT : ∃ λ hr → hr <ℕ h × ∃ λ i → BOBMap V [ x ] u (i ⊕ hr)
 
-  splitGT : ∀ {l u h}
-            → ((k , v) : Key × V)
-            → {{@erased l≤u : [ k ] <⁺ u}}
-            → BOBMap V l u h
-            → ∃ λ n → BOBMap V [ k ] u n
-  splitGT x (leaf {{l<u}})= 0 , leaf
-  splitGT (k , v) (node (k' , v') lt rt bal) with compare k k'
-  ... | tri≈ _ refl _ = _ , rt
-  ... | tri> _ _ p<k = splitGT (k , v) rt
-  ... | tri< k<p _ _ = let (n , m) = splitGT (k , v) {{[ k<p ]ᴿ}} lt
-                           (i , t) = gJoin (k' , v') m rt
-                       in _ , t
+  postulate -- might need to rework this, but it is true
+    lembal : ∀ {a b c} → a ~ b ⊔ c → a <ℕ suc c × b <ℕ suc c
+    -- very funny joke, lem LEss than Max ⟶ lemlem
+    lemlem : ∀ {a b c} → a <ℕ suc c → b <ℕ suc c → (max a b) <ℕ suc c
+
+  lemin : ∀ {l u h}
+          → {x : Key}
+          → {m : BOBMap V l u h}
+          → x ∈ m
+          → ∃ λ n → suc n ≡ h
+  lemin {h = h} {x = x} {m = leaf} ()
+  lemin {h = suc h} {m = node (x , _) l r b} _ = h , refl
+
+  splitAt' : ∀ {l u h}
+             → (k : Key)
+             → (m : BOBMap V l u h)
+             → k ∈ m
+             → Split k l u h
+  splitAt' k (node (k' , v') l r b) prf with prf
+  splitAt' {ₗ} {ᵘ} {h} k (node {hl = hl} {hr = hr} (k' , v') l r b) prf
+    | left x = split (Split.value leftS) lt rt
+    where
+      leftS : Split k ₗ [ k' ] hl
+      leftS = splitAt' k l x
+
+      lt : ∃ λ hl' → hl' <ℕ h × ∃ λ i → BOBMap V ₗ [ k ] (i ⊕ hl')
+      lt with Split.leftT leftS
+      ... | ν , a , t with <-trans a (proj₁ (lembal b))
+      ... | q = ν , q , t
+
+      rt : ∃ λ hr' → hr' <ℕ h × ∃ λ i → BOBMap V [ k ] ᵘ (i ⊕ hr')
+      rt with Split.rightT leftS
+      rt | ν , a , 0# , t with gJoin (k' , v') t r
+      ... | β with lembal b
+      ... | hl<h , hr<h = max ν hr , lemlem (<-trans a hl<h) hr<h , β
+      rt | ν , a , 1# , t with gJoin (k' , v') t r
+      ... | β with lembal b
+      ... | hl<h , hr<h = max (suc ν) hr , lemlem (≤-<-trans a hl<h) hr<h , β
+
+  splitAt' {ₗ} {ᵘ} {h} k (node {hl = hl} {hr = hr} (.k , v') l r b) prf
+    | here x = split v' (hl , lt) (hr , rt)
+    where
+      lt : hl <ℕ h × ∃ λ i → BOBMap V ₗ [ k ] (i ⊕ hl)
+      lt with lembal b
+      ... | o , _ = o , 0# , l
+
+      rt : hr <ℕ h × ∃ λ i → BOBMap V [ k ] ᵘ (i ⊕ hr)
+      rt with lembal b
+      ... | _ , p = p , 0# , r
+
+  splitAt' {ₗ} {ᵘ} {h} k (node {hl = hl} {hr = hr} (k' , v') l r b) prf
+    | right x = split (Split.value rightS) lt rt
+    where
+      rightS : Split k [ k' ] ᵘ hr
+      rightS = splitAt' k r x
+
+      rt : ∃ λ hr' → hr' <ℕ h × ∃ λ i → BOBMap V [ k ] ᵘ (i ⊕ hr')
+      rt with Split.rightT rightS
+      ... | ν , a , t with <-trans a (proj₂ (lembal b))
+      ... | q = ν , q , t
+
+      lt : ∃ λ hl' → hl' <ℕ h × ∃ λ i → BOBMap V ₗ [ k ] (i ⊕ hl')
+      lt with Split.leftT rightS
+      lt | ν , a , 0# , t with gJoin (k' , v') l t
+      ... | β with lembal b
+      ... | hl<h , hr<h = max hl ν , lemlem hl<h (<-trans a hr<h) , β
+      lt | ν , a , 1# , t with gJoin (k' , v') l t
+      ... | β with lembal b
+      ... | hl<h , hr<h = max hl (suc ν) , lemlem hl<h (≤-<-trans a hr<h) , β
+
+  postulate
+    lemGt : ∀ {a b} → a <ℕ b → ∃ λ k → b ≡ suc (a + k)
 
   unionWith : {h1 h2 : ℕ} → ∀ {l u}
               → (V → Maybe V → V)
@@ -361,17 +456,13 @@ module _ {v} {V : Set v} where
   ... | Ordℕ.greater .h2 k rewrite lemR {k} {h2} = unionRight f m n
     where
       -- express h2 in terms of h1 (see above)
-      unionRight : {h1 h2 : ℕ} → {l u : Key⁺}
-               → (V → Maybe V → V)
-               → BOBMap V l u h1
-               → BOBMap V l u h2
-                → ∃ λ i → BOBMap V l u (i ⊕ h2)
-      unionRight f leaf (leaf {{prf}}) = 0# , leaf {{prf}}
+      unionRight : {hl n : ℕ} → {l u : Key⁺}
+                   → (V → Maybe V → V)
+                   → BOBMap V l u hl
+                   → BOBMap V l u (suc (hl + n))
+                   → ∃ λ i → BOBMap V l u (i ⊕ suc (hl + n))
       unionRight f leaf (node p l r b) = 0# , (node p l r b)
-      unionRight f (node p l r b) m with (splitLT p {{mklim l}} m) , (splitGT p {{mklim r}} m)
-      ... | (hl1 , l1) , (hr1 , r1) with unionWith f l1 l
-      ... | hl2 , l2 with unionWith f r1 r
-      ... | hr2 , r2 = {!l2 , r2!}
+      unionRight f (node p l r b) m = {!!}
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 
@@ -412,32 +503,6 @@ module _ {v} {V : Set v} where
   ... | tri> _ _ p<k = joinʳ⁻ p lt (delete k {{[ p<k ]ᴿ}} rt) bal
 
   -- * DELETE ENDS HERE ------------------------------------------------
-
-  data Any (P : Pred V ℓₚ) {l u : Key⁺} (kₚ : Key) :
-    ∀ {h : ℕ} → BOBMap V l u h → Set (k ⊔ ℓ₁ ⊔ v ⊔ ℓₚ) where
-    here : ∀ {h hl hr} {v : V}
-           {{@erased l≤k : l <⁺ [ kₚ ]}} {{@erased k≤u : [ kₚ ] <⁺ u}}
-           → P v
-           → {lm : BOBMap V l [ kₚ ] hl}
-           {rm : BOBMap V [ kₚ ] u hr}
-           {bal : hl ~ hr ⊔ h}
-           → Any P kₚ (node (kₚ , v) lm rm bal)
-
-    left : ∀ {h hl hr} {(k' , v) : Key × V}
-           {lm : BOBMap V l [ k' ] hl}
-           {{k≺k' : [ kₚ ] <⁺ [ k' ]}}
-           → Any P kₚ lm
-           → {rm : BOBMap V [ k' ] u hr}
-           {bal : hl ~ hr ⊔ h}
-           → Any P kₚ (node (k' , v) lm rm bal)
-
-    right : ∀ {h hl hr} {(k' , v) : Key × V}
-           {lm : BOBMap V l [ k' ] hl}
-           {rm : BOBMap V [ k' ] u hr}
-           {{k'≤k : [ k' ] <⁺ [ kₚ ]}}
-           → Any P kₚ rm
-           → {bal : hl ~ hr ⊔ h}
-           → Any P kₚ (node (k' , v) lm rm bal)
 
   foldr : ∀ {l u} {h : ℕ} {n : Level} {A : Set n}
           → (Key × V → A → A)
