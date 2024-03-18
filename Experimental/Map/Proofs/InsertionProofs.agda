@@ -376,9 +376,7 @@ insert-safe {k} {k'} {v} {v'} {m = node p lm rm bal} (right ⦃ ord ⦄ prf) nEq
 ---------------------------------------------------------------------------------
 -- ∈-ins
 ---------------------------------------------------------------------------------
-
-postulate
-  inᴸ-joinᴿ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+inᴸ-joinᴿ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
               (x : Key)
               (p : Key × V)
               ⦃ @erased l<p : l <⁺ [ proj₁ p ] ⦄ ⦃ @erased p<u : [ proj₁ p ] <⁺ u ⦄
@@ -388,40 +386,181 @@ postulate
               → [ x ] <⁺ [ proj₁ p ]
               → x ∈ (proj₂ (joinʳ⁺ p lt rt⁺ bal))
               → x ∈ lt
-  inᴿ-joinᴿ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
-              (x k : Key)
-              (p : Key × V)
-              (f : Maybe V → V)
-              ⦃ @erased l<p : l <⁺ [ proj₁ p ] ⦄ ⦃ @erased p<u : [ proj₁ p ] <⁺ u ⦄
-              ⦃ @erased p<k : [ proj₁ p ] <⁺ [ k ] ⦄ ⦃ @erased k<u : [ k ] <⁺ u ⦄
-              (lt : BOBMap V l [ proj₁ p ] hl)
-              (rt : BOBMap V [ proj₁ p ] u hr)
-              (bal : hl ~ hr ⊔ h)
-              → [ proj₁ p ] <⁺ [ x ]
-              → x ∈ (proj₂ (joinʳ⁺ p lt (insertWith k f rt) bal))
-              → x ∈ rt
-  inᴿ-joinᴸ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+inᴸ-joinᴿ⁺ x .(x , _) lt (0# , rt) bal ord (here tt) = ⊥-elim (irrefl refl [ ord ]-lower)
+inᴸ-joinᴿ⁺ x p lt (0# , rt) bal ord (left prf) = prf
+inᴸ-joinᴿ⁺ x p lt (0# , rt) bal ord (right ⦃ ord' ⦄ prf) = ⊥-elim(asym [ ord ]-lower [ ord' ]-lower)
+inᴸ-joinᴿ⁺ x p lt (1# , rt) ~- ord (here tt) = ⊥-elim (irrefl refl [ ord ]-lower)
+inᴸ-joinᴿ⁺ x p lt (1# , rt) ~- ord (left prf) = prf
+inᴸ-joinᴿ⁺ x p lt (1# , rt) ~- ord (right ⦃ ord' ⦄ prf) = ⊥-elim(asym [ ord ]-lower [ ord' ]-lower)
+inᴸ-joinᴿ⁺ x p lt (1# , rt) ~0 ord (here tt) = ⊥-elim (irrefl refl [ ord ]-lower)
+inᴸ-joinᴿ⁺ x p lt (1# , rt) ~0 ord (left prf) = prf
+inᴸ-joinᴿ⁺ x p lt (1# , rt) ~0 ord (right ⦃ ord' ⦄ prf) = ⊥-elim(asym [ ord ]-lower [ ord' ]-lower)
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ ltᴿ rtᴿ ~+)) ~+ ord (here tt) =
+  ⊥-elim (asym [ ord ]-lower [ mklim ltᴿ ]-lower)
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ ltᴿ rtᴿ ~+)) ~+ ord (left (here tt)) =
+  ⊥-elim (irrefl⁺ [ x ] ord)
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ ltᴿ rtᴿ ~+)) ~+ ord (left (left prf)) = prf
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ ltᴿ rtᴿ ~+)) ~+ ord (left (right ⦃ ord' ⦄ prf)) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ ltᴿ rtᴿ ~+)) ~+ ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ trans⁺ [ proj₁ p ] (mklim ltᴿ) ord' ]-lower)
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ ltᴿ rtᴿ ~0)) ~+ ord (here tt) =
+  ⊥-elim (asym [ ord ]-lower [ mklim ltᴿ ]-lower)
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ ltᴿ rtᴿ ~0)) ~+ ord (left (here tt)) =
+  ⊥-elim (irrefl⁺ [ x ] ord)
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ ltᴿ rtᴿ ~0)) ~+ ord (left (left prf)) = prf
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ ltᴿ rtᴿ ~0)) ~+ ord (left (right ⦃ ord' ⦄ prf)) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ ltᴿ rtᴿ ~0)) ~+ ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ trans⁺ [ proj₁ p ] (mklim ltᴿ) ord' ]-lower)
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-)) ~+ ord (here tt) =
+  ⊥-elim (asym [ ord ]-lower [ mklim ltᴸ ]-lower)
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-)) ~+ ord (right (here tt)) =
+  ⊥-elim (asym [ ord ]-lower [ trans⁺ [ proj₁ p ] (mklim ltᴸ) (mklim rtᴸ) ]-lower)
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-)) ~+ ord (right ⦃ ord' ⦄ (left prf)) =
+  ⊥-elim (asym [ ord ]-lower [ trans⁺ [ proj₁ p ] (mklim ltᴸ) ord' ]-lower)
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-)) ~+ ord (right ⦃ ord' ⦄ (right prf)) =
+  ⊥-elim (asym [ ord ]-lower [ trans⁺ [ proj₁ p ] (mklim ltᴸ) ord' ]-lower)
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-)) ~+ ord (left (here tt)) =
+  ⊥-elim (irrefl⁺ [ x ] ord)
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-)) ~+ ord (left (left prf)) = prf
+inᴸ-joinᴿ⁺ x p lt (1# , (node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-)) ~+ ord (left (right ⦃ ord' ⦄ prf)) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+
+inᴿ-joinᴸ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
               (x : Key)
               (p : Key × V)
               ⦃ @erased l<p : l <⁺ [ proj₁ p ] ⦄ ⦃ @erased p<u : [ proj₁ p ] <⁺ u ⦄
               (lt⁺ : ∃ λ i → BOBMap V l [ proj₁ p ] (i ⊕ hl))
               (rt : BOBMap V [ proj₁ p ] u hr)
               → (bal : hl ~ hr ⊔ h)
-              → [ proj₁ p  ] <⁺ [ x ]
+              → [ proj₁ p ] <⁺ [ x ]
               → x ∈ (proj₂ (joinˡ⁺ p lt⁺ rt bal))
               → x ∈ rt
-  inᴸ-joinᴸ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
-              (x k : Key)
+inᴿ-joinᴸ⁺ x .(x , _) (0# , lt) rt bal ord (here tt) = ⊥-elim (irrefl refl [ ord ]-lower)
+inᴿ-joinᴸ⁺ x p (0# , lt) rt bal ord (right prf) = prf
+inᴿ-joinᴸ⁺ x p (0# , lt) rt bal ord (left ⦃ ord' ⦄ prf) = ⊥-elim(asym [ ord ]-lower [ ord' ]-lower)
+inᴿ-joinᴸ⁺ x p (1# , lt) rt ~+ ord (here tt) = ⊥-elim (irrefl refl [ ord ]-lower)
+inᴿ-joinᴸ⁺ x p (1# , lt) rt ~+ ord (right prf) = prf
+inᴿ-joinᴸ⁺ x p (1# , lt) rt ~+ ord (left ⦃ ord' ⦄ prf) = ⊥-elim(asym [ ord ]-lower [ ord' ]-lower)
+inᴿ-joinᴸ⁺ x p (1# , lt) rt ~0 ord (here tt) = ⊥-elim (irrefl refl [ ord ]-lower)
+inᴿ-joinᴸ⁺ x p (1# , lt) rt ~0 ord (right prf) = prf
+inᴿ-joinᴸ⁺ x p (1# , lt) rt ~0 ord (left ⦃ ord' ⦄ prf) = ⊥-elim(asym [ ord ]-lower [ ord' ]-lower)
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ ltᴿ rtᴿ ~-)) rt ~- ord (here tt) =
+  ⊥-elim (asym [ ord ]-lower [ mklim rtᴿ ]-lower)
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ ltᴿ rtᴿ ~-)) rt ~- ord (right (here tt)) =
+  ⊥-elim (irrefl⁺ [ x ] ord)
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ ltᴿ rtᴿ ~-)) rt ~- ord (right (right prf)) = prf
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ ltᴿ rtᴿ ~-)) rt ~- ord (right (left ⦃ ord' ⦄ prf)) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ ltᴿ rtᴿ ~-)) rt ~- ord (left ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [  trans⁺ [ x ] ord' (mklim rtᴿ)  ]-lower)
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ ltᴿ rtᴿ ~0)) rt ~- ord (here tt) =
+  ⊥-elim (asym [ ord ]-lower [ mklim rtᴿ ]-lower)
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ ltᴿ rtᴿ ~0)) rt ~- ord (right (here tt)) =
+  ⊥-elim (irrefl⁺ [ x ] ord)
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ ltᴿ rtᴿ ~0)) rt ~- ord (right (right prf)) = prf
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ ltᴿ rtᴿ ~0)) rt ~- ord (right (left ⦃ ord' ⦄ prf)) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ ltᴿ rtᴿ ~0)) rt ~- ord (left ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ trans⁺ [ x ] ord' (mklim rtᴿ) ]-lower)
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ lt (node pᴸ ltᴸ rtᴸ _) ~+)) rt ~- ord (here tt) =
+  ⊥-elim (asym [ ord ]-lower [ mklim rtᴸ ]-lower)
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ lt (node pᴸ ltᴸ rtᴸ _) ~+)) rt ~- ord (left (here tt)) =
+  ⊥-elim (asym [ ord ]-lower [  trans⁺ [ x ] (mklim ltᴸ) (mklim rtᴸ)  ]-lower)
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ lt (node pᴸ ltᴸ rtᴸ _) ~+)) rt ~- ord (left ⦃ ord' ⦄ (right prf)) =
+  ⊥-elim (asym [ ord ]-lower [ trans⁺ [ x ] ord' (mklim rtᴸ) ]-lower)
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ lt (node pᴸ ltᴸ rtᴸ _) ~+)) rt ~- ord (left ⦃ ord' ⦄ (left prf)) =
+  ⊥-elim (asym [ ord ]-lower [ trans⁺ [ x ] ord' (mklim rtᴸ) ]-lower)
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ lt (node pᴸ ltᴸ rtᴸ _) ~+)) rt ~- ord (right (here tt)) =
+  ⊥-elim (irrefl⁺ [ x ] ord)
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ lt (node pᴸ ltᴸ rtᴸ _) ~+)) rt ~- ord (right (right prf)) = prf
+inᴿ-joinᴸ⁺ x p (1# , (node pᴿ lt (node pᴸ ltᴸ rtᴸ _) ~+)) rt ~- ord (right (left ⦃ ord' ⦄ prf)) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+
+inᴿ-joinᴿ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+              (x : Key)
               (p : Key × V)
-              (f : Maybe V → V)
               ⦃ @erased l<p : l <⁺ [ proj₁ p ] ⦄ ⦃ @erased p<u : [ proj₁ p ] <⁺ u ⦄
-              ⦃ @erased l<k : l <⁺ [ k ] ⦄ ⦃ @erased k<p : [ k ] <⁺ [ proj₁ p ] ⦄
               (lt : BOBMap V l [ proj₁ p ] hl)
-              (rt : BOBMap V [ proj₁ p ] u hr)
+              (rt⁺ : ∃ λ i → BOBMap V [ proj₁ p ] u (i ⊕ hr))
               (bal : hl ~ hr ⊔ h)
-              → [ x ] <⁺ [ proj₁ p ]
-              → x ∈ (proj₂ (joinˡ⁺ p (insertWith k f lt) rt bal))
-              → x ∈ lt
+              → [ proj₁ p ] <⁺ [ x ]
+              → x ∈ (proj₂ (joinʳ⁺ p lt rt⁺ bal))
+              → x ∈ proj₂ rt⁺
+inᴿ-joinᴿ⁺ x p lt (0# , rt) bal ord (here tt) = ⊥-elim (irrefl⁺ [ x ] ord)
+inᴿ-joinᴿ⁺ x p lt (0# , rt) bal ord (left ⦃ ord' ⦄ prf) = ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴿ-joinᴿ⁺ x p lt (0# , rt) bal ord (right prf) = prf
+inᴿ-joinᴿ⁺ x p lt (1# , rt) ~0 ord (here tt) = ⊥-elim (irrefl⁺ [ x ] ord)
+inᴿ-joinᴿ⁺ x p lt (1# , rt) ~0 ord (left ⦃ ord' ⦄ prf) = ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴿ-joinᴿ⁺ x p lt (1# , rt) ~0 ord (right prf) = prf
+inᴿ-joinᴿ⁺ x p lt (1# , rt) ~- ord (here tt) = ⊥-elim (irrefl⁺ [ x ] ord)
+inᴿ-joinᴿ⁺ x p lt (1# , rt) ~- ord (left ⦃ ord' ⦄ prf) = ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴿ-joinᴿ⁺ x p lt (1# , rt) ~- ord (right prf) = prf
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ ltᴿ rtᴿ ~+) ~+ ord (here tt) = here ⦃ ord ⦄ tt
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ ltᴿ rtᴿ ~+) ~+ ord (right prf) = right prf
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ ltᴿ rtᴿ ~+) ~+ ord (left (here tt)) = ⊥-elim (irrefl⁺ [ x ] ord)
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ ltᴿ rtᴿ ~+) ~+ ord (left (left ⦃ ord' ⦄ prf)) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ ltᴿ rtᴿ ~+) ~+ ord (left (right prf)) = left prf
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ ltᴿ rtᴿ ~0) ~+ ord (here tt) = here ⦃ ord ⦄ tt
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ ltᴿ rtᴿ ~0) ~+ ord (right prf) = right prf
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ ltᴿ rtᴿ ~0) ~+ ord (left (here tt)) = ⊥-elim (irrefl⁺ [ x ] ord)
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ ltᴿ rtᴿ ~0) ~+ ord (left (left ⦃ ord' ⦄ prf)) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ ltᴿ rtᴿ ~0) ~+ ord (left (right prf)) = left prf
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-) ~+ ord (here tt) =
+  left ⦃ mklim rtᴸ ⦄ (here ⦃ ord ⦄  ⦃ mklim rtᴸ ⦄ tt)
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-) ~+ ord (left (here tt)) = ⊥-elim (irrefl⁺ [ x ] ord)
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-) ~+ ord (left (left ⦃ ord' ⦄ prf)) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-) ~+ ord (left ⦃ ord' ⦄ (right prf)) =
+  left ⦃ trans⁺ [ x ] ord' (mklim rtᴸ) ⦄ (left prf)
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-) ~+ ord (right (here tt)) = here ⦃ ord ⦄ tt
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-) ~+ ord (right (left prf)) = left (right prf)
+inᴿ-joinᴿ⁺ x p lt (1# , node pᴿ (node pᴸ ltᴸ rtᴸ _) rtᴿ ~-) ~+ ord (right (right prf)) = right prf
+
+inᴸ-joinᴸ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+            (x : Key)
+            (p : Key × V)
+            ⦃ @erased l<p : l <⁺ [ proj₁ p ] ⦄ ⦃ @erased p<u : [ proj₁ p ] <⁺ u ⦄
+            (lt⁺ : ∃ λ i → BOBMap V l [ proj₁ p ] (i ⊕ hl))
+            (rt : BOBMap V [ proj₁ p ] u hr)
+            (bal : hl ~ hr ⊔ h)
+            → [ x ] <⁺ [ proj₁ p ]
+            → x ∈ (proj₂ (joinˡ⁺ p lt⁺ rt bal))
+            → x ∈ proj₂ lt⁺
+inᴸ-joinᴸ⁺ x p (0# , lt) rt bal ord (here tt) = ⊥-elim (irrefl⁺ [ x ] ord)
+inᴸ-joinᴸ⁺ x p (0# , lt) rt bal ord (left prf) = prf
+inᴸ-joinᴸ⁺ x p (0# , lt) rt bal ord (right ⦃ ord' ⦄ prf) = ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴸ-joinᴸ⁺ x p (1# , lt) rt ~+ ord (here tt) = ⊥-elim (irrefl⁺ [ x ] ord)
+inᴸ-joinᴸ⁺ x p (1# , lt) rt ~+ ord (left prf) = prf
+inᴸ-joinᴸ⁺ x p (1# , lt) rt ~+ ord (right ⦃ ord' ⦄ prf) = ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴸ-joinᴸ⁺ x p (1# , lt) rt ~0 ord (here tt) = ⊥-elim (irrefl⁺ [ x ] ord)
+inᴸ-joinᴸ⁺ x p (1# , lt) rt ~0 ord (left prf) = prf
+inᴸ-joinᴸ⁺ x p (1# , lt) rt ~0 ord (right ⦃ ord' ⦄ prf) = ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ rtᴸ ~0) rt ~- ord (here tt) = here ⦃ k≤u = ord ⦄ tt
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ rtᴸ ~0) rt ~- ord (left prf) = left prf
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ rtᴸ ~0) rt ~- ord (right (here tt)) = ⊥-elim (irrefl⁺ [ x ] ord)
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ rtᴸ ~0) rt ~- ord (right (left prf)) = right prf
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ rtᴸ ~0) rt ~- ord (right (right ⦃ ord' ⦄ prf)) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ rtᴸ ~-) rt ~- ord (here tt) = here ⦃ k≤u = ord ⦄ tt
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ rtᴸ ~-) rt ~- ord (left prf) = left prf
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ rtᴸ ~-) rt ~- ord (right (here tt)) = ⊥-elim (irrefl⁺ [ x ] ord)
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ rtᴸ ~-) rt ~- ord (right (left prf)) = right prf
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ rtᴸ ~-) rt ~- ord (right (right ⦃ ord' ⦄ prf)) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ _) ~+) rt ~- ord (here tt) =
+  right ⦃ mklim ltᴿ ⦄ (here ⦃ mklim ltᴿ ⦄ ⦃ ord ⦄ tt)
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ _) ~+) rt ~- ord (left (here tt)) = here ⦃ k≤u = ord ⦄ tt
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ _) ~+) rt ~- ord (left (left prf)) = left prf
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ _) ~+) rt ~- ord (left (right prf)) = right (left prf)
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ _) ~+) rt ~- ord (right (here tt)) = ⊥-elim (irrefl⁺ [ x ] ord)
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ _) ~+) rt ~- ord (right ⦃ ord' ⦄ (left prf)) =
+  right ⦃ trans⁺ [ proj₁ pᴸ ] (mklim ltᴿ) ord' ⦄ (right prf)
+inᴸ-joinᴸ⁺ x p (1# , node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ _) ~+) rt ~- ord (right (right ⦃ ord' ⦄ prf)) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
 
 ∈-ins : ∀ {l u : Key⁺} {h : ℕ}
         (k x : Key)
@@ -435,38 +574,56 @@ postulate
 ... | tri≈ _ refl _ = inj₁ refl
 ∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf | tri< k<x _ _ with compare k (proj₁ p)
 ∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf | tri< k<x _ _ | tri< k<p _ _ with compare x (proj₁ p)
-... | tri< x<p _ _ =
-  inj₂ (left ⦃ [ x<p ]ᴿ ⦄ (inᴸ-joinᴸ⁺ x k p f ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ ⦃ l<k ⦄ ⦃ [ k<p ]ᴿ ⦄ lm rm bal [ x<p ]ᴿ prf))
 ... | tri≈ _ refl _ = inj₂ (here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ tt)
 ... | tri> _ _ c = inj₂ (right ⦃ [ c ]ᴿ ⦄ (inᴿ-joinᴸ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lt⁺ rm bal [ c ]ᴿ prf))
   where
     lt⁺ = insertWith k f ⦃ p≤u = [ k<p ]ᴿ ⦄ lm
-∈-ins k x f ⦃ l<k ⦄ ⦃ k<u ⦄ (node p lm rm bal) prf | tri< k<x _ _ | tri> _ _ c with compare x (proj₁ p)
+... | tri< x<p _ _ with ∈-ins k x f ⦃ k<u = [ k<p ]ᴿ ⦄ lm prf'
+  where
+    lt⁺ = insertWith k f ⦃ p≤u = [ k<p ]ᴿ ⦄ lm
+    prf' = inᴸ-joinᴸ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lt⁺ rm bal [ x<p ]ᴿ prf
+... | inj₁ prf = inj₁ prf
+... | inj₂ prf = inj₂ (left ⦃ [ x<p ]ᴿ ⦄ prf)
+∈-ins k x f ⦃ l<k ⦄ ⦃ k<u ⦄ (node p lm rm bal) prf | tri< k<x _ _ | tri> _ _ p<k with compare x (proj₁ p)
 ... | tri< a _ _ = inj₂ (left ⦃ [ a ]ᴿ ⦄ (inᴸ-joinᴿ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm rt⁺ bal [ a ]ᴿ prf))
   where
-    rt⁺ = insertWith k f ⦃ [ c ]ᴿ ⦄ rm
+    rt⁺ = insertWith k f ⦃ [ p<k ]ᴿ ⦄ rm
 ... | tri≈ _ refl _ = inj₂ (here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ tt)
-... | tri> _ _ p<x =
-  inj₂ (right ⦃ [ p<x ]ᴿ ⦄ (inᴿ-joinᴿ⁺ x k p f ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ ⦃ [ c ]ᴿ ⦄ ⦃ k<u ⦄ lm rm bal [ p<x ]ᴿ prf))
+... | tri> _ _ p<x  with ∈-ins k x f ⦃ [ p<k ]ᴿ ⦄ rm prfᴿ
+  where
+    rt⁺ = insertWith k f ⦃ [ p<k ]ᴿ ⦄ rm
+    prfᴿ = inᴿ-joinᴿ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm rt⁺ bal [ p<x ]ᴿ prf
+... | inj₁ prf = inj₁ prf
+... | inj₂ prf = inj₂ (right ⦃ [ p<x ]ᴿ ⦄ prf)
 ∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf | tri< k<x _ _ | tri≈ _ refl _ with prf
 ... | here x = inj₁ refl
 ... | left prf = inj₂ (left prf)
 ... | right prf = inj₂ (right prf)
 ∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf | tri> _ _ x<k with compare k (proj₁ p)
 ∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf | tri> _ _ x<k | tri< k<p _ _ with compare x (proj₁ p)
-... | tri< x<p _ _ =
-  inj₂ (left ⦃ [ x<p ]ᴿ ⦄ (inᴸ-joinᴸ⁺ x k p f ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ ⦃ l<k ⦄ ⦃ [ k<p ]ᴿ ⦄ lm rm bal [ x<p ]ᴿ prf))
 ... | tri≈ _ refl _ = inj₂ (here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ tt)
-... | tri> _ _ c = inj₂ (right ⦃ [ c ]ᴿ ⦄ (inᴿ-joinᴸ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lt⁺ rm bal [ c ]ᴿ prf))
+... | tri> _ _ c = inj₂ (right ⦃ [ c ]ᴿ ⦄ prf')
   where
     lt⁺ = insertWith k f ⦃ p≤u = [ k<p ]ᴿ ⦄ lm
+    prf' = inᴿ-joinᴸ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lt⁺ rm bal [ c ]ᴿ prf
+... | tri< x<p _ _ with ∈-ins k x f ⦃ k<u = [ k<p ]ᴿ ⦄ lm prf'
+  where
+    lt⁺ = insertWith k f ⦃ p≤u = [ k<p ]ᴿ ⦄ lm
+    prf' = inᴸ-joinᴸ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lt⁺ rm bal [ x<p ]ᴿ prf
+... | inj₁ prf = inj₁ prf
+... | inj₂ prf = inj₂ (left ⦃ [ x<p ]ᴿ ⦄ prf)
 ∈-ins k x f ⦃ l<k ⦄ ⦃ k<u ⦄ (node p lm rm bal) prf | tri> _ _ x<k | tri> _ _ p<k with compare x (proj₁ p)
-... | tri< x<p _ _ = inj₂ (left ⦃ [ x<p ]ᴿ ⦄ (inᴸ-joinᴿ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm rt⁺ bal [ x<p ]ᴿ prf) )
+... | tri< x<p _ _ = inj₂ (left ⦃ [ x<p ]ᴿ ⦄ prf' )
   where
     rt⁺ = insertWith k f ⦃ [ p<k ]ᴿ ⦄ rm
+    prf' = inᴸ-joinᴿ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm rt⁺ bal [ x<p ]ᴿ prf
 ... | tri≈ _ refl _ = inj₂ (here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ tt)
-... | tri> _ _ p<x =
-  inj₂ (right ⦃ [ p<x ]ᴿ ⦄ (inᴿ-joinᴿ⁺ x k p f ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ ⦃ [ p<k ]ᴿ ⦄ ⦃ k<u ⦄ lm rm bal [ p<x ]ᴿ prf))
+... | tri> _ _ p<x with ∈-ins k x f ⦃ [ p<k ]ᴿ ⦄ rm prfᴿ
+  where
+    rt⁺ = insertWith k f ⦃ [ p<k ]ᴿ ⦄ rm
+    prfᴿ = inᴿ-joinᴿ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm rt⁺ bal [ p<x ]ᴿ prf
+... | inj₁ prf = inj₁ prf
+... | inj₂ prf = inj₂ (right ⦃ [ p<x ]ᴿ ⦄ prf)
 ∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf | tri> _ _ x<k | tri≈ _ refl _ with prf
 ... | here x = inj₁ refl
 ... | left prf = inj₂ (left prf)

@@ -68,17 +68,12 @@ compareSelf k with compare k k
 ... | tri< a ¬b ¬c = contradiction refl ¬b
 ... | tri> ¬a ¬b c = contradiction refl ¬b
 
-compareLeft : ∀ {k k' : K} → (ord : # k ≺Ex # k') → compare k k' ≡ inj₁ (! {{ord}})
+compareLeft : ∀ {k k' : Key} → (ord : k < k') → compare k k' ≡ tri< ord {!!} {!!}
 compareLeft {k} {k'} ord with compare k k'
-compareLeft {k} {k'} ord
-  | inj₁ (! ⦃ prf ⦄) with ≺Eq ord prf
-... | refl = refl
-compareLeft {k} {k'} ord
-  | inj₂ (inj₂ (! ⦃ prf ⦄)) with ≺Absurd ord prf
-... | ()
-compareLeft {k} {k'} ord
-  | eq with inreflex ord refl
-... | ()
+... | le a = {!!}
+... | eq b = {!!}
+... | ge c = {!!}
+
 
 compareRight : ∀ {k k' : K} → (ord : # k' ≺Ex # k) → compare k k' ≡ inj₂ (inj₂ (! {{ord}}))
 compareRight {k} {k'} ord with compare k k'
