@@ -363,19 +363,16 @@ module _ {v} {V : Set v} where
   ... | 1-offR   .hl   rewrite lem4R {hl} = 1# , node p l r ~+
   ... | right    .hl k rewrite lemLL {k} {hl} = gJoinLeft p l r
 
-  -- can we somehow show that h is the original height?
-  -- bundle height conditions
   record Split (x : Key) (l u : Key⁺) (h : ℕ) : Set (k ⊔ v ⊔ ℓ₁) where
     constructor split
     field
-      value : V
-      leftT : ∃ λ hl → hl <ℕ h × ∃ λ i → BOBMap V l [ x ] (i ⊕ hl)
-      rightT : ∃ λ hr → hr <ℕ h × ∃ λ i → BOBMap V [ x ] u (i ⊕ hr)
+      value : Maybe V
+      leftT : ∃ λ hl → hl ≤ℕ h × BOBMap V l [ x ] hl
+      rightT : ∃ λ hr → hr ≤ℕ h × BOBMap V [ x ] u hr
 
-  postulate -- might need to rework this, but it is true
-    lembal : ∀ {a b c} → a ~ b ⊔ c → a <ℕ suc c × b <ℕ suc c
-    -- very funny joke, lem LEss than Max ⟶ lemlem
-    lemlem : ∀ {a b c} → a <ℕ suc c → b <ℕ suc c → (max a b) <ℕ suc c
+  postulate
+    lembal : ∀ {a b c} → a ~ b ⊔ c → a ≤ℕ c × b ≤ℕ c
+    lem≤max : ∀ {a b c} → a ≤ℕ c → b ≤ℕ c → max a b ≤ℕ c
 
   lemin : ∀ {l u h}
           → {x : Key}
@@ -385,62 +382,86 @@ module _ {v} {V : Set v} where
   lemin {h = h} {x = x} {m = leaf} ()
   lemin {h = suc h} {m = node (x , _) l r b} _ = h , refl
 
-  splitAt' : ∀ {l u h}
+  splitAt : ∀ {l u h}
              → (k : Key)
+             → {{@erased l<k : l <⁺ [ k ]}} → {{@erased k<u : [ k ] <⁺ u}}
              → (m : BOBMap V l u h)
-             → k ∈ m
              → Split k l u h
-  splitAt' k (node (k' , v') l r b) prf with prf
-  splitAt' {ₗ} {ᵘ} {h} k (node {hl = hl} {hr = hr} (k' , v') l r b) prf
-    | left x = split (Split.value leftS) lt rt
+  splitAt {ₗ} {ᵘ} {zero} k leaf
+    = split nothing (0 , ≤ℕ-base , lt) (0 , ≤ℕ-base , rt)
     where
+      -- sinful stuff
+      lt : BOBMap V ₗ [ k ] 0
+      lt = leaf
+
+      rt : BOBMap V [ k ] ᵘ 0
+      rt = leaf
+
+  splitAt {h = suc h} k (node (k' , v') l r b) with compare k k'
+  splitAt {ₗ} {ᵘ} {h} k {{l<k = l<k}} (node {hl = hl} {hr = hr} (k' , v') l r b)
+    | tri< x _ _ = split (Split.value leftS) lt rt
+    where
+      sh : ℕ
+      sh = h
+
       leftS : Split k ₗ [ k' ] hl
-      leftS = splitAt' k l x
+      leftS = splitAt k {{l<k}} {{[ x ]ᴿ}} l
 
-      lt : ∃ λ hl' → hl' <ℕ h × ∃ λ i → BOBMap V ₗ [ k ] (i ⊕ hl')
-      lt with Split.leftT leftS
-      ... | ν , a , t with <-trans a (proj₁ (lembal b))
-      ... | q = ν , q , t
-
-      rt : ∃ λ hr' → hr' <ℕ h × ∃ λ i → BOBMap V [ k ] ᵘ (i ⊕ hr')
-      rt with Split.rightT leftS
-      rt | ν , a , 0# , t with gJoin (k' , v') t r
-      ... | β with lembal b
-      ... | hl<h , hr<h = max ν hr , lemlem (<-trans a hl<h) hr<h , β
-      rt | ν , a , 1# , t with gJoin (k' , v') t r
-      ... | β with lembal b
-      ... | hl<h , hr<h = max (suc ν) hr , lemlem (≤-<-trans a hl<h) hr<h , β
-
-  splitAt' {ₗ} {ᵘ} {h} k (node {hl = hl} {hr = hr} (.k , v') l r b) prf
-    | here x = split v' (hl , lt) (hr , rt)
-    where
-      lt : hl <ℕ h × ∃ λ i → BOBMap V ₗ [ k ] (i ⊕ hl)
+      lt : ∃ λ hl' → hl' ≤ℕ sh × BOBMap V ₗ [ k ] hl'
       lt with lembal b
-      ... | o , _ = o , 0# , l
+      ... | o , _ with Split.leftT leftS
+      ... | ht , ht<hl , t = ht , ≤-trans ht<hl (m≤n⇒m≤1+n o) , t
 
-      rt : hr <ℕ h × ∃ λ i → BOBMap V [ k ] ᵘ (i ⊕ hr)
-      rt with lembal b
-      ... | _ , p = p , 0# , r
+      -- a bit (very) convoluted, surely there are better ways to do this
+      -- also uses a few lemmas which are not proven yet
+      rt : ∃ λ hr' → hr' ≤ℕ sh × BOBMap V [ k ] ᵘ hr'
+      rt with Split.rightT leftS
+      rt | ht , ht<hl , t with gJoin (k' , v') t r
+      ... | 0# , β
+        = let (hl<h , hr<h) = lembal b
+          in max ht hr , lem≤max (≤-trans ht<hl (m≤n⇒m≤1+n hl<h)) (m≤n⇒m≤1+n hr<h) , β
+      ... | 1# , β
+        = let (hl<h , hr<h) = lembal b
+          in suc (max ht hr) , ≤ℕ-step (lem≤max (≤-trans ht<hl hl<h) hr<h) , β
 
-  splitAt' {ₗ} {ᵘ} {h} k (node {hl = hl} {hr = hr} (k' , v') l r b) prf
-    | right x = split (Split.value rightS) lt rt
+  splitAt {ₗ} {ᵘ} {h} k (node {hl = hl} {hr = hr} (.k , v') l r b)
+    | tri≈ _ refl _ = split (just v') (hl , lt) (hr , rt)
     where
+      sh : ℕ
+      sh = h
+
+      lt : hl ≤ℕ sh × BOBMap V ₗ [ k ] hl
+      lt with lembal b
+      ... | o , _ = {!!}
+
+      rt : hr ≤ℕ sh × BOBMap V [ k ] ᵘ hr
+      rt with lembal b
+      ... | _ , p = {!!}
+
+  splitAt {ₗ} {ᵘ} {h} k {{k<u = k<u}} (node {hl = hl} {hr = hr} (k' , v') l r b)
+    | tri> _ _ x = split (Split.value rightS) lt rt
+    where
+      sh : ℕ
+      sh = h
+
       rightS : Split k [ k' ] ᵘ hr
-      rightS = splitAt' k r x
+      rightS = splitAt k {{[ x ]ᴿ}} r
 
-      rt : ∃ λ hr' → hr' <ℕ h × ∃ λ i → BOBMap V [ k ] ᵘ (i ⊕ hr')
-      rt with Split.rightT rightS
-      ... | ν , a , t with <-trans a (proj₂ (lembal b))
-      ... | q = ν , q , t
+      rt : ∃ λ hr' → hr' ≤ℕ sh × BOBMap V [ k ] ᵘ hr'
+      rt with lembal b
+      ... | _ , o with Split.rightT rightS
+      ... | ht , ht<hr , t = ht , ≤-trans ht<hr (m≤n⇒m≤1+n o) , t
 
-      lt : ∃ λ hl' → hl' <ℕ h × ∃ λ i → BOBMap V ₗ [ k ] (i ⊕ hl')
+      lt : ∃ λ hl' → hl' ≤ℕ sh × BOBMap V ₗ [ k ] hl'
       lt with Split.leftT rightS
-      lt | ν , a , 0# , t with gJoin (k' , v') l t
-      ... | β with lembal b
-      ... | hl<h , hr<h = max hl ν , lemlem hl<h (<-trans a hr<h) , β
-      lt | ν , a , 1# , t with gJoin (k' , v') l t
-      ... | β with lembal b
-      ... | hl<h , hr<h = max hl (suc ν) , lemlem hl<h (≤-<-trans a hr<h) , β
+      lt | ht , ht<hr , t with gJoin (k' , v') l t
+      ... | 0# , β
+        = let (hl<h , hr<h) = lembal b
+          -- TODO: solve this better, fairly certain it is possible (too tired..)
+          in max hl ht , lem≤max (m≤n⇒m≤1+n hl<h) (≤-trans ht<hr (m≤n⇒m≤1+n hr<h)) , β
+      ... | 1# , β
+        = let (hl<h , hr<h) = lembal b
+          in suc (max hl ht) , ≤ℕ-step (lem≤max hl<h (≤-trans ht<hr hr<h)) , β
 
   postulate
     lemGt : ∀ {a b} → a <ℕ b → ∃ λ k → b ≡ suc (a + k)
@@ -463,6 +484,8 @@ module _ {v} {V : Set v} where
                    → ∃ λ i → BOBMap V l u (i ⊕ suc (hl + n))
       unionRight f leaf (node p l r b) = 0# , (node p l r b)
       unionRight f (node p l r b) m = {!!}
+        where
+          ttt = splitAt (proj₁ p) {{mklim l}} {{mklim r}} m
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 
