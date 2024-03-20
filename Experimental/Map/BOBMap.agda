@@ -432,11 +432,11 @@ module _ {v} {V : Set v} where
 
       lt : hl ≤ℕ sh × BOBMap V ₗ [ k ] hl
       lt with lembal b
-      ... | o , _ = {!!}
+      ... | o , _ = (m≤n⇒m≤1+n o) , l
 
       rt : hr ≤ℕ sh × BOBMap V [ k ] ᵘ hr
       rt with lembal b
-      ... | _ , p = {!!}
+      ... | _ , p = m≤n⇒m≤1+n p , r
 
   splitAt {ₗ} {ᵘ} {h} k {{k<u = k<u}} (node {hl = hl} {hr = hr} (k' , v') l r b)
     | tri> _ _ x = split (Split.value rightS) lt rt
