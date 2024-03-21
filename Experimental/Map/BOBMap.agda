@@ -483,9 +483,23 @@ module _ {v} {V : Set v} where
                    → BOBMap V l u (suc (hl + n))
                    → ∃ λ i → BOBMap V l u (i ⊕ suc (hl + n))
       unionRight f leaf (node p l r b) = 0# , (node p l r b)
-      unionRight f (node p l r b) m = {!!}
-        where
-          ttt = splitAt (proj₁ p) {{mklim l}} {{mklim r}} m
+      {-# CATCHALL #-}
+      unionRight {hl} f m (node p l r b)
+        with splitAt (proj₁ p) {{mklim l}} {{mklim r}} m
+      unionRight {hl} f m (node p l r b)
+        | split value (hL , prfL , treeL) (hR , prfR , treeR)
+        with unionWith f l treeL
+      unionRight {hl} f m (node (k , v) l r b)
+        | split value (hL , prfL , treeL) (hR , prfR , treeR)
+        | 0# , t1 with unionWith f r treeR
+      ... | 0# , t2 = {!gJoin (k , f v value) t1 t2!}
+      ... | 1# , t2 = {!gJoin (k , f v value) t1 t2!}
+      unionRight {hl} f m (node (k , v) l r b)
+        | split value (hL , prfL , treeL) (hR , prfR , treeR)
+        | 1# , t1 with unionWith f r treeR
+      ... | 0# , t2 = {!gJoin (k , f v value) t1 t2!}
+      ... | 1# , t2 = {!gJoin (k , f v value) t1 t2!}
+
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 
