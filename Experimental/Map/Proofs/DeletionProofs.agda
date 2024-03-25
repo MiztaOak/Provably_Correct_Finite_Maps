@@ -22,19 +22,6 @@ open import Map.BOBMap order as BOB
 open StrictTotalOrder (toStrictTotalOrder order) renaming (Carrier to Key)
 open import Map.Proofs.Proofs order V
 
----------------------------------------------------------------------------------
--- del-∉
----------------------------------------------------------------------------------
-del-∉ : ∀ {l u : Key⁺} {h : ℕ} (k : Key)
-        ⦃ @erased l<k : l <⁺ [ k ] ⦄ ⦃ @erased k<u : [ k ] <⁺ u ⦄
-        (m : BOBMap V l u h)
-        → k ∉ m
-        → proj₂ (delete k m) ≐ m
-del-∉ k leaf prf = (λ _ _ x → x) , λ _ _ x → x -- should this be allowed?
-del-∉ k (node p lm rm bal) prf with compare k (proj₁ p)
-... | tri< a ¬b ¬c = {!!}
-... | tri≈ ¬a refl ¬c = ⊥-elim (prf (here tt))
-... | tri> ¬a ¬b c = (λ k' v x → {!!}) , λ k' v x → {!!}
 
 ---------------------------------------------------------------------------------
 -- del-∈
@@ -79,41 +66,97 @@ inRaise' {k = k} {node p l r b} (here tt) = here ⦃ k≤u = mklim r ⦄ tt
 inRaise' {k = k} {node p l r b} (left prf) = left prf
 inRaise' {k = k} {node p l r b} (right prf) = right (inRaise' prf)
 
-postulate
-  inᴸ-joinᴸ⁻ : ∀ {l u : Key⁺} {hl hr h}
-              {k : Key}
-              {p : Key × V}
-              ⦃ @erased l<p : l <⁺ [ proj₁ p ] ⦄ ⦃ @erased p<u : [ proj₁ p ] <⁺ u ⦄
-              (lt⁻ : ∃ λ i → BOBMap V l [ proj₁ p ] pred[ i ⊕ hl ])
-              (rt : BOBMap V [ proj₁ p ] u hr)
-              (bal : hl ~ hr ⊔ h)
-              → [ k ] <⁺ [ proj₁ p ]
-              → k ∈ (proj₂ (joinˡ⁻ p lt⁻ rt bal))
-              → k ∈ proj₂ lt⁻
-  inᴿ-joinᴿ⁻ : ∀ {l u : Key⁺} {hl hr h}
-              {k : Key}
-              {p : Key × V}
-              ⦃ @erased l<p : l <⁺ [ proj₁ p ] ⦄ ⦃ @erased p<u : [ proj₁ p ] <⁺ u ⦄
-              (lt : BOBMap V l [ proj₁ p ] hl)
-              (rt⁻ : ∃ λ i → BOBMap V [ proj₁ p ] u pred[ i ⊕ hr ])
-              (bal : hl ~ hr ⊔ h)
-              → [ proj₁ p ] <⁺ [ k ]
-              → k ∈ (proj₂ (joinʳ⁻ p lt rt⁻ bal))
-              → k ∈ proj₂ rt⁻
-  inᴸ-joinᴿ⁻ : ∀ {l u : Key⁺} {hl hr h}
-              {k : Key}
-              {p : Key × V}
-              ⦃ @erased l<p : l <⁺ [ proj₁ p ] ⦄ ⦃ @erased p<u : [ proj₁ p ] <⁺ u ⦄
-              (lt : BOBMap V l [ proj₁ p ] hl)
-              (rt⁻ : ∃ λ i → BOBMap V [ proj₁ p ] u pred[ i ⊕ hr ])
-              (bal : hl ~ hr ⊔ h)
-              → @erased [ k ] <⁺ [ proj₁ p ]
-              → k ∈ (proj₂ (joinʳ⁻ p lt rt⁻ bal))
-              → k ∈ lt
+inᴸ-joinᴸ⁻ : ∀ {l u : Key⁺} {hl hr h}
+            {k : Key}
+            {p : Key × V}
+            ⦃ @erased l<p : l <⁺ [ proj₁ p ] ⦄ ⦃ @erased p<u : [ proj₁ p ] <⁺ u ⦄
+            (lt⁻ : ∃ λ i → BOBMap V l [ proj₁ p ] pred[ i ⊕ hl ])
+            (rt : BOBMap V [ proj₁ p ] u hr)
+            (bal : hl ~ hr ⊔ h)
+            → @erased [ k ] <⁺ [ proj₁ p ]
+            → k ∈ (proj₂ (joinˡ⁻ p lt⁻ rt bal))
+            → k ∈ proj₂ lt⁻
+inᴸ-joinᴸ⁻ {hl = zero} {k = k} (0# , lt) rt bal ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+inᴸ-joinᴸ⁻ {hl = zero} {k = k} (0# , lt) rt bal ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴸ-joinᴸ⁻ {hl = zero} {k = k} (1# , lt) rt bal ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+inᴸ-joinᴸ⁻ {hl = zero} {k = k} (1# , lt) rt bal ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴸ-joinᴸ⁻ {hl = suc hl} {k = k} {p} (0# , lt) rt ~+ ord prf = inᴸ-joinᴿ⁺ k p lt (1# , rt) ~+ ord prf
+inᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (0# , lt) rt ~- ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+inᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (0# , lt) rt ~- ord (left prf) = prf
+inᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (0# , lt) rt ~- ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (0# , lt) rt ~0 ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+inᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (0# , lt) rt ~0 ord (left prf) = prf
+inᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (0# , lt) rt ~0 ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (1# , lt) rt bal ord (here x) = ⊥-elim (irrefl⁺ [ k ] ord)
+inᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (1# , lt) rt bal ord (left prf) = prf
+inᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (1# , lt) rt bal ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+
+inᴿ-joinᴿ⁻ : ∀ {l u : Key⁺} {hl hr h}
+            {k : Key}
+            {p : Key × V}
+            ⦃ @erased l<p : l <⁺ [ proj₁ p ] ⦄ ⦃ @erased p<u : [ proj₁ p ] <⁺ u ⦄
+            (lt : BOBMap V l [ proj₁ p ] hl)
+            (rt⁻ : ∃ λ i → BOBMap V [ proj₁ p ] u pred[ i ⊕ hr ])
+            (bal : hl ~ hr ⊔ h)
+            → @erased [ proj₁ p ] <⁺ [ k ]
+            → k ∈ (proj₂ (joinʳ⁻ p lt rt⁻ bal))
+            → k ∈ proj₂ rt⁻
+inᴿ-joinᴿ⁻ {hr = zero} {k = k} lt (0# , rt) bal ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+inᴿ-joinᴿ⁻ {hr = zero} {k = k} lt (0# , rt) bal ord (left ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴿ-joinᴿ⁻ {hr = zero} {k = k} lt (1# , rt) bal ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+inᴿ-joinᴿ⁻ {hr = zero} {k = k} lt (1# , rt) bal ord (left ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~+ ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+inᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~+ ord (left ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~+ ord (right prf) = prf
+inᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~0 ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+inᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~0 ord (left ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~0 ord (right prf) = prf
+inᴿ-joinᴿ⁻ {hr = suc _} {k = k} {p} lt (0# , rt) ~- ord prf = inᴿ-joinᴸ⁺ k p (1# , lt) rt ~- ord prf
+inᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (1# , rt) bal ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+inᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (1# , rt) bal ord (left ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (1# , rt) bal ord (right prf) = prf
+
+inᴸ-joinᴿ⁻ : ∀ {l u : Key⁺} {hl hr h}
+            {k : Key}
+            {p : Key × V}
+            ⦃ @erased l<p : l <⁺ [ proj₁ p ] ⦄ ⦃ @erased p<u : [ proj₁ p ] <⁺ u ⦄
+            (lt : BOBMap V l [ proj₁ p ] hl)
+            (rt⁻ : ∃ λ i → BOBMap V [ proj₁ p ] u pred[ i ⊕ hr ])
+            (bal : hl ~ hr ⊔ h)
+            → @erased [ k ] <⁺ [ proj₁ p ]
+            → k ∈ (proj₂ (joinʳ⁻ p lt rt⁻ bal))
+            → k ∈ lt
+inᴸ-joinᴿ⁻ {hr = zero} {k = k} lt (0# , rt) bal ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+inᴸ-joinᴿ⁻ {hr = zero} {k = k} lt (0# , rt) bal ord (left prf) = prf
+inᴸ-joinᴿ⁻ {hr = zero} {k = k} lt (1# , rt) bal ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+inᴸ-joinᴿ⁻ {hr = zero} {k = k} lt (1# , rt) bal ord (left prf) = prf
+inᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~+ ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+inᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~+ ord (left prf) = prf
+inᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~+ ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~0 ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+inᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~0 ord (left prf) = prf
+inᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~0 ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+inᴸ-joinᴿ⁻ {hr = suc _} {k = k} {p} lt (0# , rt) ~- ord prf = inᴸ-joinᴸ⁺ k p (1# , lt) rt ~- ord prf
+inᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (1# , rt) bal ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+inᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (1# , rt) bal ord (left prf) = prf
+inᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (1# , rt) bal ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
 
 del-∈ : ∀ {l u : Key⁺} {h : ℕ}
         (k : Key) (m : BOBMap V l u h)
-        ⦃ l<k : l <⁺ [ k ] ⦄ ⦃ k<u : [ k ] <⁺ u ⦄
+        ⦃ @erased l<k : l <⁺ [ k ] ⦄ ⦃ @erased k<u : [ k ] <⁺ u ⦄
         → k ∈ m
         → k ∉ proj₂ (delete k m)
 del-∈ k leaf () ∉dM
@@ -139,3 +182,65 @@ del-∈ k (node p lm rm b) ∈M ∉dM with compare k (proj₁ p)
 ... | tri> _ _ c = del-∈ k rm ⦃ [ c ]ᴿ ⦄ (anyRight c ∈M) prfᴿ
   where
     prfᴿ = inᴿ-joinᴿ⁻ ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm (delete k ⦃ [ c ]ᴿ ⦄ rm) b [ c ]ᴿ ∉dM
+
+---------------------------------------------------------------------------------
+-- del-safe
+---------------------------------------------------------------------------------
+del-safe : ∀ {l u : Key⁺} {h : ℕ} (k k' : Key) {v : V} (m : BOBMap V l u h)
+           ⦃ @erased l<k : l <⁺ [ k ] ⦄ ⦃ @erased k<u : [ k ] <⁺ u ⦄
+           → k' ↦ v ∈ m
+           → k ≢ k'
+           → k' ↦ v ∈ proj₂ (delete k m)
+del-safe k k' leaf () nEq
+del-safe k k' (node .(k' , _) lm rm b) (here refl) nEq with compare k k'
+... | tri< a _ _ = {!!}
+... | tri≈ _ refl _ = ⊥-elim (nEq refl)
+... | tri> _ _ c = {!!}
+del-safe k k' (node p lm rm b) (left prf) nEq with compare k (proj₁ p)
+... | tri< a _ _ = {!!}
+... | tri≈ _ refl _ = {!!}
+... | tri> _ _ c = {!!}
+del-safe k k' (node p lm rm b) (right prf) nEq with compare k (proj₁ p)
+... | tri< a _ _ = {!!}
+... | tri≈ _ refl _ = {!!}
+... | tri> _ _ c = {!!}
+
+---------------------------------------------------------------------------------
+-- del-∉
+---------------------------------------------------------------------------------
+del-∉del⊆ : ∀ {l u : Key⁺} {h : ℕ} (k : Key)
+        ⦃ @erased l<k : l <⁺ [ k ] ⦄ ⦃ @erased k<u : [ k ] <⁺ u ⦄
+        (m : BOBMap V l u h)
+        → k ∉ m
+        → proj₂ (delete k m) ⊆ m
+del-∉del⊆ k leaf prf k' v ()
+del-∉del⊆ k (node p lm rm bal) prf k' v prf' = {!!}
+
+∈Contradiction : ∀ {l u : Key⁺} {h : ℕ} {m : BOBMap V l u h} {k k' : Key}
+                 → k ∉ m
+                 → k' ∈ m
+                 → k ≢ k'
+∈Contradiction {k = k} {k'} prf prf' with compare k k'
+... | tri< _ ¬b _ = ¬b
+... | tri≈ _ refl _ = ⊥-elim (prf prf')
+... | tri> _ ¬b _ = ¬b
+
+del-∉m⊆ : ∀ {l u : Key⁺} {h : ℕ} (k : Key)
+        ⦃ @erased l<k : l <⁺ [ k ] ⦄ ⦃ @erased k<u : [ k ] <⁺ u ⦄
+        (m : BOBMap V l u h)
+        → k ∉ m
+        → m ⊆ proj₂ (delete k m)
+del-∉m⊆ k m prf k' v prf' = del-safe k k' m prf' (∈Contradiction prf (↦∈To∈ prf'))
+
+del-∉ : ∀ {l u : Key⁺} {h : ℕ} (k : Key)
+        ⦃ @erased l<k : l <⁺ [ k ] ⦄ ⦃ @erased k<u : [ k ] <⁺ u ⦄
+        (m : BOBMap V l u h)
+        → k ∉ m
+        → proj₂ (delete k m) ≐ m
+del-∉ k m prf = (del-∉del⊆ k m prf) , (del-∉m⊆ k m prf)
+
+-- -}
+-- -}
+-- -}
+-- -}
+-- -}

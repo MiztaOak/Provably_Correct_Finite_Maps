@@ -38,6 +38,7 @@ data AnyM {V : Set ℓ'} (P : Pred V ℓₚ) (kₚ : Key) :
 module _ (V : Set ℓ) where
   open import Map.Proofs.InsertionProofs order V
   open import Map.Proofs.Proofs order V
+  open import Map.Proofs.DeletionProofs order V
 
   private
     height : Map V → ℕ
@@ -51,6 +52,9 @@ module _ (V : Set ℓ) where
 
     toNotAny : {m : Map V} {P : Pred V ℓₚ} {k : Key} → ¬ AnyM P k m → ¬ Any P k (toBMap m)
     toNotAny {m = (map m)} prf x = prf (map x)
+
+    toNotAnyM : ∀ {h : ℕ} {m : BOBMap V ⊥⁺ ⊤⁺ h} {P : Pred V ℓₚ} {k : Key}
+                → ¬ Any P k m → ¬ AnyM P k (map m)
 
     fldr : {l : Level} {A : Set l} → (Key × V → A → A) → A → Map V → A
     fldr f g (map m) = foldr f g m
@@ -171,7 +175,8 @@ module _ (V : Set ℓ) where
     ---------------------------------------------------------------------------------
     BMap.del-∉ BOBMapImp prf = {!!}
 
-    BMap.del-∈ BOBMapImp prf = {!!}
+    BMap.del-∈ BOBMapImp {k} {m} prf ¬In with del-∈ k (toBMap m) ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ (toAny prf)
+    ... | x = {!!}
 
     BMap.del-safe BOBMapImp prf nEq = {!!}
 -- -}

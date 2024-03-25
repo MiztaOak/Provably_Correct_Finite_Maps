@@ -70,6 +70,14 @@ anyRight ord (here x) = ⊥-elim (irrefl refl ord)
 anyRight ord (left ⦃ ord' ⦄ prf) = ⊥-elim (asym ord [ ord' ]-lower)
 anyRight ord (right prf) = prf
 
+---------------------------------------------------------------------------------
+-- Convert _↦_∈_ to _∈_
+---------------------------------------------------------------------------------
+↦∈To∈ : ∀ {l u : Key⁺} {h : ℕ} {k : Key} {v : V} {m : BOBMap V l u h}
+          → k ↦ v ∈ m → k ∈ m
+↦∈To∈ (here x) = here tt
+↦∈To∈ (left prf) = left (↦∈To∈ prf)
+↦∈To∈ (right prf) = right (↦∈To∈ prf)
 
 ---------------------------------------------------------------------------------
 -- join left and right lemmas for insertion
@@ -317,7 +325,7 @@ inᴸ-joinᴿ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
               (lt : BOBMap V l [ proj₁ p ] hl)
               (rt⁺ : ∃ λ i → BOBMap V [ proj₁ p ] u (i ⊕ hr))
               → (bal : hl ~ hr ⊔ h)
-              → [ x ] <⁺ [ proj₁ p ]
+              → @erased [ x ] <⁺ [ proj₁ p ]
               → x ∈ (proj₂ (joinʳ⁺ p lt rt⁺ bal))
               → x ∈ lt
 inᴸ-joinᴿ⁺ x .(x , _) lt (0# , rt) bal ord (here tt) = ⊥-elim (irrefl refl [ ord ]-lower)
@@ -368,7 +376,7 @@ inᴿ-joinᴸ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
               (lt⁺ : ∃ λ i → BOBMap V l [ proj₁ p ] (i ⊕ hl))
               (rt : BOBMap V [ proj₁ p ] u hr)
               → (bal : hl ~ hr ⊔ h)
-              → [ proj₁ p ] <⁺ [ x ]
+              → @erased [ proj₁ p ] <⁺ [ x ]
               → x ∈ (proj₂ (joinˡ⁺ p lt⁺ rt bal))
               → x ∈ rt
 inᴿ-joinᴸ⁺ x .(x , _) (0# , lt) rt bal ord (here tt) = ⊥-elim (irrefl refl [ ord ]-lower)
@@ -419,7 +427,7 @@ inᴿ-joinᴿ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
               (lt : BOBMap V l [ proj₁ p ] hl)
               (rt⁺ : ∃ λ i → BOBMap V [ proj₁ p ] u (i ⊕ hr))
               (bal : hl ~ hr ⊔ h)
-              → [ proj₁ p ] <⁺ [ x ]
+              → @erased [ proj₁ p ] <⁺ [ x ]
               → x ∈ (proj₂ (joinʳ⁺ p lt rt⁺ bal))
               → x ∈ proj₂ rt⁺
 inᴿ-joinᴿ⁺ x p lt (0# , rt) bal ord (here tt) = ⊥-elim (irrefl⁺ [ x ] ord)
@@ -461,7 +469,7 @@ inᴸ-joinᴸ⁺ : ∀ {l u : Key⁺} {hl hr h : ℕ}
             (lt⁺ : ∃ λ i → BOBMap V l [ proj₁ p ] (i ⊕ hl))
             (rt : BOBMap V [ proj₁ p ] u hr)
             (bal : hl ~ hr ⊔ h)
-            → [ x ] <⁺ [ proj₁ p ]
+            → @erased [ x ] <⁺ [ proj₁ p ]
             → x ∈ (proj₂ (joinˡ⁺ p lt⁺ rt bal))
             → x ∈ proj₂ lt⁺
 inᴸ-joinᴸ⁺ x p (0# , lt) rt bal ord (here tt) = ⊥-elim (irrefl⁺ [ x ] ord)
