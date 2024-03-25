@@ -186,6 +186,79 @@ del-∈ k (node p lm rm b) ∈M ∉dM with compare k (proj₁ p)
 ---------------------------------------------------------------------------------
 -- del-safe
 ---------------------------------------------------------------------------------
+postulate
+  anyᴿ-joinᴿ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    {k : Key}
+    {v : V}
+    {p : Key × V}
+    (lt : BOBMap V l [ proj₁ p ] hl)
+    (rt⁻ : ∃ (λ i → BOBMap V [ proj₁ p ] u pred[ i ⊕ hr ]))
+    (bal : hl ~ hr ⊔ h)
+    → @erased [ proj₁ p ] <⁺ [ k ]
+    → Any (_≡_ v) k (proj₂ rt⁻)
+    → Any (_≡_ v) k (proj₂ (joinʳ⁻ p lt rt⁻ bal))
+  anyᴸ-joinᴸ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    {k : Key}
+    {v : V}
+    {p : Key × V}
+    (lt⁻ : ∃ (λ i → BOBMap V l [ proj₁ p ] pred[ i ⊕ hl ]))
+    (rt : BOBMap V [ proj₁ p ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → @erased [ k ] <⁺ [ proj₁ p ]
+    → Any (_≡_ v) k (proj₂ lt⁻)
+    → Any (_≡_ v) k (proj₂ (joinˡ⁻ p lt⁻ rt bal))
+  anyᴿ-joinᴸ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    {k : Key}
+    {v : V}
+    {p : Key × V}
+    (lt⁻ : ∃ (λ i → BOBMap V l [ proj₁ p ] pred[ i ⊕ hl ]))
+    (rt : BOBMap V [ proj₁ p ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → @erased [ proj₁ p ] <⁺ [ k ]
+    → Any (_≡_ v) k rt
+    → Any (_≡_ v) k (proj₂ (joinˡ⁻ p lt⁻ rt bal))
+  anyᴸ-joinᴿ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    {k : Key}
+    {v : V}
+    {p : Key × V}
+    (lt : BOBMap V l [ proj₁ p ] hl)
+    (rt⁻ : ∃ (λ i → BOBMap V [ proj₁ p ] u pred[ i ⊕ hr ]))
+    (bal : hl ~ hr ⊔ h)
+    → @erased [ k ] <⁺ [ proj₁ p ]
+    → Any (_≡_ v) k lt
+    → Any (_≡_ v) k (proj₂ (joinʳ⁻ p lt rt⁻ bal))
+  herejoinᴸ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    {k : Key}
+    {v : V}
+    (lt⁻ : ∃ (λ i → BOBMap V l [ k ] pred[ i ⊕ hl ]))
+    (rt : BOBMap V [ k ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → Any (_≡_ v) k (proj₂ (joinˡ⁻ (k , v) lt⁻ rt bal))
+  herejoinᴿ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    {k : Key}
+    {v : V}
+    (lt : BOBMap V l [ k ] hl)
+    (rt⁻ : ∃ (λ i → BOBMap V [ k ] u pred[ i ⊕ hr ]))
+    (bal : hl ~ hr ⊔ h)
+    → Any (_≡_ v) k (proj₂ (joinʳ⁻ (k , v) lt rt⁻ bal))
+  anyJoinᴸ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    {k kₚ : Key}
+    {v : V}
+    (lm : BOBMap V l [ kₚ ] hl)
+    (rm : BOBMap V [ kₚ ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → Any (_≡_ v) k lm
+    → Any (_≡_ v) k (proj₂ (join lm rm bal))
+  anyJoinᴿ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    {k kₚ : Key}
+    {v : V}
+    (lm : BOBMap V l [ kₚ ] hl)
+    (rm : BOBMap V [ kₚ ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → Any (_≡_ v) k rm
+    → Any (_≡_ v) k (proj₂ (join lm rm bal))
+
+
 del-safe : ∀ {l u : Key⁺} {h : ℕ} (k k' : Key) {v : V} (m : BOBMap V l u h)
            ⦃ @erased l<k : l <⁺ [ k ] ⦄ ⦃ @erased k<u : [ k ] <⁺ u ⦄
            → k' ↦ v ∈ m
@@ -193,17 +266,27 @@ del-safe : ∀ {l u : Key⁺} {h : ℕ} (k k' : Key) {v : V} (m : BOBMap V l u h
            → k' ↦ v ∈ proj₂ (delete k m)
 del-safe k k' leaf () nEq
 del-safe k k' (node .(k' , _) lm rm b) (here refl) nEq with compare k k'
-... | tri< a _ _ = {!!}
+... | tri< a _ _ = herejoinᴸ⁻ (delete k ⦃ p≤u = [ a ]ᴿ ⦄ lm) rm b
 ... | tri≈ _ refl _ = ⊥-elim (nEq refl)
-... | tri> _ _ c = {!!}
-del-safe k k' (node p lm rm b) (left prf) nEq with compare k (proj₁ p)
-... | tri< a _ _ = {!!}
-... | tri≈ _ refl _ = {!!}
-... | tri> _ _ c = {!!}
-del-safe k k' (node p lm rm b) (right prf) nEq with compare k (proj₁ p)
-... | tri< a _ _ = {!!}
-... | tri≈ _ refl _ = {!!}
-... | tri> _ _ c = {!!}
+... | tri> _ _ c = herejoinᴿ⁻ lm (delete k ⦃ [ c ]ᴿ ⦄ rm) b
+del-safe k k' (node p lm rm b) (left ⦃ k'<p ⦄ prf) nEq with compare k (proj₁ p)
+... | tri< a _ _ = anyᴸ-joinᴸ⁻ lm⁻ rm b k'<p prfᴸ
+  where
+    prfᴸ = del-safe k k' lm ⦃ k<u = [ a ]ᴿ ⦄ prf nEq
+    lm⁻ = delete k ⦃ p≤u = [ a ]ᴿ ⦄ lm
+... | tri≈ _ refl _ = anyJoinᴸ lm rm b prf
+... | tri> _ _ c = anyᴸ-joinᴿ⁻ lm rm⁻ b k'<p prf
+  where
+    rm⁻ = delete k ⦃ [ c ]ᴿ ⦄ rm
+del-safe k k' (node p lm rm b) (right ⦃ p<k' ⦄ prf) nEq with compare k (proj₁ p)
+... | tri< a _ _ = anyᴿ-joinᴸ⁻ lm⁻ rm b p<k' prf
+  where
+    lm⁻ = delete k ⦃ p≤u = [ a ]ᴿ ⦄ lm
+... | tri≈ _ refl _ = anyJoinᴿ lm rm b prf
+... | tri> _ _ c = anyᴿ-joinᴿ⁻ lm rm⁻ b p<k' prfᴿ
+  where
+    prfᴿ = del-safe k k' rm ⦃ [ c ]ᴿ ⦄ prf nEq
+    rm⁻ = delete k ⦃ [ c ]ᴿ ⦄ rm
 
 ---------------------------------------------------------------------------------
 -- del-∉
@@ -214,7 +297,10 @@ del-∉del⊆ : ∀ {l u : Key⁺} {h : ℕ} (k : Key)
         → k ∉ m
         → proj₂ (delete k m) ⊆ m
 del-∉del⊆ k leaf prf k' v ()
-del-∉del⊆ k (node p lm rm bal) prf k' v prf' = {!!}
+del-∉del⊆ k (node p lm rm bal) prf k' v prf' with compare k (proj₁ p)
+... | tri< a _ _ = {!!}
+... | tri≈ _ refl _ = {!!}
+... | tri> _ _ c = {!!}
 
 ∈Contradiction : ∀ {l u : Key⁺} {h : ℕ} {m : BOBMap V l u h} {k k' : Key}
                  → k ∉ m
