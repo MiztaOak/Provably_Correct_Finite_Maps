@@ -157,6 +157,7 @@ module _ {v} {V : Set v} where
              → Cons l u h
   uncons (node p leaf rm ~+) = cons p (mklim leaf) (0# , rm)
   uncons (node p leaf rm ~0) = cons p (mklim leaf) (0# , rm)
+  {-# CATCHALL #-}
   uncons (node {suc _} p lm rm bal) with uncons lm
   ... | cons head l<u tail = cons head l<u (joinˡ⁻ p tail rm bal)
 
@@ -167,6 +168,7 @@ module _ {v} {V : Set v} where
          → ∃ λ i → BOBMap V l u (i ⊕ h)
   join lt leaf ~0 = 0# , raise lt
   join lt leaf ~- = 0# , raise lt
+  {-# CATCHALL #-}
   join {hr = suc _} lt rt b with uncons rt
   ... | cons head l<u tail = joinʳ⁻ head (raise ⦃ l<u ⦄ lt) tail b
 

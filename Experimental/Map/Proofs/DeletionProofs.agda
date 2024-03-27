@@ -22,7 +22,6 @@ open import Map.BOBMap order as BOB
 open StrictTotalOrder (toStrictTotalOrder order) renaming (Carrier to Key)
 open import Map.Proofs.Proofs order V
 
-
 ---------------------------------------------------------------------------------
 -- del-∈
 ---------------------------------------------------------------------------------
@@ -186,8 +185,7 @@ del-∈ k (node p lm rm b) ∈M ∉dM with compare k (proj₁ p)
 ---------------------------------------------------------------------------------
 -- del-safe
 ---------------------------------------------------------------------------------
-postulate
-  anyᴿ-joinᴿ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+anyᴿ-joinᴿ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
     {k : Key}
     {v : V}
     {p : Key × V}
@@ -197,7 +195,13 @@ postulate
     → @erased [ proj₁ p ] <⁺ [ k ]
     → Any (_≡_ v) k (proj₂ rt⁻)
     → Any (_≡_ v) k (proj₂ (joinʳ⁻ p lt rt⁻ bal))
-  anyᴸ-joinᴸ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+anyᴿ-joinᴿ⁻ {hr = 0} lt (i , rt) bal ord ()
+anyᴿ-joinᴿ⁻ {hr = suc _} lt (1# , rt) bal ord prf = right ⦃ ord ⦄ prf
+anyᴿ-joinᴿ⁻ {hr = suc _} lt (0# , rt) ~+ ord prf = right ⦃ ord ⦄ prf
+anyᴿ-joinᴿ⁻ {hr = suc _} lt (0# , rt) ~0 ord prf = right ⦃ ord ⦄ prf
+anyᴿ-joinᴿ⁻ {hr = suc _} lt (0# , rt) ~- ord prf = anyᴿjoinᴸ⁺ (1# , lt) rt ~- ord prf
+
+anyᴸ-joinᴸ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
     {k : Key}
     {v : V}
     {p : Key × V}
@@ -207,7 +211,13 @@ postulate
     → @erased [ k ] <⁺ [ proj₁ p ]
     → Any (_≡_ v) k (proj₂ lt⁻)
     → Any (_≡_ v) k (proj₂ (joinˡ⁻ p lt⁻ rt bal))
-  anyᴿ-joinᴸ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+anyᴸ-joinᴸ⁻ {hl = 0} (i , lt) rt bal ord ()
+anyᴸ-joinᴸ⁻ {hl = suc _} (0# , lt) rt ~+ ord prf = anyᴸjoinᴿ⁺ lt (1# , rt) ~+ ord prf
+anyᴸ-joinᴸ⁻ {hl = suc _} (0# , lt) rt ~0 ord prf = left ⦃ ord ⦄ prf
+anyᴸ-joinᴸ⁻ {hl = suc _} (0# , lt) rt ~- ord prf = left ⦃ ord ⦄ prf
+anyᴸ-joinᴸ⁻ {hl = suc _} (1# , lt) rt bal ord prf = left ⦃ ord ⦄ prf
+
+anyᴿ-joinᴸ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
     {k : Key}
     {v : V}
     {p : Key × V}
@@ -217,7 +227,14 @@ postulate
     → @erased [ proj₁ p ] <⁺ [ k ]
     → Any (_≡_ v) k rt
     → Any (_≡_ v) k (proj₂ (joinˡ⁻ p lt⁻ rt bal))
-  anyᴸ-joinᴿ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+anyᴿ-joinᴸ⁻ {hl = 0} (0# , lt) rt bal ord prf = right ⦃ ord ⦄ prf
+anyᴿ-joinᴸ⁻ {hl = 0} (1# , lt) rt bal ord prf = right ⦃ ord ⦄ prf
+anyᴿ-joinᴸ⁻ {hl = suc _} (0# , lt) rt ~+ ord prf = anyᴿjoinᴿ⁺ lt (1# , rt) ~+ ord prf
+anyᴿ-joinᴸ⁻ {hl = suc _} (0# , lt) rt ~0 ord prf = right ⦃ ord ⦄ prf
+anyᴿ-joinᴸ⁻ {hl = suc _} (0# , lt) rt ~- ord prf = right ⦃ ord ⦄ prf
+anyᴿ-joinᴸ⁻ {hl = suc _} (1# , lt) rt bal ord prf = right ⦃ ord ⦄ prf
+
+anyᴸ-joinᴿ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
     {k : Key}
     {v : V}
     {p : Key × V}
@@ -227,36 +244,110 @@ postulate
     → @erased [ k ] <⁺ [ proj₁ p ]
     → Any (_≡_ v) k lt
     → Any (_≡_ v) k (proj₂ (joinʳ⁻ p lt rt⁻ bal))
-  herejoinᴸ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+anyᴸ-joinᴿ⁻ {hr = 0} lt (0# , rt) bal ord prf = left ⦃ ord ⦄ prf
+anyᴸ-joinᴿ⁻ {hr = 0} lt (1# , rt) bal ord prf = left ⦃ ord ⦄ prf
+anyᴸ-joinᴿ⁻ {hr = suc _} lt (0# , rt) ~+ ord prf = left ⦃ ord ⦄ prf
+anyᴸ-joinᴿ⁻ {hr = suc _} lt (0# , rt) ~0 ord prf = left ⦃ ord ⦄ prf
+anyᴸ-joinᴿ⁻ {hr = suc _} lt (0# , rt) ~- ord prf = anyᴸjoinᴸ⁺ (1# , lt) rt ~- ord prf
+anyᴸ-joinᴿ⁻ {hr = suc _} lt (1# , rt) bal ord prf = left ⦃ ord ⦄ prf
+
+herejoinᴸ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
     {k : Key}
     {v : V}
     (lt⁻ : ∃ (λ i → BOBMap V l [ k ] pred[ i ⊕ hl ]))
     (rt : BOBMap V [ k ] u hr)
     (bal : hl ~ hr ⊔ h)
     → Any (_≡_ v) k (proj₂ (joinˡ⁻ (k , v) lt⁻ rt bal))
-  herejoinᴿ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+herejoinᴸ⁻ {hl = 0} (0# , lt) rt bal = here ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ refl
+herejoinᴸ⁻ {hl = 0} (1# , lt) rt bal = here ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ refl
+herejoinᴸ⁻ {hl = suc _} (0# , lt) rt ~+ = herejoinᴿ⁺ lt (1# , rt) ~+
+herejoinᴸ⁻ {hl = suc _} (0# , lt) rt ~0 = here ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ refl
+herejoinᴸ⁻ {hl = suc _} (0# , lt) rt ~- = here ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ refl
+herejoinᴸ⁻ {hl = suc _} (1# , lt) rt bal = here ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ refl
+
+herejoinᴿ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
     {k : Key}
     {v : V}
     (lt : BOBMap V l [ k ] hl)
     (rt⁻ : ∃ (λ i → BOBMap V [ k ] u pred[ i ⊕ hr ]))
     (bal : hl ~ hr ⊔ h)
     → Any (_≡_ v) k (proj₂ (joinʳ⁻ (k , v) lt rt⁻ bal))
-  anyJoinᴸ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+herejoinᴿ⁻ {hr = 0} lt (0# , rt) bal = here ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ refl
+herejoinᴿ⁻ {hr = 0} lt (1# , rt) bal = here ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ refl
+herejoinᴿ⁻ {hr = suc _} lt (0# , rt) ~+ = here ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ refl
+herejoinᴿ⁻ {hr = suc _} lt (0# , rt) ~0 = here ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ refl
+herejoinᴿ⁻ {hr = suc _} lt (0# , rt) ~- = herejoinᴸ⁺ (1# , lt) rt ~-
+herejoinᴿ⁻ {hr = suc _} lt (1# , rt) bal = here ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ refl
+
+anyRaise : ∀ {l y u : Key⁺} {h : ℕ}
+          ⦃ @erased y<u : y <⁺ u ⦄
+          {k : Key}
+          {v : V}
+          {m : BOBMap V l y h}
+          → k ↦ v ∈ m
+          → k ↦ v ∈ (raise m)
+anyRaise {k = k} {m = leaf} ()
+anyRaise ⦃ y<u = y<u ⦄ {k} {m = node p l r b} (here prf) = here ⦃ k≤u = trans⁺ [ k ] (mklim r) y<u ⦄ prf
+anyRaise {k = k} {m = node p l r b} (left prf) = left prf
+anyRaise {k = k} {m = node p l r b} (right prf) = right (anyRaise prf)
+
+anyJoinᴸ : ∀ {l u : Key⁺} {hl hr h : ℕ}
     {k kₚ : Key}
     {v : V}
     (lm : BOBMap V l [ kₚ ] hl)
     (rm : BOBMap V [ kₚ ] u hr)
     (bal : hl ~ hr ⊔ h)
     → Any (_≡_ v) k lm
+    → @erased k < kₚ
     → Any (_≡_ v) k (proj₂ (join lm rm bal))
-  anyJoinᴿ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+anyJoinᴸ lm (leaf ⦃ ord' ⦄) ~0 prf ord = anyRaise ⦃ ord' ⦄ prf
+anyJoinᴸ lm (leaf ⦃ ord' ⦄) ~- prf ord = anyRaise ⦃ ord' ⦄ prf
+anyJoinᴸ lm rm@(node _ _ _ _) bal prf ord with uncons rm
+... | cons head l<u tail = prf'
+  where
+    lmR = (raise ⦃ l<u ⦄ lm)
+    prf' = anyᴸ-joinᴿ⁻ {p = head } lmR tail bal [ trans ord [ l<u ]-lower ]ᴿ (anyRaise ⦃ l<u ⦄ prf)
+
+anyUncons : ∀ {l u h} {k : Key} {v : V}
+    {m : BOBMap V l u (suc h)}
+    → k ↦ v ∈ m
+    → k ↦ v ∈ proj₂ (Cons.tail $ uncons m) ⊎ (k , v) ≡ (Cons.head $ uncons m)
+anyUncons {k = k} {m = node p leaf rm ~+} (here refl) = inj₂ refl
+anyUncons {k = k} {m = node p leaf rm ~+} (right prf) = inj₁ prf
+anyUncons {k = k} {m = node p leaf leaf ~0} (here refl) = inj₂ refl
+anyUncons {k = k} {m = node p lm@(node _ _ _ _) rm bal} prf with uncons lm in pUncons
+... | cons head l<u tail with prf
+... | here refl = inj₁ (herejoinᴸ⁻ tail rm bal)
+... | right ⦃ ord ⦄ x = inj₁ (anyᴿ-joinᴸ⁻ tail rm bal ord x)
+... | left ⦃ ord ⦄ x with anyUncons x
+... | inj₁ x rewrite pUncons = inj₁ (anyᴸ-joinᴸ⁻ tail rm bal ord x )
+... | inj₂ y rewrite pUncons = inj₂ y
+
+minHead : ∀ {l u h} {k : Key⁺}
+  (m : BOBMap V l u (suc h))
+  → @erased l <⁺ k
+  → [  proj₁ (Cons.head $ uncons m) ] <⁺ k
+minHead (node p leaf rm ~+) ord = {!!}
+minHead (node p leaf leaf ~0) ord = {!!}
+minHead (node p lm@(node _ _ _ _) rm bal) ord = {!!}
+
+anyJoinᴿ : ∀ {l u : Key⁺} {hl hr h : ℕ}
     {k kₚ : Key}
     {v : V}
     (lm : BOBMap V l [ kₚ ] hl)
     (rm : BOBMap V [ kₚ ] u hr)
     (bal : hl ~ hr ⊔ h)
     → Any (_≡_ v) k rm
+    → @erased [ kₚ ] <⁺ [ k ]
     → Any (_≡_ v) k (proj₂ (join lm rm bal))
+anyJoinᴿ lm leaf bal () ord
+anyJoinᴿ {l} lm rm@(node _ _ _ _) bal prf ord with uncons rm in pUncons
+... | cons head l<u (i , tail) with anyUncons prf
+... | inj₂ refl rewrite pUncons = herejoinᴿ⁻ lmR (i , tail) bal
+  where
+    lmR = (raise ⦃ l<u ⦄ lm)
+... | inj₁ prfᴿ with minHead rm ord
+... | ord' rewrite pUncons = anyᴿ-joinᴿ⁻ (raise ⦃ l<u ⦄ lm) (i , tail) bal ord' prfᴿ
 
 del-safe : ∀ {l u : Key⁺} {h : ℕ} (k k' : Key) {v : V} (m : BOBMap V l u h)
            ⦃ @erased l<k : l <⁺ [ k ] ⦄ ⦃ @erased k<u : [ k ] <⁺ u ⦄
@@ -273,7 +364,7 @@ del-safe k k' (node p lm rm b) (left ⦃ k'<p ⦄ prf) nEq with compare k (proj�
   where
     prfᴸ = del-safe k k' lm ⦃ k<u = [ a ]ᴿ ⦄ prf nEq
     lm⁻ = delete k ⦃ p≤u = [ a ]ᴿ ⦄ lm
-... | tri≈ _ refl _ = anyJoinᴸ lm rm b prf
+... | tri≈ _ refl _ = anyJoinᴸ lm rm b prf [ k'<p ]-lower
 ... | tri> _ _ c = anyᴸ-joinᴿ⁻ lm rm⁻ b k'<p prf
   where
     rm⁻ = delete k ⦃ [ c ]ᴿ ⦄ rm
@@ -281,7 +372,7 @@ del-safe k k' (node p lm rm b) (right ⦃ p<k' ⦄ prf) nEq with compare k (proj
 ... | tri< a _ _ = anyᴿ-joinᴸ⁻ lm⁻ rm b p<k' prf
   where
     lm⁻ = delete k ⦃ p≤u = [ a ]ᴿ ⦄ lm
-... | tri≈ _ refl _ = anyJoinᴿ lm rm b prf
+... | tri≈ _ refl _ = anyJoinᴿ lm rm b prf p<k'
 ... | tri> _ _ c = anyᴿ-joinᴿ⁻ lm rm⁻ b p<k' prfᴿ
   where
     prfᴿ = del-safe k k' rm ⦃ [ c ]ᴿ ⦄ prf nEq
