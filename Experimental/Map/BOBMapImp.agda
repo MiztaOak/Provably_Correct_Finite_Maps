@@ -55,6 +55,7 @@ module _ (V : Set ℓ) where
 
     toNotAnyM : ∀ {h : ℕ} {m : BOBMap V ⊥⁺ ⊤⁺ h} {P : Pred V ℓₚ} {k : Key}
                 → ¬ Any P k m → ¬ AnyM P k (map m)
+    toNotAnyM neg (map prf) = neg prf
 
     fldr : {l : Level} {A : Set l} → (Key × V → A → A) → A → Map V → A
     fldr f g (map m) = foldr f g m
@@ -173,12 +174,15 @@ module _ (V : Set ℓ) where
     ---------------------------------------------------------------------------------
     -- Deletion proofs
     ---------------------------------------------------------------------------------
-    BMap.del-∉ BOBMapImp prf = {!!}
+    BMap.del-∉ BOBMapImp {k} {map m} prf = leftSide , rightSide
+      where
+        leftSide = λ k' v x → map $ del-∉del⊆ k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m (toNotAny prf) k' v (toAny x)
+        rightSide = λ k' v x → map $ del-∉m⊆ k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m (toNotAny prf) k' v (toAny x)
 
-    BMap.del-∈ BOBMapImp {k} {m} prf ¬In with del-∈ k (toBMap m) ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ (toAny prf)
-    ... | x = {!!}
+    BMap.del-∈ BOBMapImp {k} {map m} prf = toNotAnyM $ del-∈ k m ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ (toAny prf)
 
-    BMap.del-safe BOBMapImp prf nEq = {!!}
+    BMap.del-safe BOBMapImp {k} {k'} {m = map m} (map prf) nEq =
+      map $ del-safe k k' m ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ prf nEq
 -- -}
 -- -}
 -- -}

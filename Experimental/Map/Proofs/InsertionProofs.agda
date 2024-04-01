@@ -21,6 +21,7 @@ open import Prelude
 open import Map.BOBMap order as BOB
 open StrictTotalOrder (toStrictTotalOrder order) renaming (Carrier to Key)
 open import Map.Proofs.Proofs order V
+open import Map.Proofs.InsertionHelpers order V
 
 ---------------------------------------------------------------------------------
 -- Induction Principle using insert
@@ -153,24 +154,24 @@ insert-safe {k} {k'} {v} {v'} {m = node p lm rm bal} (right ⦃ ord ⦄ prf) nEq
 ∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf | tri< k<x _ _ with compare k (proj₁ p)
 ∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf | tri< k<x _ _ | tri< k<p _ _ with compare x (proj₁ p)
 ... | tri≈ _ refl _ = inj₂ (here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ tt)
-... | tri> _ _ c = inj₂ (right ⦃ [ c ]ᴿ ⦄ (inᴿ-joinᴸ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lt⁺ rm bal [ c ]ᴿ prf))
+... | tri> _ _ c = inj₂ (right ⦃ [ c ]ᴿ ⦄ (inᴿ-joinᴸ⁺ ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lt⁺ rm bal [ c ]ᴿ prf))
   where
     lt⁺ = insertWith k f ⦃ p≤u = [ k<p ]ᴿ ⦄ lm
 ... | tri< x<p _ _ with ∈-ins k x f ⦃ k<u = [ k<p ]ᴿ ⦄ lm prf'
   where
     lt⁺ = insertWith k f ⦃ p≤u = [ k<p ]ᴿ ⦄ lm
-    prf' = inᴸ-joinᴸ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lt⁺ rm bal [ x<p ]ᴿ prf
+    prf' = inᴸ-joinᴸ⁺ ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lt⁺ rm bal [ x<p ]ᴿ prf
 ... | inj₁ prf = inj₁ prf
 ... | inj₂ prf = inj₂ (left ⦃ [ x<p ]ᴿ ⦄ prf)
 ∈-ins k x f ⦃ l<k ⦄ ⦃ k<u ⦄ (node p lm rm bal) prf | tri< k<x _ _ | tri> _ _ p<k with compare x (proj₁ p)
-... | tri< a _ _ = inj₂ (left ⦃ [ a ]ᴿ ⦄ (inᴸ-joinᴿ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm rt⁺ bal [ a ]ᴿ prf))
+... | tri< a _ _ = inj₂ (left ⦃ [ a ]ᴿ ⦄ (inᴸ-joinᴿ⁺ ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm rt⁺ bal [ a ]ᴿ prf))
   where
     rt⁺ = insertWith k f ⦃ [ p<k ]ᴿ ⦄ rm
 ... | tri≈ _ refl _ = inj₂ (here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ tt)
 ... | tri> _ _ p<x  with ∈-ins k x f ⦃ [ p<k ]ᴿ ⦄ rm prfᴿ
   where
     rt⁺ = insertWith k f ⦃ [ p<k ]ᴿ ⦄ rm
-    prfᴿ = inᴿ-joinᴿ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm rt⁺ bal [ p<x ]ᴿ prf
+    prfᴿ = inᴿ-joinᴿ⁺ ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm rt⁺ bal [ p<x ]ᴿ prf
 ... | inj₁ prf = inj₁ prf
 ... | inj₂ prf = inj₂ (right ⦃ [ p<x ]ᴿ ⦄ prf)
 ∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf | tri< k<x _ _ | tri≈ _ refl _ with prf
@@ -183,23 +184,23 @@ insert-safe {k} {k'} {v} {v'} {m = node p lm rm bal} (right ⦃ ord ⦄ prf) nEq
 ... | tri> _ _ c = inj₂ (right ⦃ [ c ]ᴿ ⦄ prf')
   where
     lt⁺ = insertWith k f ⦃ p≤u = [ k<p ]ᴿ ⦄ lm
-    prf' = inᴿ-joinᴸ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lt⁺ rm bal [ c ]ᴿ prf
+    prf' = inᴿ-joinᴸ⁺ ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lt⁺ rm bal [ c ]ᴿ prf
 ... | tri< x<p _ _ with ∈-ins k x f ⦃ k<u = [ k<p ]ᴿ ⦄ lm prf'
   where
     lt⁺ = insertWith k f ⦃ p≤u = [ k<p ]ᴿ ⦄ lm
-    prf' = inᴸ-joinᴸ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lt⁺ rm bal [ x<p ]ᴿ prf
+    prf' = inᴸ-joinᴸ⁺ ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lt⁺ rm bal [ x<p ]ᴿ prf
 ... | inj₁ prf = inj₁ prf
 ... | inj₂ prf = inj₂ (left ⦃ [ x<p ]ᴿ ⦄ prf)
 ∈-ins k x f ⦃ l<k ⦄ ⦃ k<u ⦄ (node p lm rm bal) prf | tri> _ _ x<k | tri> _ _ p<k with compare x (proj₁ p)
 ... | tri< x<p _ _ = inj₂ (left ⦃ [ x<p ]ᴿ ⦄ prf' )
   where
     rt⁺ = insertWith k f ⦃ [ p<k ]ᴿ ⦄ rm
-    prf' = inᴸ-joinᴿ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm rt⁺ bal [ x<p ]ᴿ prf
+    prf' = inᴸ-joinᴿ⁺ ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm rt⁺ bal [ x<p ]ᴿ prf
 ... | tri≈ _ refl _ = inj₂ (here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ tt)
 ... | tri> _ _ p<x with ∈-ins k x f ⦃ [ p<k ]ᴿ ⦄ rm prfᴿ
   where
     rt⁺ = insertWith k f ⦃ [ p<k ]ᴿ ⦄ rm
-    prfᴿ = inᴿ-joinᴿ⁺ x p ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm rt⁺ bal [ p<x ]ᴿ prf
+    prfᴿ = inᴿ-joinᴿ⁺ ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm rt⁺ bal [ p<x ]ᴿ prf
 ... | inj₁ prf = inj₁ prf
 ... | inj₂ prf = inj₂ (right ⦃ [ p<x ]ᴿ ⦄ prf)
 ∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf | tri> _ _ x<k | tri≈ _ refl _ with prf
@@ -210,7 +211,6 @@ insert-safe {k} {k'} {v} {v'} {m = node p lm rm bal} (right ⦃ ord ⦄ prf) nEq
 ---------------------------------------------------------------------------------
 -- ins-comm
 ---------------------------------------------------------------------------------
-
 ins-comm : ∀ {l u : Key⁺} {h : ℕ}
            (x y z : Key)
            {v : V}
