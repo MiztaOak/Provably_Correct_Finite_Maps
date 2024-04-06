@@ -97,17 +97,17 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
             insert (insert f (a , b)) (c , d)
               = insert (insert f (c , d)) (a , b)
       -}
-      ins-comm : ∀ k k' f f' m
+      ins-comm : ∀ k k' v v' m
                 → k ≢ k'
-                → insertWith k f (insertWith k' f' m)
-                  ≐ insertWith k' f' (insertWith k f m)
+                → insert k v (insert k' v' m)
+                  ≐ insert k' v' (insert k v m)
 
       {-
       ⊢ ∀ f a b x . x ∈ (insert f (a , b)) → (x = a) ∨ x ∈ f
       -}
-      ∈-ins : ∀ m k x f
-              → x ∈ (insertWith k f m)
-              → (x ≡ k) ⊎ x ∈ m
+      ∈-ins : ∀ m k x v f
+              → x ↦ v ∈ (insertWith k f m)
+              → (x ≡ k) ⊎ x ↦ v ∈ m
 
       insert∈ : ∀ k v m → k ↦ v ∈ (insert k v m)
 

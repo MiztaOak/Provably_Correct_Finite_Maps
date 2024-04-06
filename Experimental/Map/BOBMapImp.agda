@@ -117,8 +117,8 @@ module _ (V : Set ℓ) where
 
     BMap.lookup-insert BOBMapImp k (map m) f = lookup-insert k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m f
 
-    BMap.ins-comm BOBMapImp k k' f f' (map m) notEq =
-      (λ z v x → map (leftSide z (toAny x))) , λ z v x → map (rightSide z (toAny x))
+    BMap.ins-comm BOBMapImp k k' v v' (map m) notEq =
+      ( λ z v x → map (leftSide z v (toAny x)) ) , λ z v x → map (rightSide z v (toAny x))
       where
        l<k' : ⊥⁺ <⁺ BOB.[ k' ]
        l<k' = ⊥⁺<[ k' ]
@@ -128,16 +128,16 @@ module _ (V : Set ℓ) where
        l<k = ⊥⁺<[ k ]
        k<u : BOB.[ k ] <⁺ ⊤⁺
        k<u = [ k ]<⊤⁺
-       leftSide : ∀ (z : Key) → {v : V}
-         → z ↦ v ∈ proj₂ (insertWith k f ⦃ l<k ⦄ ⦃ k<u ⦄ (proj₂ (insertWith k' f' ⦃ l<k' ⦄ ⦃ k'<u ⦄ m)))
-         → z ↦ v ∈ proj₂ (insertWith k' f' ⦃ l<k' ⦄ ⦃ k'<u ⦄ (proj₂ (insertWith k f ⦃ l<k ⦄ ⦃ k<u ⦄ m)))
-       leftSide z prf = ins-comm k k' z ⦃ l<k ⦄ ⦃ k<u ⦄ ⦃ l<k' ⦄ ⦃ k'<u ⦄ f f' m notEq prf
-       rightSide : ∀ (z : Key) → {v : V}
-         → z ↦ v ∈ proj₂ (insertWith k' f' ⦃ l<k' ⦄ ⦃ k'<u ⦄ (proj₂ (insertWith k f ⦃ l<k ⦄ ⦃ k<u ⦄ m)))
-         → z ↦ v ∈ proj₂ (insertWith k f ⦃ l<k ⦄ ⦃ k<u ⦄ (proj₂ (insertWith k' f' ⦃ l<k' ⦄ ⦃ k'<u ⦄ m)))
-       rightSide z prf = ins-comm k' k z ⦃ l<k' ⦄ ⦃ k'<u ⦄ ⦃ l<k ⦄ ⦃ k<u ⦄ f' f m (¬Sym notEq) prf
+       leftSide : ∀ (z : Key) → (v'' : V)
+         → z ↦ v'' ∈ proj₂ (insert (k , v) ⦃ l<k ⦄ ⦃ k<u ⦄ (proj₂ (insert (k' , v') ⦃ l<k' ⦄ ⦃ k'<u ⦄ m)))
+         → z ↦ v'' ∈ proj₂ (insert (k' , v') ⦃ l<k' ⦄ ⦃ k'<u ⦄ (proj₂ (insert (k , v) ⦃ l<k ⦄ ⦃ k<u ⦄ m)))
+       leftSide z v'' prf = insert-comm k k' z {v''} ⦃ l<k ⦄ ⦃ k<u ⦄ ⦃ l<k' ⦄ ⦃ k'<u ⦄ v v' m notEq prf
+       rightSide : ∀ (z : Key) → (v'' : V)
+         → z ↦ v'' ∈ proj₂ (insert (k' , v') ⦃ l<k' ⦄ ⦃ k'<u ⦄ (proj₂ (insert (k , v) ⦃ l<k ⦄ ⦃ k<u ⦄ m)))
+         → z ↦ v'' ∈ proj₂ (insert (k , v) ⦃ l<k ⦄ ⦃ k<u ⦄ (proj₂ (insert (k' , v') ⦃ l<k' ⦄ ⦃ k'<u ⦄ m)))
+       rightSide z v'' prf = insert-comm k' k z {v''} ⦃ l<k' ⦄ ⦃ k'<u ⦄ ⦃ l<k ⦄ ⦃ k<u ⦄ v' v m (¬Sym notEq) prf
 
-    BMap.∈-ins BOBMapImp (map m) k x f (map prf) with ∈-ins k x f ⦃ ⊥⁺<[ k ] ⦄  ⦃ [ k ]<⊤⁺ ⦄ m prf
+    BMap.∈-ins BOBMapImp (map m) k x v f (map prf) with ∈-ins k x f ⦃ ⊥⁺<[ k ] ⦄  ⦃ [ k ]<⊤⁺ ⦄ m prf
     ... | inj₁ x = inj₁ x
     ... | inj₂ y = inj₂ (map y)
 
@@ -149,27 +149,40 @@ module _ (V : Set ℓ) where
     ---------------------------------------------------------------------------------
     -- Union proofs
     ---------------------------------------------------------------------------------
-    BMap.∪-∅ᴸ BOBMapImp m f = {!!}
-    BMap.∪-∅ᴿ BOBMapImp m f = {!!}
-    BMap.∪-∅ BOBMapImp m f = {!!}
+    proj₁ (BMap.∪-∅ᴸ BOBMapImp (map leaf) f) k v (map ())
+    proj₁ (BMap.∪-∅ᴸ BOBMapImp (map (node _ _ _ _)) f) k v prf = prf
+    proj₂ (BMap.∪-∅ᴸ BOBMapImp (map leaf) f) k v (map ())
+    proj₂ (BMap.∪-∅ᴸ BOBMapImp (map (node _ _ _ _)) f) k v prf = prf
+    proj₁ (BMap.∪-∅ᴿ BOBMapImp m f) k v prf = prf
+    proj₂ (BMap.∪-∅ᴿ BOBMapImp m f) k v prf = prf
+    -- hmm shoud this be removed or?
+    BMap.∪-∅ BOBMapImp m f = (proj₁ $ BMap.∪-∅ᴸ BOBMapImp m f) , (proj₂ $ BMap.∪-∅ᴸ BOBMapImp m f)
 
-    BMap.∪-∈ BOBMapImp (map n) (map m) f k prf = {!!} {- with (find k n , find k m)
+    BMap.∪-∈ BOBMapImp (map leaf) (map leaf) f k (map ())
+    BMap.∪-∈ BOBMapImp (map leaf) (map m@(node _ _ _ _)) f k prf = inj₂ prf
+    BMap.∪-∈ BOBMapImp (map n@(node _ _ _ _)) (map leaf) f k prf = inj₁ prf
+    BMap.∪-∈ BOBMapImp (map n@(node _ _ _ _)) (map m@(node p l r _)) f k prf = {!!}
+    {-with (find k n , find k m)
       where
-        find : ∀ {l u h} (x : K)
-               → (a : BOBMap (l , u) h)
+        find : ∀ {l u h} (x : Key)
+               → (a : BOBMap V l u h)
                → Maybe (x ∈ a)
         find x leaf = nothing
         find x (node p lt rt bal) with compare x (proj₁ p)
-        ... | le = (find x lt) >>= λ α → just (left α)
-        ... | eq = just $ here {{mapOrd lt}} {{mapOrd rt}} tt
-        ... | ge = (find x rt) >>= λ α → just (right α)
+        ... | tri< a _ _ = (find x lt) >>= λ α → just (left ⦃ [ a ]ᴿ ⦄ α)
+        ... | tri≈ _ refl _ = just $ here ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ tt
+        ... | tri> _ _ c = (find x rt) >>= λ α → just (right ⦃ [ c ]ᴿ ⦄ α)
     ... | just α , just β = inj₁ (map α)
     ... | just α , nothing = inj₁ (map α)
     ... | nothing , just β = inj₂ (map β)
     ... | nothing , nothing = {!!} -}
 
-    BMap.∪-∈' BOBMapImp n m f k (inj₁ prf) = {!!}
-    BMap.∪-∈' BOBMapImp n m f k (inj₂ prf) = {!!}
+    BMap.∪-∈' BOBMapImp (map leaf) m f k (inj₁ (map ()))
+    BMap.∪-∈' BOBMapImp (map (node _ _ _ _)) (map leaf) f k (inj₁ prf) = prf
+    BMap.∪-∈' BOBMapImp (map (node _ _ _ _)) (map (node _ _ _ _)) f k (inj₁ prf) = {!!}
+    BMap.∪-∈' BOBMapImp n (map leaf) f k (inj₂ (map ()))
+    BMap.∪-∈' BOBMapImp (map leaf) (map (node _ _ _ _)) f k (inj₂ prf) = prf
+    BMap.∪-∈' BOBMapImp (map (node _ _ _ _)) (map (node _ _ _ _)) f k (inj₂ prf) = {!!}
 
     ---------------------------------------------------------------------------------
     -- Deletion proofs

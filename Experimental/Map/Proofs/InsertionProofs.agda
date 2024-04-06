@@ -102,7 +102,7 @@ lookup-insert k ⦃ l<k ⦄ ⦃ k<u ⦄ (node p lm rm b) f with compare k (proj�
 -- Prove that Insert results in ∈
 ---------------------------------------------------------------------------------
 insert∈ : ∀ {l u : Key⁺} {h : ℕ} (k : Key) (v : V)
-          {{l<k : l <⁺ [ k ]}} {{ k<u : [ k ] <⁺ u}}
+          {{@erased l<k : l <⁺ [ k ]}} {{@erased k<u : [ k ] <⁺ u}}
           → (m : BOBMap V l u h)
           → k ↦ v ∈ (proj₂ $ insertWith k (λ _ → v) m)
 insert∈ k v leaf = here refl
@@ -143,20 +143,23 @@ insert-safe {k} {k'} {v} {v'} {m = node p lm rm bal} (right ⦃ ord ⦄ prf) nEq
 ---------------------------------------------------------------------------------
 ∈-ins : ∀ {l u : Key⁺} {h : ℕ}
         (k x : Key)
+        {v : V}
         (f : Maybe V → V)
         {{@erased l<k : l <⁺ [ k ]}} {{@erased k<u : [ k ] <⁺ u}}
         (m : BOBMap V l u h)
-        → x ∈ proj₂ (insertWith k f m)
-        → (x ≡ k) ⊎ x ∈ m
+        → x ↦ v ∈ proj₂ (insertWith k f m)
+        → (x ≡ k) ⊎ x ↦ v ∈ m
 ∈-ins k .k f leaf (here x) = inj₁ refl
 ∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf with compare k x
 ... | tri≈ _ refl _ = inj₁ refl
 ∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf | tri< k<x _ _ with compare k (proj₁ p)
 ∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf | tri< k<x _ _ | tri< k<p _ _ with compare x (proj₁ p)
-... | tri≈ _ refl _ = inj₂ (here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ tt)
-... | tri> _ _ c = inj₂ (right ⦃ [ c ]ᴿ ⦄ (inᴿ-joinᴸ⁺ ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lt⁺ rm bal [ c ]ᴿ prf))
+... | tri≈ _ refl _ = inj₂ (here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ (inC-joinᴸ⁺ lm⁺ rm bal prf))
   where
-    lt⁺ = insertWith k f ⦃ p≤u = [ k<p ]ᴿ ⦄ lm
+    lm⁺ = insertWith k f ⦃ p≤u = [ k<p ]ᴿ ⦄ lm
+... | tri> _ _ c = inj₂ (right ⦃ [ c ]ᴿ ⦄ (inᴿ-joinᴸ⁺ ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm⁺ rm bal [ c ]ᴿ prf))
+  where
+    lm⁺ = insertWith k f ⦃ p≤u = [ k<p ]ᴿ ⦄ lm
 ... | tri< x<p _ _ with ∈-ins k x f ⦃ k<u = [ k<p ]ᴿ ⦄ lm prf'
   where
     lt⁺ = insertWith k f ⦃ p≤u = [ k<p ]ᴿ ⦄ lm
@@ -167,7 +170,9 @@ insert-safe {k} {k'} {v} {v'} {m = node p lm rm bal} (right ⦃ ord ⦄ prf) nEq
 ... | tri< a _ _ = inj₂ (left ⦃ [ a ]ᴿ ⦄ (inᴸ-joinᴿ⁺ ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm rt⁺ bal [ a ]ᴿ prf))
   where
     rt⁺ = insertWith k f ⦃ [ p<k ]ᴿ ⦄ rm
-... | tri≈ _ refl _ = inj₂ (here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ tt)
+... | tri≈ _ refl _ = inj₂ (here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ (inC-joinᴿ⁺ lm rm⁺ bal prf))
+  where
+    rm⁺ = insertWith k f ⦃ [ p<k ]ᴿ ⦄ rm
 ... | tri> _ _ p<x  with ∈-ins k x f ⦃ [ p<k ]ᴿ ⦄ rm prfᴿ
   where
     rt⁺ = insertWith k f ⦃ [ p<k ]ᴿ ⦄ rm
@@ -180,7 +185,9 @@ insert-safe {k} {k'} {v} {v'} {m = node p lm rm bal} (right ⦃ ord ⦄ prf) nEq
 ... | right prf = inj₂ (right prf)
 ∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf | tri> _ _ x<k with compare k (proj₁ p)
 ∈-ins k x f ⦃ l<k ⦄ (node p lm rm bal) prf | tri> _ _ x<k | tri< k<p _ _ with compare x (proj₁ p)
-... | tri≈ _ refl _ = inj₂ (here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ tt)
+... | tri≈ _ refl _ = inj₂ (here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ (inC-joinᴸ⁺ lm⁺ rm bal prf))
+  where
+    lm⁺ = insertWith k f ⦃ p≤u = [ k<p ]ᴿ ⦄ lm
 ... | tri> _ _ c = inj₂ (right ⦃ [ c ]ᴿ ⦄ prf')
   where
     lt⁺ = insertWith k f ⦃ p≤u = [ k<p ]ᴿ ⦄ lm
@@ -196,7 +203,9 @@ insert-safe {k} {k'} {v} {v'} {m = node p lm rm bal} (right ⦃ ord ⦄ prf) nEq
   where
     rt⁺ = insertWith k f ⦃ [ p<k ]ᴿ ⦄ rm
     prf' = inᴸ-joinᴿ⁺ ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm rt⁺ bal [ x<p ]ᴿ prf
-... | tri≈ _ refl _ = inj₂ (here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ tt)
+... | tri≈ _ refl _ = inj₂ (here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ (inC-joinᴿ⁺ lm rm⁺ bal prf))
+  where
+    rm⁺ = insertWith k f ⦃ [ p<k ]ᴿ ⦄ rm
 ... | tri> _ _ p<x with ∈-ins k x f ⦃ [ p<k ]ᴿ ⦄ rm prfᴿ
   where
     rt⁺ = insertWith k f ⦃ [ p<k ]ᴿ ⦄ rm
@@ -208,10 +217,241 @@ insert-safe {k} {k'} {v} {v'} {m = node p lm rm bal} (right ⦃ ord ⦄ prf) nEq
 ... | left prf = inj₂ (left prf)
 ... | right prf = inj₂ (right prf)
 
+insEq : ∀ {l u : Key⁺} {h : ℕ}
+        (x : Key)
+        {v v' : V}
+        {{@erased l<k : l <⁺ [ x ]}} {{@erased k<u : [ x ] <⁺ u}}
+        (m : BOBMap V l u h)
+        → x ↦ v ∈ proj₂ (insert (x , v') m)
+        → v ≡ v'
+insEq x leaf (here refl) = refl
+insEq x (node p lt rt bal) prf with compare x (proj₁ p)
+insEq x {v' = v'} (node p lt rt bal) prf | tri< x<p _ _ = insEq x ⦃ k<u = [ x<p ]ᴿ ⦄ lt prf'
+  where
+    lt⁺ = insert (x , v') ⦃ p≤u = [ x<p ]ᴿ ⦄ lt
+    prf' = inᴸ-joinᴸ⁺ ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ lt⁺ rt bal [ x<p ]ᴿ prf
+insEq x (node p lt rt bal) prf | tri≈ _ refl _ with prf
+... | here refl = refl
+... | left ⦃ ord ⦄ _ = ⊥-elim (irrefl⁺ [ proj₁ p ] ord)
+... | right ⦃ ord ⦄ _ = ⊥-elim (irrefl⁺ [ proj₁ p ] ord)
+insEq x {v' = v'} (node p lt rt bal) prf | tri> _ _ p<x = insEq x ⦃ [ p<x ]ᴿ ⦄ rt prf'
+  where
+    rt⁺ = insert (x , v') ⦃ [ p<x ]ᴿ ⦄ rt
+    prf' = inᴿ-joinᴿ⁺ ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ lt rt⁺ bal [ p<x ]ᴿ prf
+
 ---------------------------------------------------------------------------------
 -- ins-comm
 ---------------------------------------------------------------------------------
-ins-comm : ∀ {l u : Key⁺} {h : ℕ}
+isEq? : ∀ (x y : Key) → x ≡ y ⊎ x ≢ y
+isEq? x y with compare x y
+... | tri< _ nEq _  = inj₂ nEq
+... | tri≈ _ refl _ = inj₁ refl
+... | tri> _ nEq _  = inj₂ nEq
+
+insert-joinR→R : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    (x y z : Key)
+    (p : Key × V)
+    (v vˣ vʸ : V)
+    ⦃ l<x : l <⁺ [ x ] ⦄ ⦃ p<x : [ proj₁ p ] <⁺ [ x ] ⦄ ⦃ x<u : [ x ] <⁺ u ⦄
+    ⦃ l<y : l <⁺ [ y ] ⦄ ⦃ p<y : [ proj₁ p ] <⁺ [ y ] ⦄ ⦃ y<u : [ y ] <⁺ u ⦄
+    (lt : BOBMap V l [ proj₁ p ] hl)
+    (rt : BOBMap V [ proj₁ p ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → x ≢ y
+    → z ↦ v ∈ (proj₂ (insert (x , vˣ) (proj₂ (joinʳ⁺ p lt (insert (y , vʸ) rt) bal))))
+    → z ↦ v ∈ (proj₂ (insert (y , vʸ) (proj₂ (joinʳ⁺ p lt (insert (x , vˣ) rt) bal))))
+insert-joinR→R x y z p v vˣ vʸ ⦃ p<x = p<x ⦄ lt rt bal nEq prf with insert (y , vʸ) rt in insYEq
+... | rtʸ with joinʳ⁺ p lt rtʸ bal in jEq
+... | rt⁺ with ∈-ins x z (λ _ → vˣ) (proj₂ rt⁺) prf
+... | inj₁ refl rewrite insEq x (proj₂ rt⁺) prf = insert-safe prfJoin nEq
+  where
+    m = insert (x , vˣ) rt
+    prfIns = insert∈ x vˣ rt
+    prfJoin = anyᴿjoinᴿ⁺ lt m bal p<x prfIns
+insert-joinR→R x y z p v vˣ vʸ lt rt bal nEq prf | rtʸ | (i , rt⁺) | inj₂ prfᴿ with jEq
+... | refl with compare z (proj₁ p)
+insert-joinR→R x y z p v vˣ vʸ ⦃ p<y = p<y ⦄ lt rt bal nEq prf
+  | rtʸ | (i , rt⁺) | inj₂ prfᴿ | refl | tri< z<p _ _ with isEq? z y
+... | inj₁ refl = ⊥-elim (asym z<p [ p<y ]-lower)
+... | inj₂ z≢y = insert-safe prfJoin z≢y
+  where
+    prfᴸ = inᴸ-joinᴿ⁺ ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ lt rtʸ bal [ z<p ]ᴿ prfᴿ
+    m = insertWith x (λ _ → vˣ) rt
+    prfJoin = anyᴸjoinᴿ⁺ lt m bal [ z<p ]ᴿ prfᴸ
+insert-joinR→R x y z p v vˣ vʸ ⦃ p<y = p<y ⦄ lt rt bal nEq prf
+  | rtʸ | (i , rt⁺) | inj₂ prfᴿ | refl | tri≈ _ refl _ rewrite inC-joinᴿ⁺ lt rtʸ bal prfᴿ with isEq? z y
+... | inj₁ refl = ⊥-elim (irrefl⁺ [ proj₁ p ] p<y)
+... | inj₂ z≢y = insert-safe prfJoin z≢y
+  where
+    prfJoin = herejoinᴿ⁺ lt (insert (x , vˣ) rt) bal
+insert-joinR→R x y z p v vˣ vʸ lt rt bal nEq prf
+  | rtʸ | (i , rt⁺) | inj₂ prfᴿ | refl | tri> _ _ p<z with insYEq
+... | refl with inᴿ-joinᴿ⁺ ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ lt rtʸ bal [ p<z ]ᴿ prfᴿ
+... | prfIns with ∈-ins y z (λ _ → vʸ) rt prfIns
+... | inj₁ refl rewrite insEq y rt prfIns = insert∈ y vʸ m
+  where
+    m = proj₂ (joinʳ⁺ p lt (insertWith x (λ _ → vˣ) rt) bal)
+... | inj₂ prfᴿ' with isEq? z x
+... | inj₁ refl rewrite insEq z (proj₂ (joinʳ⁺ p lt (insertWith y (λ _ → vʸ) rt) bal)) prf = res
+  where
+    prfInsX = insert∈ x vˣ rt
+    prfJoin = anyᴿjoinᴿ⁺ lt (insert (z , vˣ) rt) bal [ p<z ]ᴿ prfInsX
+    res = insert-safe prfJoin nEq
+... | inj₂ z≢x with isEq? z y
+... | inj₂ z≢y = insert-safe prfJoin z≢y
+  where
+    prfInsX = insert-safe prfᴿ' z≢x
+    prfJoin = anyᴿjoinᴿ⁺ lt (insert (x , vˣ) rt) bal [ p<z ]ᴿ prfInsX
+... | inj₁ refl rewrite insEq z rt prfIns = insert∈ z vʸ m
+  where
+    m = (proj₂ (joinʳ⁺ p lt (insertWith x (λ _ → vˣ) rt) bal))
+
+insert-joinL : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    (y z : Key)
+    (p : Key × V)
+    (v vˣ vʸ : V)
+    ⦃ l<x : l <⁺ [ proj₁ p ] ⦄ ⦃ x<u : [ proj₁ p ] <⁺ u ⦄
+    ⦃ l<y : l <⁺ [ y ] ⦄ ⦃ y<p : [ y ] <⁺ [ proj₁ p ] ⦄
+    (lt : BOBMap V l [ proj₁ p ] hl)
+    (rt : BOBMap V [ proj₁ p ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → (proj₁ p) ≢ y
+    → z ↦ v ∈ (proj₂ (insert (proj₁ p , vˣ) (proj₂ (joinˡ⁺ p (insert (y , vʸ) lt) rt bal))))
+    → z ↦ v ∈ (proj₂ (joinˡ⁺ (proj₁ p , vˣ) (insert (y , vʸ) lt) rt bal))
+insert-joinL y z p v vˣ vʸ lt rt bal nEq prf with ∈-ins (proj₁ p) z (λ _ → vˣ) m prf
+  where
+    m = proj₂ (joinˡ⁺ p (insert (y , vʸ) lt) rt bal)
+... | inj₁ refl rewrite insEq (proj₁ p) (proj₂ (joinˡ⁺ p (insert (y , vʸ) lt) rt bal)) prf =
+  herejoinᴸ⁺ (insert (y , vʸ) lt) rt bal
+... | inj₂ prf' with compare z (proj₁ p)
+... | tri< z<p _ _ = anyᴸjoinᴸ⁺ (insert (y , vʸ) lt) rt bal [ z<p ]ᴿ prfᴸ
+  where
+    prfᴸ = inᴸ-joinᴸ⁺ (insert (y , vʸ) lt) rt bal [ z<p ]ᴿ prf'
+... | tri≈ _ refl _ rewrite insEq (proj₁ p) (proj₂ (joinˡ⁺ p (insertWith y (λ _ → vʸ) lt) rt bal)) prf =
+  herejoinᴸ⁺ (insert (y , vʸ) lt) rt bal
+... | tri> _ _ p<z = anyᴿjoinᴸ⁺ (insert (y , vʸ) lt) rt bal [ p<z ]ᴿ prfᴿ
+  where
+    prfᴿ = inᴿ-joinᴸ⁺ (insert (y , vʸ) lt) rt bal [ p<z ]ᴿ prf'
+
+postulate
+  insert-joinL→L : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    (x y z : Key)
+    (p : Key × V)
+    (v vˣ vʸ : V)
+    ⦃ l<x : l <⁺ [ x ] ⦄ ⦃ x<p : [ x ] <⁺ [ proj₁ p ] ⦄ ⦃ x<u : [ x ] <⁺ u ⦄
+    ⦃ l<y : l <⁺ [ y ] ⦄ ⦃ y<p : [ y ] <⁺ [ proj₁ p ] ⦄ ⦃ y<u : [ y ] <⁺ u ⦄
+    (lt : BOBMap V l [ proj₁ p ] hl)
+    (rt : BOBMap V [ proj₁ p ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → x ≢ y
+    → z ↦ v ∈ (proj₂ (insert (x , vˣ) (proj₂ (joinˡ⁺ p (insert (y , vʸ) lt) rt bal))))
+    → z ↦ v ∈ (proj₂ (insert (y , vʸ) (proj₂ (joinˡ⁺ p (insert (x , vˣ) lt) rt bal))))
+  insert-joinL→R : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    (x y z : Key)
+    (p : Key × V)
+    (v vˣ vʸ : V)
+    ⦃ l<x : l <⁺ [ x ] ⦄ ⦃ p<x : [ proj₁ p ] <⁺ [ x ] ⦄ ⦃ x<u : [ x ] <⁺ u ⦄
+    ⦃ l<y : l <⁺ [ y ] ⦄ ⦃ y<p : [ y ] <⁺ [ proj₁ p ] ⦄ ⦃ y<u : [ y ] <⁺ u ⦄
+    (lt : BOBMap V l [ proj₁ p ] hl)
+    (rt : BOBMap V [ proj₁ p ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → x ≢ y
+    → z ↦ v ∈ (proj₂ (insert (x , vˣ) (proj₂ (joinˡ⁺ p (insert (y , vʸ) lt) rt bal))))
+    → z ↦ v ∈ (proj₂ (insert (y , vʸ) (proj₂ (joinʳ⁺ p lt (insert (x , vˣ) rt) bal))))
+  insert-joinR→L : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    (x y z : Key)
+    (p : Key × V)
+    (v vˣ vʸ : V)
+    ⦃ l<x : l <⁺ [ x ] ⦄ ⦃ x<p : [ x ] <⁺ [ proj₁ p ] ⦄ ⦃ x<u : [ x ] <⁺ u ⦄
+    ⦃ l<y : l <⁺ [ y ] ⦄ ⦃ p<y : [ proj₁ p ] <⁺ [ y ] ⦄ ⦃ y<u : [ y ] <⁺ u ⦄
+    (lt : BOBMap V l [ proj₁ p ] hl)
+    (rt : BOBMap V [ proj₁ p ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → x ≢ y
+    → z ↦ v ∈ (proj₂ (insert (x , vˣ) (proj₂ (joinʳ⁺ p lt (insert (y , vʸ) rt) bal))))
+    → z ↦ v ∈ (proj₂ (insert (y , vʸ) (proj₂ (joinˡ⁺ p (insert (x , vˣ) lt) rt bal))))
+  insert-joinR : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    (y z : Key)
+    (p : Key × V)
+    (v vˣ vʸ : V)
+    ⦃ l<x : l <⁺ [ proj₁ p ] ⦄ ⦃ x<u : [ proj₁ p ] <⁺ u ⦄
+    ⦃ p<y : [ proj₁ p ] <⁺ [ y ] ⦄ ⦃ y<u : [ y ] <⁺ u ⦄
+    (lt : BOBMap V l [ proj₁ p ] hl)
+    (rt : BOBMap V [ proj₁ p ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → (proj₁ p) ≢ y
+    → z ↦ v ∈ (proj₂ (insert (proj₁ p , vˣ) (proj₂ (joinʳ⁺ p lt (insert (y , vʸ) rt) bal))))
+    → z ↦ v ∈ (proj₂ (joinʳ⁺ (proj₁ p , vˣ) lt (insert (y , vʸ) rt) bal))
+
+insert-comm : ∀ {l u : Key⁺} {h : ℕ}
+           (x y z : Key)
+           {v : V}
+           {{l<x : l <⁺ [ x ]}} {{x<u : [ x ] <⁺ u}}
+           {{l<y : l <⁺ [ y ]}} {{y<u : [ y ] <⁺ u}}
+           (vˣ vʸ : V)
+           (m : BOBMap V l u h)
+           → x ≢ y
+           → z ↦ v ∈ proj₂ (insert (x , vˣ) (proj₂ (insert (y , vʸ) m)))
+           → z ↦ v ∈ proj₂ (insert (y , vʸ) (proj₂ (insert (x , vˣ) m)))
+---- leaf cases ----
+insert-comm x y z ⦃ y<u = y<u ⦄ vˣ vʸ leaf nEq prf with compare x y
+... | tri< x<y  _ _ with compare y x
+... | tri< _ _ ¬x<y = ⊥-elim (¬x<y x<y)
+... | tri≈ _ refl _ = ⊥-elim (nEq refl)
+... | tri> _ _ _  with prf
+... | here α = right ⦃ [ x<y ]ᴿ ⦄ (here ⦃ [ x<y ]ᴿ ⦄ ⦃ y<u ⦄ α)
+... | left (here ⦃ l<x ⦄ α) = here ⦃ l<x ⦄ α
+insert-comm x y z vˣ vʸ leaf nEq prf | tri≈ _ refl _ = ⊥-elim (nEq refl)
+insert-comm x y z ⦃ l<y = l<y ⦄ vˣ vʸ leaf nEq prf | tri> _ _ y<x with compare y x
+... | tri< _ _ _ with prf
+... | here α = left ⦃ [ y<x ]ᴿ ⦄ (here ⦃ l<y ⦄ ⦃ [ y<x ]ᴿ ⦄ α)
+... | right (here ⦃ k≤u = x<u ⦄ α) = here ⦃ k≤u = x<u ⦄ α
+insert-comm x y z vˣ vʸ leaf nEq prf | tri> _ _ y<x | tri≈ _ refl _ = ⊥-elim (nEq refl)
+insert-comm x y z ⦃ x<u = x<u ⦄ ⦃ y<u = y<u ⦄ vˣ vʸ leaf nEq prf | tri> _ _ y<x | tri> _ _ c with prf
+... | here α = right ⦃ [ c ]ᴿ ⦄ (here ⦃ [ c ]ᴿ ⦄ ⦃ y<u ⦄ α)
+... | right (here α) = here ⦃ k≤u = x<u ⦄ α
+---- node cases ----
+insert-comm x y z {v} vˣ vʸ (node p lt rt bal) nEq prf with compare y (proj₁ p) in compY
+... | tri< y<p _ _ with compare x (proj₁ p)
+... | tri< x<p _ _ = insert-joinL→L x y z p v vˣ vʸ ⦃ x<p = [ x<p ]ᴿ ⦄ ⦃ y<p = [ y<p ]ᴿ ⦄ lt rt bal nEq prf
+... | tri≈ _ refl _ rewrite compY = insert-joinL y z p v vˣ vʸ ⦃ y<p = [ y<p ]ᴿ ⦄ lt rt bal nEq prf
+... | tri> _ _ p<x = insert-joinL→R x y z p v vˣ vʸ ⦃ p<x = [ p<x ]ᴿ ⦄ ⦃ y<p = [ y<p ]ᴿ ⦄ lt rt bal nEq prf
+insert-comm x y z {v} vˣ vʸ (node p lt rt bal) nEq prf | tri≈ _ refl _ with compare x (proj₁ p)
+... | tri≈ _ refl _ rewrite compY = ⊥-elim (nEq refl)
+... | tri< x<p _ _ with insert (x , vˣ) ⦃ p≤u = [ x<p ]ᴿ ⦄ lt in insX
+... | (i , lt') with compare z (proj₁ p)
+... | tri< z<p z≢p _ = insert-safe prf'' z≢p
+  where
+    prf' = inᴸ-joinᴸ⁺ (i , lt') rt bal [ z<p ]ᴿ prf
+    prf'' = anyᴸjoinᴸ⁺ (i , lt') rt bal [ z<p ]ᴿ prf'
+... | tri≈ _ refl _ rewrite inC-joinᴸ⁺ (i , lt') rt bal prf = insert∈ (proj₁ p) vʸ (proj₂ m')
+  where
+    m' = joinˡ⁺ p (i , lt') rt bal
+... | tri> _ z≢p p<z = insert-safe prf'' z≢p
+  where
+    prf' = inᴿ-joinᴸ⁺ (i , lt') rt bal [ p<z ]ᴿ prf
+    prf'' = anyᴿjoinᴸ⁺ (i , lt') rt bal [ p<z ]ᴿ prf'
+insert-comm x y z {v} vˣ vʸ (node p lt rt bal) nEq prf | tri≈ _ refl _ | tri> _ _ p<x with
+  insert (x , vˣ) ⦃ [ p<x ]ᴿ ⦄ rt in insX
+... | (i , rt') with compare z (proj₁ p)
+... | tri< z<p z≢p _ = insert-safe prf'' z≢p
+  where
+    prf' = inᴸ-joinᴿ⁺ lt (i , rt') bal [ z<p ]ᴿ prf
+    prf'' = anyᴸjoinᴿ⁺ lt (i , rt') bal [ z<p ]ᴿ prf'
+... | tri≈ _ refl _ rewrite inC-joinᴿ⁺ lt (i , rt') bal prf = insert∈ (proj₁ p) vʸ (proj₂ m')
+  where
+    m' = joinʳ⁺ p lt (i , rt') bal
+... | tri> _ p≢z p<z = insert-safe prf'' p≢z
+  where
+    prf' = inᴿ-joinᴿ⁺ lt (i , rt') bal [ p<z ]ᴿ prf
+    prf'' = anyᴿjoinᴿ⁺ lt (i , rt') bal [ p<z ]ᴿ prf'
+insert-comm x y z {v} vˣ vʸ (node p lt rt bal) nEq prf | tri> _ _ p<y with compare x (proj₁ p) in compX
+... | tri< x<p _ _ = insert-joinR→L x y z p v vˣ vʸ ⦃ x<p = [ x<p ]ᴿ ⦄ ⦃ p<y = [ p<y ]ᴿ ⦄ lt rt bal nEq prf
+... | tri≈ _ refl _ rewrite compY = insert-joinR y z p v vˣ vʸ ⦃ p<y = [ p<y ]ᴿ ⦄ lt rt bal nEq prf
+... | tri> _ _ p<x = insert-joinR→R x y z p v vˣ vʸ ⦃ p<x = [ p<x ]ᴿ ⦄ ⦃ p<y = [ p<y ]ᴿ ⦄ lt rt bal nEq prf
+
+postulate
+  ins-comm : ∀ {l u : Key⁺} {h : ℕ}
            (x y z : Key)
            {v : V}
            {{l<x : l <⁺ [ x ]}} {{x<u : [ x ] <⁺ u}}
@@ -221,19 +461,43 @@ ins-comm : ∀ {l u : Key⁺} {h : ℕ}
            → x ≢ y
            → z ↦ v ∈ proj₂ (insertWith x fˣ (proj₂ (insertWith y fʸ m)))
            → z ↦ v ∈ proj₂ (insertWith y fʸ (proj₂ (insertWith x fˣ m)))
-ins-comm x y z fˣ fʸ leaf nEq prf with compare x y
-... | tri< a ¬b ¬c = {!!}
-... | tri≈ ¬a refl ¬c = ⊥-elim (nEq refl)
-ins-comm x y z fˣ fʸ leaf nEq prf
-  | tri> ¬a ¬b c with compare y x
-... | tri< a ¬b₁ ¬c = {!!}
-ins-comm x y z fˣ fʸ leaf nEq prf
-  | tri> ¬a ¬b c | tri≈ ¬a₁ refl ¬c = ⊥-elim (nEq refl)
-ins-comm x y z fˣ fʸ leaf nEq prf
-  | tri> ¬a ¬b _ | tri> ¬a₁ ¬b₁ c with prf
-... | here α = right ⦃ [ c ]ᴿ ⦄ (here ⦃ [ c ]ᴿ ⦄ ⦃ {!!} ⦄ α)
-... | right (here α) = here ⦃ k≤u = {!!} ⦄ α
-ins-comm x y z fˣ fʸ (node p lt rt bal) nEq prf = {!!}
+{-
+---- leaf cases ----
+ins-comm x y z ⦃ y<u = y<u ⦄ fˣ fʸ leaf nEq prf with compare x y
+... | tri< x<y  _ _ with compare y x
+... | tri< _ _ ¬x<y = ⊥-elim (¬x<y x<y)
+... | tri≈ _ refl _ = ⊥-elim (nEq refl)
+... | tri> _ _ _  with prf
+... | here α = right ⦃ [ x<y ]ᴿ ⦄ (here ⦃ [ x<y ]ᴿ ⦄ ⦃ y<u ⦄ α)
+... | left (here ⦃ l<x ⦄ α) = here ⦃ l<x ⦄ α
+ins-comm x y z fˣ fʸ leaf nEq prf | tri≈ _ refl _ = ⊥-elim (nEq refl)
+ins-comm x y z ⦃ l<y = l<y ⦄ fˣ fʸ leaf nEq prf | tri> _ _ y<x with compare y x
+... | tri< _ _ _ with prf
+... | here α = left ⦃ [ y<x ]ᴿ ⦄ (here ⦃ l<y ⦄ ⦃ [ y<x ]ᴿ ⦄ α)
+... | right (here ⦃ k≤u = x<u ⦄ α) = here ⦃ k≤u = x<u ⦄ α
+ins-comm x y z fˣ fʸ leaf nEq prf | tri> _ _ y<x | tri≈ _ refl _ = ⊥-elim (nEq refl)
+ins-comm x y z ⦃ x<u = x<u ⦄ ⦃ y<u = y<u ⦄ fˣ fʸ leaf nEq prf | tri> _ _ y<x | tri> _ _ c with prf
+... | here α = right ⦃ [ c ]ᴿ ⦄ (here ⦃ [ c ]ᴿ ⦄ ⦃ y<u ⦄ α)
+... | right (here α) = here ⦃ k≤u = x<u ⦄ α
+---- node cases ----
+ins-comm x y z fˣ fʸ (node p lt rt bal) nEq prf with compare y (proj₁ p) in compY
+... | tri< y<p _ _ = {!!}
+ins-comm x y z {v} fˣ fʸ (node p lt rt bal) nEq prf | tri≈ _ refl _ with compare x (proj₁ p)
+... | tri< x<p _ _ = {!!}
+... | tri≈ _ refl _ rewrite compY = ⊥-elim (nEq refl)
+... | tri> _ _ p<x with insertWith x fˣ ⦃ [ p<x ]ᴿ ⦄ rt in insX
+... | (i , rt') with compare z (proj₁ p)
+... | tri< z<p _ _ = {!prf'!}
+  where
+    prf' = inᴸ-joinᴿ⁺ lt (i , rt') bal [ z<p ]ᴿ prf
+... | tri≈ _ refl _ = {!insert∈ (proj₁ p) v ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ (proj₂ (joinʳ⁺ p lt (i , rt') bal))!}
+... | tri> _ _ p<z = {!!}
+  where
+    prf' = inᴿ-joinᴿ⁺ lt (i , rt') bal [ p<z ]ᴿ prf
+ins-comm x y z fˣ fʸ (node p lt rt bal) nEq prf | tri> _ _ p<y with compare x (proj₁ p) in compX
+... | tri< x<p _ _ = {!!}
+... | tri≈ _ refl _ rewrite compY = {!!}
+... | tri> _ _ p<x = {!!}
 
 -- -}
 -- -}
