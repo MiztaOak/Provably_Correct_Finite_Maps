@@ -111,6 +111,8 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
 
       insert∈ : ∀ k v m → k ↦ v ∈ (insert k v m)
 
+      ∈insert : ∀ k {v} {v'} m → k ↦ v ∈ (insert k v' m) → v ≡ v'
+
       insert-safe : ∀ {k k' v v' m} → k ↦ v ∈ m → k ≢ k' → k ↦ v ∈ (insert k' v' m)
 
       ---------------------------------------------------------------------------------
@@ -148,3 +150,5 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
           → P ∅ × (∀ m → P m → ∀ k v → P (insertWith k (λ _ → v) m))
           → (∀ m → P m)
     ip P (b , s) mp = ips P (b , λ m x k v _ → s m x k v ) mp
+
+  open BMap ⦃...⦄ public

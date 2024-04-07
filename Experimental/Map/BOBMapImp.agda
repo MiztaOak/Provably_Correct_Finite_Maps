@@ -1,4 +1,5 @@
 {-# OPTIONS --erasure #-}
+{-# OPTIONS --allow-unsolved-metas #-}
 open import Relation.Binary.Bundles using (StrictTotalOrder)
 open import OrdSet
 
@@ -6,7 +7,7 @@ module Map.BOBMapImp {k ℓ₁} (order : OrdSet k ℓ₁) where
 
 open import Prelude
 open import Level using (Level; _⊔_) renaming (suc to s; zero to z)
-open import Map.BasicMap
+open import Map.BasicMap using (BMap)
 open import Data.Nat.Base using (ℕ; _*_; suc; zero)
 open import Data.Product hiding (map)
 open import Function.Base
@@ -28,36 +29,36 @@ private
   variable
     ℓ ℓ' ℓₚ : Level
 
-data Map (V : Set ℓ') : Set (k ⊔ ℓ' ⊔ ℓ₁) where
-  map : ∀ {h} → BOB.BOBMap V ⊥⁺ ⊤⁺ h → Map V
+data AVLMap (V : Set ℓ') : Set (k ⊔ ℓ' ⊔ ℓ₁) where
+  map : ∀ {h} → BOB.BOBMap V ⊥⁺ ⊤⁺ h → AVLMap V
 
 data AnyM {V : Set ℓ'} (P : Pred V ℓₚ) (kₚ : Key) :
-  Map V → Set (k ⊔ ℓ₁ ⊔ ℓ' ⊔ ℓₚ) where
+  AVLMap V → Set (k ⊔ ℓ₁ ⊔ ℓ' ⊔ ℓₚ) where
     map : ∀ {h t} → BOB.Any P kₚ t → AnyM P kₚ (map {h = h} t)
 
-module _ (V : Set ℓ) where
-  open import Map.Proofs.InsertionProofs order V
-  open import Map.Proofs.Proofs order V
+module BMapAVLInstance (V : Set ℓ) where
+  open import Map.Proofs.InsertionProofs order V as insP
+  open import Map.Proofs.Proofs order V as Proofs
   open import Map.Proofs.DeletionProofs order V
 
   private
-    height : Map V → ℕ
+    height : AVLMap V → ℕ
     height (map {h} x) = h
 
-    toBMap : (m : Map V) → BOBMap V ⊥⁺  ⊤⁺ (height m)
+    toBMap : (m : AVLMap V) → BOBMap V ⊥⁺  ⊤⁺ (height m)
     toBMap (map x) = x
 
-    toAny : {m : Map V} {P : Pred V ℓₚ} {k : Key} → AnyM P k m → Any P k (toBMap m)
+    toAny : {m : AVLMap V} {P : Pred V ℓₚ} {k : Key} → AnyM P k m → Any P k (toBMap m)
     toAny (map x) = x
 
-    toNotAny : {m : Map V} {P : Pred V ℓₚ} {k : Key} → ¬ AnyM P k m → ¬ Any P k (toBMap m)
+    toNotAny : {m : AVLMap V} {P : Pred V ℓₚ} {k : Key} → ¬ AnyM P k m → ¬ Any P k (toBMap m)
     toNotAny {m = (map m)} prf x = prf (map x)
 
     toNotAnyM : ∀ {h : ℕ} {m : BOBMap V ⊥⁺ ⊤⁺ h} {P : Pred V ℓₚ} {k : Key}
                 → ¬ Any P k m → ¬ AnyM P k (map m)
     toNotAnyM neg (map prf) = neg prf
 
-    fldr : {l : Level} {A : Set l} → (Key × V → A → A) → A → Map V → A
+    fldr : {l : Level} {A : Set l} → (Key × V → A → A) → A → AVLMap V → A
     fldr f g (map m) = foldr f g m
 
     ¬Sym : ∀ {ℓ : Level} {A : Set ℓ} {a b : A} → ¬ (a ≡ b) → ¬ (b ≡ a)
@@ -68,7 +69,7 @@ module _ (V : Set ℓ) where
     -- Assigning map functionality to interface
     ---------------------------------------------------------------------------------
     BOBMapImp : BMap {ℓ₁ = ℓ₁} {K = Key} {V}
-    BMap.Map BOBMapImp = Map V
+    BMap.Map BOBMapImp = AVLMap V
     BMap.∅ BOBMapImp = map (leaf {{⊥⁺<⊤⁺}})
 
     BMap._∈_ BOBMapImp k m = AnyM {ℓₚ = z} (λ _ → True) k m
@@ -103,7 +104,7 @@ module _ (V : Set ℓ) where
     -- Leaving these for later as we are not 100% sure that they are relevant or correct
     BMap.ips BOBMapImp P (base , step) (map m) = ip-insert (bobP P) ((λ leaf → {!base!}) , {!!}) m
       where
-        bobP : (Map V → Set (k ⊔ ℓ)) → (∀ {h : ℕ} → BOBMap V ⊥⁺ ⊤⁺ h → Set (k ⊔ ℓ))
+        bobP : (AVLMap V → Set (k ⊔ ℓ)) → (∀ {h : ℕ} → BOBMap V ⊥⁺ ⊤⁺ h → Set (k ⊔ ℓ))
         bobP P m = P (map m)
 
     BMap.lookup-∅ BOBMapImp _ = refl
@@ -111,11 +112,11 @@ module _ (V : Set ℓ) where
 
     BMap.∈-∅ BOBMapImp _ (map ())
 
-    BMap.∈⇒lookup BOBMapImp (map m) k prf = map $ ∈⇒lookup m k prf
+    BMap.∈⇒lookup BOBMapImp (map m) k prf = map $ insP.∈⇒lookup m k prf
 
-    BMap.lookup⇒∈ BOBMapImp (map m) k v (map prf) = lookup⇒∈ k m prf
+    BMap.lookup⇒∈ BOBMapImp (map m) k v (map prf) = insP.lookup⇒∈ k m prf
 
-    BMap.lookup-insert BOBMapImp k (map m) f = lookup-insert k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m f
+    BMap.lookup-insert BOBMapImp k (map m) f = insP.lookup-insert k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m f
 
     BMap.ins-comm BOBMapImp k k' v v' (map m) notEq =
       ( λ z v x → map (leftSide z v (toAny x)) ) , λ z v x → map (rightSide z v (toAny x))
@@ -142,6 +143,8 @@ module _ (V : Set ℓ) where
     ... | inj₂ y = inj₂ (map y)
 
     BMap.insert∈ BOBMapImp k v (map m) = map (insert∈ k v ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m)
+
+    BMap.∈insert BOBMapImp k (map m) (map prf) = insEq k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m prf
 
     BMap.insert-safe BOBMapImp {k' = k'} (map prf) nEq =
       map (insert-safe ⦃ ⊥⁺<[ k' ] ⦄ ⦃ [ k' ]<⊤⁺ ⦄ prf nEq)
@@ -196,6 +199,7 @@ module _ (V : Set ℓ) where
 
     BMap.del-safe BOBMapImp {k} {k'} {m = map m} (map prf) nEq =
       map $ del-safe k k' m ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ prf nEq
+
 -- -}
 -- -}
 -- -}
