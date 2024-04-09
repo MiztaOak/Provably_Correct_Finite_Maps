@@ -635,11 +635,15 @@ module _ {v} {V : Set v} where
   n≢sn : ∀ {n} → ¬ n ≡ suc n
   n≢sn {n} ()
 
+  sa≰sb⇒a≰b : ∀ {a b} → ¬ (suc a) ≤ (suc b) → ¬ a ≤ b
+  sa≰sb⇒a≰b {a} {b} sa≰sb a≤b = contradiction (s≤s a≤b) sa≰sb
+
   a≰b∧a≤sb⇒a=sb : ∀ {a b} → ¬ a ≤ b → a ≤ suc b → a ≡ suc b
   a≰b∧a≤sb⇒a=sb {zero} {b} p1 p2 = ⊥-elim (p1 z≤n)
   a≰b∧a≤sb⇒a=sb {suc a} {zero} p1 p2
     rewrite n≤0⇒n≡0 (s≤s⁻¹ p2) = refl
-  a≰b∧a≤sb⇒a=sb {suc a} {suc b} p1 p2 = {!!}
+  a≰b∧a≤sb⇒a=sb {suc a} {suc b} p1 p2
+    rewrite a≰b∧a≤sb⇒a=sb {a} {b} (sa≰sb⇒a≰b p1) (s≤s⁻¹ p2) = refl
 
   postulate
     a+sb≡sc⇒a+b≡c : ∀ {a b c} → a + suc b ≡ suc c → c ≡ a + b
