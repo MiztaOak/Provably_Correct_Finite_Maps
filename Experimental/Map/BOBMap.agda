@@ -567,8 +567,7 @@ module _ {v} {V : Set v} where
   ... | Ordℕ.greater .h2 k rewrite lemR {k} {h2} = unionRight f m n
 
   n+0 : ∀ {n} → n + 0 ≡ n
-  n+0 {zero} = refl
-  n+0 {suc n} rewrite n+0 {n} = refl
+  n+0 {n} = +-identityʳ n
 
   sa+n : ∀ {a n} → suc (a + n) ≡ a + suc n
   sa+n {zero} {zero} = refl
@@ -716,8 +715,9 @@ module _ {v} {V : Set v} where
   sss2L {a} {b} {c} p1 p2 with sss2 p1 p2
   ... | x rewrite mab≡mba {max a b} {suc a} = x
 
-  unionRight f leaf (node p l r b) = 0# , (node p l r b)
-  {-# CATCHALL #-}
+  -- Optimization
+  -- unionRight f leaf (node p l r b) = 0# , (node p l r b)
+  -- {-# CATCHALL #-}
   unionRight {hl} f m (node p l r b)
     with splitAt (proj₁ p) {{mklim l}} {{mklim r}} m
   unionRight {hl} f m (node p l r b)
@@ -726,11 +726,15 @@ module _ {v} {V : Set v} where
   unionRight {hl} {n} {ₗ} {ᵘ} f m (node {hlʳ} {hrʳ} (k , v) l r b)
     | split value (hL , prfL , treeL) (hR , prfR , treeR)
     | 0# , t1 = joinʳ⁺ (k , f v value) t1 (unionWith f r treeR) (lemA b prfL prfR)
-  unionRight {hl} {zero} {ₗ} {ᵘ} f m (node {hlʳ} {hrʳ} (k , v) l r b)
+  unionRight {hl} {n} {ₗ} {ᵘ} f m (node {hlʳ} {hrʳ} (k , v) l r b)
     | split value (hL , prfL , treeL) (hR , prfR , treeR)
     | 1# , t1 with unionWith f r treeR
-  ... | 0# , t2 = joiner
+  ... | j , t2 =  lem (gJoin (k , f v value) t1 t2)
     where
+      lem : ∃ (λ i → BOBMap V ₗ ᵘ (i ⊕ max (suc (max hlʳ hL)) (j ⊕ max hrʳ hR)))
+          → ∃ (λ i → BOBMap V ₗ ᵘ (i ⊕ suc (hl + n)))
+      lem (i , t) = i , {!!}
+{-
       joiner : ∃ λ i → BOBMap V ₗ ᵘ (i ⊕ suc (hl + zero))
       joiner with bigbal b
       joiner | inl (refl , refl) with gJoin (k , f v value) t1 t2
@@ -790,6 +794,7 @@ module _ {v} {V : Set v} where
         rewrite sss2L t prfL
         = i , res
 
+
   unionRight {hl} {suc n} {ₗ} {ᵘ} f m (node {hlʳ} {hrʳ} (k , v) l r b)
     | split value (hL , prfL , treeL) (hR , prfR , treeR)
     | 1# , t1 with unionWith f r treeR
@@ -846,7 +851,7 @@ module _ {v} {V : Set v} where
         rewrite t
         rewrite sss2L t prfL
         = i , res
-
+{-
   -- * DELETE STARTS HERE ----------------------------------------------------
 
   joinˡ⁻ : ∀ {l u} {hl hr h}
@@ -894,3 +899,9 @@ module _ {v} {V : Set v} where
           → A
   foldr f g leaf = g
   foldr f g (node p l r bal) = foldr f (f p (foldr f g r)) l
+
+
+-- -}
+-- -}
+-- -}
+-- -}
