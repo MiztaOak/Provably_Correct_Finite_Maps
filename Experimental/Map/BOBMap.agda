@@ -10,7 +10,7 @@ Order = toStrictTotalOrder order
 
 open import Prelude
 open import Level using (Level; _⊔_) renaming (suc to lsuc)
-open import Data.Nat.Base using (ℕ; zero; suc; _+_; _*_; _<_)
+open import Data.Nat.Base using (ℕ; zero; suc; _+_; _*_; _<_; _≤_)
 open import Data.Fin.Base using (Fin) renaming (zero to fzero; suc to fsuc)
 open import Data.Product
 open import Data.Maybe
@@ -18,13 +18,14 @@ open import Relation.Unary using (Pred)
 open import Relation.Binary.PropositionalEquality hiding (trans; [_])
 open import Function using (_∘_; _$_; const; case_of_)
 open import Relation.Binary.Definitions
+open import Relation.Nullary using (¬_)
 
 open StrictTotalOrder Order renaming (Carrier to Key)
 open import Data.Tree.AVL.Key Order public
 
 private
   variable
-    ℓ ℓ' ℓₚ : Level
+    ℓ ℓ' ℓₚ ℓₐ : Level
     v : Level
 
 ℕ₂ = Fin 2
@@ -324,6 +325,78 @@ module _ {v} {V : Set v} where
            → Any P kₚ rm
            → {bal : hl ~ hr ⊔ h}
            → Any P kₚ (node (k' , v) lm rm bal)
+
+  data All (P : Pred (Key × V) ℓₐ) {l u : Key⁺}
+      : ∀ {h : ℕ} → BOBMap V l u h → Set (k ⊔ ℓ₁ ⊔ v ⊔ ℓₐ) where
+    leaf : ⦃ @erased l<u : l <⁺ u ⦄ → All P leaf
+    node : ∀ {hl hr h}
+           → {(k , v) : Key × V}
+           {lt : BOBMap V l [ k ] hl}
+           {rt : BOBMap V [ k ] u hr}
+           {bal : hl ~ hr ⊔ h}
+           → P (k , v)
+           → All P lt
+           → All P rt
+           → All P (node (k , v) lt rt bal)
+
+  allLookup : {l u : Key⁺} {h : ℕ} {m : BOBMap V l u h} {k : Key} {v : V} {P : Pred (Key × V) ℓₐ}
+    → Any (λ v' → v ≡ v') k  m
+    → All P m
+    → P (k , v)
+  allLookup (here refl) (node p lt rt) = p
+  allLookup (left prf) (node p lt rt) = allLookup prf lt
+  allLookup (right prf) (node p lt rt) = allLookup prf rt
+
+  alljoinᴸ : ∀ {l u : Key⁺} {hl hr h : ℕ} {P : Pred (Key × V) ℓₐ}
+    → {k : Key} {v : V}
+    → {lt⁺ : ∃ λ i → BOBMap V l [ k ] (i ⊕ hl)}
+    → {rt : BOBMap V [ k ] u hr}
+    → P (k , v)
+    → All P (proj₂ lt⁺)
+    → All P rt
+    → (bal : hl ~ hr ⊔ h)
+    → All P (proj₂ (joinˡ⁺ (k , v) lt⁺ rt bal))
+  alljoinᴸ {lt⁺ = (0# , lt)} p allL allR bal = node p allL allR
+  alljoinᴸ {lt⁺ = (1# , lt)} p allL allR ~+ = node p allL allR
+  alljoinᴸ {lt⁺ = (1# , lt)} p allL allR ~0 = node p allL allR
+  alljoinᴸ {lt⁺ = (1# , node _ _ _ ~0)} p (node a aL aR) allR ~- = node a aL (node p aR allR)
+  alljoinᴸ {lt⁺ = (1# , node _ _ _ ~-)} p (node a aL aR) allR ~- = node a aL (node p aR allR)
+  alljoinᴸ {lt⁺ = (1# , node _ _ (node _ _ _ _) ~+)} {rt} p (node a aL (node aᴿ aLᴿ aRᴿ)) allR ~- =
+    node aᴿ (node a aL aLᴿ) (node p aRᴿ allR)
+
+  alljoinᴿ : ∀ {l u : Key⁺} {hl hr h : ℕ} {P : Pred (Key × V) ℓₐ}
+    → {k : Key} {v : V}
+    → {lt : BOBMap V l [ k ] hl}
+    → {rt⁺ : ∃ λ i → BOBMap V [ k ] u (i ⊕ hr)}
+    → P (k , v)
+    → All P lt
+    → All P (proj₂ rt⁺)
+    → (bal : hl ~ hr ⊔ h)
+    → All P (proj₂ (joinʳ⁺ (k , v) lt rt⁺ bal))
+  alljoinᴿ {rt⁺ = (0# , rt)} p allL allR bal = node p allL allR
+  alljoinᴿ {rt⁺ = (1# , rt)} p allL allR ~0 = node p allL allR
+  alljoinᴿ {rt⁺ = (1# , rt)} p allL allR ~- = node p allL allR
+  alljoinᴿ {rt⁺ = (1# , (node _ _ _ ~+))} p allL (node a aL aR) ~+ = node a (node p allL aL) aR
+  alljoinᴿ {rt⁺ = (1# , (node _ _ _ ~0))} p allL (node a aL aR) ~+ = node a (node p allL aL) aR
+  alljoinᴿ {rt⁺ = (1# , (node _ (node _ _ _ _) _ ~-))} p allL (node a (node aᴸ aLᴸ aRᴸ) aR) ~+ =
+    node aᴸ (node p allL aLᴸ) (node a aRᴸ aR)
+
+  allInsert : {l u : Key⁺} {h : ℕ} {(k , v) : Key × V}
+              {P : Pred (Key × V) ℓₐ}
+              {{@erased l<u : l <⁺ [ k ]}} {{@erased p<u : [ k ] <⁺ u}}
+              {m : BOBMap V l u h}
+              → P (k , v)
+              → All P m
+              → All P (proj₂ $ insert (k , v) m)
+  allInsert p leaf = node p leaf leaf
+  allInsert {h = _} {k , v} p (node {h = _} {(k' , v')} {lt} {rt} {bal = bal} a allL allR) with compare k k'
+  ... | le k<k' = alljoinᴸ {lt⁺ = m } a (allInsert ⦃ p<u = [ k<k' ]ᴿ ⦄ p allL) allR bal
+    where
+      m = insert (k , v) ⦃ p≤u = [ k<k' ]ᴿ ⦄ lt
+  ... | eq refl = node p allL allR
+  ... | ge k'<k = alljoinᴿ {rt⁺ = m} a allL (allInsert ⦃ [ k'<k ]ᴿ ⦄ p allR) bal
+    where
+      m = insert (k , v) ⦃ [ k'<k ]ᴿ ⦄ rt
 
   foldr : ∀ {l u} {h : ℕ} {n : Level} {A : Set n}
           → (Key × V → A → A)

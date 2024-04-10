@@ -27,7 +27,7 @@ open BOB hiding (max) public
 
 private
   variable
-    ℓ ℓ' ℓₚ : Level
+    ℓ ℓ' ℓₚ ℓₐ : Level
 
 data AVLMap (V : Set ℓ') : Set (k ⊔ ℓ' ⊔ ℓ₁) where
   map : ∀ {h} → BOB.BOBMap V ⊥⁺ ⊤⁺ h → AVLMap V
@@ -35,6 +35,10 @@ data AVLMap (V : Set ℓ') : Set (k ⊔ ℓ' ⊔ ℓ₁) where
 data AnyM {V : Set ℓ'} (P : Pred V ℓₚ) (kₚ : Key) :
   AVLMap V → Set (k ⊔ ℓ₁ ⊔ ℓ' ⊔ ℓₚ) where
     map : ∀ {h t} → BOB.Any P kₚ t → AnyM P kₚ (map {h = h} t)
+
+data AllM {V : Set ℓ'} (P : Pred (Key × V) ℓₐ) : AVLMap V → Set (k ⊔ ℓ₁ ⊔ ℓ' ⊔ ℓₐ) where
+  map : ∀ {h t} → BOB.All P t → AllM P (map {h = h} t)
+
 
 module BMapAVLInstance (V : Set ℓ) where
   open import Map.Proofs.InsertionProofs order V as insP
@@ -199,6 +203,18 @@ module BMapAVLInstance (V : Set ℓ) where
 
     BMap.del-safe BOBMapImp {k} {k'} {m = map m} (map prf) nEq =
       map $ del-safe k k' m ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ prf nEq
+
+  allMLookup : ∀ {m : AVLMap V} {k : Key} {v : V} {P : Pred (Key × V) ℓₐ}
+    → AnyM (_≡_ v) k m
+    → AllM P m
+    → P (k , v)
+  allMLookup (map prf) (map all) = allLookup prf all
+
+  allMInsert : ∀ {P : Pred (Key × V) ℓₐ} {(k , v) : Key × V} {m : AVLMap V}
+    → P (k , v)
+    → AllM P m
+    → AllM P (BMap.insert BOBMapImp k v m)
+  allMInsert {P = P} {k , v} p (map m) = map $ allInsert ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ p m
 
 -- -}
 -- -}
