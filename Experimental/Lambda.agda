@@ -9,7 +9,7 @@ open import Map.BasicMap
 open import Data.Sum using (inj₁ ; inj₂)
 open import Relation.Binary.PropositionalEquality
 
-open import Map.BOBMapImp ℕOrder hiding (insert)
+open import Map.BOBMapImp ℕOrder
 
 module Lambda where
 

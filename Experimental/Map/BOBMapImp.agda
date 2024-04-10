@@ -23,7 +23,7 @@ open import Relation.Binary.Definitions
 import Map.BOBMap order as BOB
 open StrictTotalOrder (toStrictTotalOrder order) renaming (Carrier to Key)
 
-open BOB hiding (max) public
+open BOB
 
 private
   variable

@@ -188,7 +188,7 @@ del-∉del⊆ k leaf prf k' v ()
 del-∉del⊆ k (node p lm rm bal) prf k' v prf' with compare k (proj₁ p)
 ... | tri≈ _ refl _ = ⊥-elim (prf (here tt))
 del-∉del⊆ k (node p lm rm bal) prf k' v prf' | tri< k<p _ _ with compare k' (proj₁ p)
-... | tri< k'<p _ _ = left ⦃ [ k'<p ]ᴿ ⦄ $ del-∉del⊆ k ⦃ k<u = [ k<p ]ᴿ ⦄ lm (∉Left k<p prf) k' v prfᴸ
+... | tri< k'<p _ _ = left ⦃ [ k'<p ]ᴿ ⦄ (del-∉del⊆ k ⦃ k<u = [ k<p ]ᴿ ⦄ lm (∉Left k<p prf) k' v prfᴸ)
   where
     lm⁻ = delete k ⦃ p≤u = [ k<p ]ᴿ ⦄ lm
     prfᴸ = inᴸ-joinᴸ⁻ lm⁻ rm bal [ k'<p ]ᴿ prf'
@@ -209,7 +209,7 @@ del-∉del⊆ k (node p lm rm bal) prf k' v prf' | tri> _ _ p<k with compare k' 
   where
     rm⁻ = delete k ⦃ [ p<k ]ᴿ ⦄ rm
     prfC = inC-joinᴿ⁻ lm rm⁻ bal prf'
-... | tri> _ _ p<k' = right ⦃ [ p<k' ]ᴿ ⦄ $ del-∉del⊆ k ⦃ [ p<k ]ᴿ ⦄ rm (∉Right p<k prf) k' v prfᴿ
+... | tri> _ _ p<k' = right ⦃ [ p<k' ]ᴿ ⦄ (del-∉del⊆ k ⦃ [ p<k ]ᴿ ⦄ rm (∉Right p<k prf) k' v prfᴿ)
   where
     rm⁻ = delete k ⦃ [ p<k ]ᴿ ⦄ rm
     prfᴿ = inᴿ-joinᴿ⁻ lm rm⁻ bal [ p<k' ]ᴿ prf'
