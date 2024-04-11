@@ -14,7 +14,7 @@ open import Data.Nat.Base
   using (ℕ; zero; suc; pred; _+_; _*_; _<_; _≤_; z<s; s<s; z≤n; s≤s; s≤s⁻¹)
   renaming (_⊔_ to max; compare to compareℕ; Ordering to Ordℕ)
 open import Data.Nat.Properties
-  using (n<1+n; ≤-refl; <⇒≤; m≤n⇒m≤1+n; ≤-trans; +-identityʳ; m≤n⇒m⊔n≡n; ⊔-comm; _≤?_; n≤0⇒n≡0; suc-injective)
+  using (n<1+n; ≤-refl; <⇒≤; m≤n⇒m≤1+n; ≤-trans; +-identityʳ; m≤n⇒m⊔n≡n; ⊔-comm; _≤?_; n≤0⇒n≡0; suc-injective; n≤1+n)
 open import Data.Fin.Base using (Fin) renaming (zero to fzero; suc to fsuc)
 open import Data.Product
 open import Data.Sum using (_⊎_) renaming (inj₁ to inl; inj₂ to inr)
@@ -604,14 +604,16 @@ module _ {v} {V : Set v} where
   ... | x rewrite p2 with m≤n⇒m⊔n≡n x
   ... | y rewrite ⊔-comm b (c + n) = y
 
+  n⊔n≡n : ∀ n → max n n ≡ n
+  n⊔n≡n n = lemC {n}
+
   postulate
-    n⊔n≡n : ∀ n → max n n ≡ n
     mab≡mba : ∀ {a b} → max a b ≡ max b a
 
-  n≡n⇒sn≡sn : ∀ {n} → n ≡ n → suc n ≡ suc n
+  n≡n⇒sn≡sn : ∀ {n m} → n ≡ m → suc n ≡ suc m
   n≡n⇒sn≡sn {n} refl = refl
 
-  sn≡sn⇒n≡n : ∀ {n} → suc n ≡ suc n → n ≡ n
+  sn≡sn⇒n≡n : ∀ {n m} → suc n ≡ suc m → n ≡ m
   sn≡sn⇒n≡n {n} refl = refl
 
   lemm : ∀ {a b} → b ≤ a → max a b ≡ a
@@ -620,6 +622,11 @@ module _ {v} {V : Set v} where
   lemm {suc a} {suc b} p1 with b ≤? a
   ... | yes x rewrite lemm {a} {b} x = refl
   ... | no  x = contradiction (s≤s⁻¹ p1) x
+
+  lemm' : ∀ {a b} → b ≤ a → max b a ≡ a
+  lemm' {zero} {zero} p1 = refl
+  lemm' {suc a} {zero} p1 = refl
+  lemm' {suc a} {suc b} (s≤s p1) = n≡n⇒sn≡sn (lemm' p1)
 
   ⊔-0 : ∀ {n} → max n zero ≡ n
   ⊔-0 {zero} = refl
@@ -736,6 +743,37 @@ module _ {v} {V : Set v} where
   sss2L {a} {b} {c} p1 p2 with sss2 p1 p2
   ... | x rewrite mab≡mba {max a b} {suc a} = x
 
+  suc≡≤ : ∀ {n m} → n ≡ suc m → m ≤ n
+  suc≡≤ {.(suc m)} {m} refl = n≤1+n m
+
+  ≤suc : ∀ {n m} → n ≤ m → n ≤ (suc m)
+  ≤suc z≤n = z≤n
+  ≤suc (s≤s prf) = s≤s (≤suc prf)
+
+  fixHeight : ∀ {n hlʳ hrʳ hl hR hL} j
+    → hlʳ ~ hrʳ ⊔ hl + n
+    → hR ≤ hl
+    → hL ≤ hl
+    → max (suc (max hlʳ hL)) (j ⊕ max hrʳ hR) ≡ suc (hl + n)
+  fixHeight {n} {hl = hl} 0# bal prfR prfL with bigbal (lemA bal prfL prfR)
+  ... | inl (fst , snd) rewrite fst rewrite snd rewrite lem4L {hl + n} = refl
+  ... | inr (inl (fst , snd)) rewrite fst = lemm (≤suc (suc≡≤ snd))
+  ... | inr (inr (fst , snd)) rewrite fst rewrite (sym snd) rewrite n⊔n≡n (hl + n) = {!!}
+  fixHeight {n} {hl = hl} 1# bal prfR prfL with bigbal (lemA bal prfL prfR)
+  ... | inl (fst , snd) rewrite fst rewrite snd rewrite n⊔n≡n (hl + n) = refl
+  ... | inr (inl (fst , snd)) rewrite fst rewrite lemm (suc≡≤ snd) = refl
+  ... | inr (inr (fst , snd)) rewrite fst rewrite lemm' (suc≡≤ snd) = refl
+
+  fixHeight1# : ∀ {n hlʳ hrʳ hl hR hL}
+    → hlʳ ~ hrʳ ⊔ hl + n
+    → hR ≤ hl
+    → hL ≤ hl
+    → max (suc (max hlʳ hL)) (1# ⊕ max hrʳ hR) ≡ suc (hl + n)
+  fixHeight1# {n} {hl = hl} bal prfR prfL with bigbal (lemA bal prfL prfR)
+  ... | inl (fst , snd) rewrite fst rewrite snd rewrite n⊔n≡n (hl + n) = refl
+  ... | inr (inl (fst , snd)) rewrite fst rewrite lemm (suc≡≤ snd) = refl
+  ... | inr (inr (fst , snd)) rewrite fst rewrite lemm' (suc≡≤ snd) = refl
+
   -- Optimization
   -- unionRight f leaf (node p l r b) = 0# , (node p l r b)
   -- {-# CATCHALL #-}
@@ -750,129 +788,12 @@ module _ {v} {V : Set v} where
   unionRight {hl} {n} {ₗ} {ᵘ} f m (node {hlʳ} {hrʳ} (k , v) l r b)
     | split value (hL , prfL , treeL) (hR , prfR , treeR)
     | 1# , t1 with unionWith f r treeR
-  ... | j , t2 =  lem (gJoin (k , f v value) t1 t2)
+  ... | 1# , t2 = lem (gJoin (k , f v value) t1 t2)
     where
-      lem : ∃ (λ i → BOBMap V ₗ ᵘ (i ⊕ max (suc (max hlʳ hL)) (j ⊕ max hrʳ hR)))
+      lem : ∃ (λ i → BOBMap V ₗ ᵘ (i ⊕ max (suc (max hlʳ hL)) (1# ⊕ max hrʳ hR)))
           → ∃ (λ i → BOBMap V ₗ ᵘ (i ⊕ suc (hl + n)))
-      lem (i , t) = i , {!!}
-{-
-      joiner : ∃ λ i → BOBMap V ₗ ᵘ (i ⊕ suc (hl + zero))
-      joiner with bigbal b
-      joiner | inl (refl , refl) with gJoin (k , f v value) t1 t2
-      ... | i , t -- why is this needed?
-        rewrite lemm+n {n = zero} prfR
-        rewrite lemm+n {n = zero} prfL
-        rewrite lem4L {hl + zero}
-        = i , t
-      joiner | inr (inl (refl , t)) with ssss t prfR , gJoin (k , f v value) t1 t2
-      ... | inr x , i , res
-        rewrite lemm+n {n = zero} prfL
-        rewrite n+0 {hl}
-        rewrite suc-injective x
-        rewrite lem4L {hl}
-        = i , res
-      ... | inl x , i , res
-        rewrite lemm+n {n = zero} prfL
-        rewrite n+0 {hl}
-        rewrite sym x
-        rewrite lemRR {max hrʳ hR}
-        = i , res
-      joiner | inr (inr (refl , t)) with ssss t prfL
-      ... | inl x
-        rewrite lemm+n {n = zero} prfR
-        rewrite n+0 {hl}
-        rewrite x
-        = joinʳ⁺ (k , f v value) t1 (0# , t2) ~0
-      ... | inr x
-        rewrite lemm+n {n = zero} prfR
-        rewrite n+0 {hl}
-        rewrite x
-        with gJoin (k , f v value) t1 t2
-      ... | i , res
-        rewrite lem4L {hl}= i , res
-  ... | 1# , t2 = joiner --{!gJoin (k , f v value) t1 t2!}
-    where
-      joiner : ∃ λ i → BOBMap V ₗ ᵘ (i ⊕ suc (hl + zero))
-      joiner
-        with bigbal b
-      joiner | inl (refl , refl) with gJoin (k , f v value) t1 t2
-      ... | i , res
-        rewrite n+0 {hl}
-        rewrite lemm prfL
-        rewrite lemm prfR
-        rewrite n⊔n≡n hl
-        = i , res
-      joiner | inr (inl (refl , t)) with gJoin (k , f v value) t1 t2
-      ... | i , res
-        rewrite lemm+n {n = zero} prfL
-        rewrite t
-        rewrite sss2 t prfR
-        = i , res
-      joiner | inr (inr (refl , t)) with gJoin (k , f v value) t1 t2
-      ... | i , res
-        rewrite lemm+n {n = zero} prfR
-        rewrite t
-        rewrite sss2L t prfL
-        = i , res
-
-
-  unionRight {hl} {suc n} {ₗ} {ᵘ} f m (node {hlʳ} {hrʳ} (k , v) l r b)
-    | split value (hL , prfL , treeL) (hR , prfR , treeR)
-    | 1# , t1 with unionWith f r treeR
-  ... | 0# , t2 = joiner
-    where
-      N : ℕ
-      N = suc n
-
-      joiner : ∃ λ i → BOBMap V ₗ ᵘ (i ⊕ suc (hl + N))
-      joiner with bigbal b
-      joiner | inl (refl , refl) with gJoin (k , f v value) t1 t2
-      ... | i , t -- why is this needed?
-        rewrite lemm+n {n = N} prfR
-        rewrite lemm+n {n = N} prfL
-        rewrite lem4L {hl + N}
-        = i , t
-      joiner | inr (inl (refl , t))
-        with gJoin (k , f v value) t1 t2
-      ... | i , x -- again
-        rewrite lemm+n {n = N} prfL
-        rewrite t
-        rewrite pppp {hrʳ} {hR} {hl} {n} (tttt t) prfR
-        rewrite lemRR {hrʳ}
-        = i , x
-      joiner | inr (inr (refl , t)) with pppp {hlʳ} {hL} {hl} {n} (tttt t) prfL
-      ... | x
-        rewrite x
-        rewrite lemm+n {n = N} prfR
-        rewrite t
-        = joinʳ⁺ (k , f v value) t1 (0# , t2) ~0
-  ... | 1# , t2 = joiner
-    where
-      N : ℕ
-      N = suc n
-
-      joiner : ∃ λ i → BOBMap V ₗ ᵘ (i ⊕ suc (hl + N))
-      joiner
-        with bigbal b
-      joiner | inl (refl , refl) with gJoin (k , f v value) t1 t2
-      ... | i , res
-        rewrite lemm+n {n = N} prfL
-        rewrite lemm+n {n = N} prfR
-        rewrite n⊔n≡n (hl + N)
-        = i , res
-      joiner | inr (inl (refl , t)) with gJoin (k , f v value) t1 t2
-      ... | i , res
-        rewrite lemm+n {n = N} prfL
-        rewrite t
-        rewrite sss2 t prfR
-        = i , res
-      joiner | inr (inr (refl , t)) with gJoin (k , f v value) t1 t2
-      ... | i , res
-        rewrite lemm+n {n = N} prfR
-        rewrite t
-        rewrite sss2L t prfL
-        = i , res
--}
+      lem (i , t) rewrite fixHeight1# b prfR prfL = i , t
+  ... | 0# , t2 = {!gJoin (k , f v value) t1 t2!}
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 
