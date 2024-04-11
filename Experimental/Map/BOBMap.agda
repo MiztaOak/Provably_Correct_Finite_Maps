@@ -14,7 +14,7 @@ open import Data.Nat.Base
   using (ℕ; zero; suc; pred; _+_; _*_; _<_; _≤_; z<s; s<s; z≤n; s≤s; s≤s⁻¹)
   renaming (_⊔_ to max; compare to compareℕ; Ordering to Ordℕ)
 open import Data.Nat.Properties
-  using (n<1+n; ≤-refl; <⇒≤; m≤n⇒m≤1+n; ≤-trans; +-identityʳ; m≤n⇒m⊔n≡n; ⊔-comm; _≤?_; n≤0⇒n≡0; suc-injective; n≤1+n)
+  using (n<1+n; n≤1+n; ≤-refl; <⇒≤; m≤n⇒m≤1+n; ≤-trans; +-identityʳ; m≤n⇒m⊔n≡n; ⊔-comm; _≤?_; n≤0⇒n≡0; suc-injective; ≤-reflexive)
 open import Data.Fin.Base using (Fin) renaming (zero to fzero; suc to fsuc)
 open import Data.Product
 open import Data.Sum using (_⊎_) renaming (inj₁ to inl; inj₂ to inr)
@@ -619,9 +619,7 @@ module _ {v} {V : Set v} where
   lemm : ∀ {a b} → b ≤ a → max a b ≡ a
   lemm {zero} {zero} p1 = refl
   lemm {suc a} {zero} p1 = refl
-  lemm {suc a} {suc b} p1 with b ≤? a
-  ... | yes x rewrite lemm {a} {b} x = refl
-  ... | no  x = contradiction (s≤s⁻¹ p1) x
+  lemm {suc a} {suc b} (s≤s p1) rewrite lemm p1 = refl
 
   lemm' : ∀ {a b} → b ≤ a → max b a ≡ a
   lemm' {zero} {zero} p1 = refl
@@ -635,9 +633,9 @@ module _ {v} {V : Set v} where
   lemm+n : ∀ {a b n} → b ≤ a → max (a + n) b ≡ a + n
   lemm+n {zero} {zero} {n} p1 = ⊔-0 {n}
   lemm+n {suc a} {zero} {n} p1 = refl
-  lemm+n {suc a} {suc b} {n} p1 with b ≤? a
+  lemm+n {suc a} {suc b} {n} (s≤s p1) with b ≤? a
   ... | yes x rewrite lemm+n {a} {b} {n} x = refl
-  ... | no  x = contradiction (s≤s⁻¹ p1) x
+  ... | no  x = contradiction p1 x
 
   n≢sn : ∀ {n} → ¬ n ≡ suc n
   n≢sn {n} ()
@@ -736,15 +734,15 @@ module _ {v} {V : Set v} where
     rewrite lem4L {a}
     = refl
 
+  suc≡≤ : ∀ {n m} → n ≡ suc m → m ≤ n
+  suc≡≤ {.(suc m)} {m} refl = n≤1+n m
+
   sss2L : ∀ {a b c n}
           → c + n ≡ suc a
           → b ≤ c
           → max (max a b) (suc a) ≡ suc a
   sss2L {a} {b} {c} p1 p2 with sss2 p1 p2
   ... | x rewrite mab≡mba {max a b} {suc a} = x
-
-  suc≡≤ : ∀ {n m} → n ≡ suc m → m ≤ n
-  suc≡≤ {.(suc m)} {m} refl = n≤1+n m
 
   ≤suc : ∀ {n m} → n ≤ m → n ≤ (suc m)
   ≤suc z≤n = z≤n
@@ -774,6 +772,10 @@ module _ {v} {V : Set v} where
   ... | inr (inl (fst , snd)) rewrite fst rewrite lemm (suc≡≤ snd) = refl
   ... | inr (inr (fst , snd)) rewrite fst rewrite lemm' (suc≡≤ snd) = refl
 
+  m⊔sm⇒sm : ∀ {m} → max (suc m) m ≡ suc m
+  m⊔sm⇒sm {zero} = refl
+  m⊔sm⇒sm {suc m} rewrite m⊔sm⇒sm {m} = refl
+
   -- Optimization
   -- unionRight f leaf (node p l r b) = 0# , (node p l r b)
   -- {-# CATCHALL #-}
@@ -788,12 +790,21 @@ module _ {v} {V : Set v} where
   unionRight {hl} {n} {ₗ} {ᵘ} f m (node {hlʳ} {hrʳ} (k , v) l r b)
     | split value (hL , prfL , treeL) (hR , prfR , treeR)
     | 1# , t1 with unionWith f r treeR
+  ... | 0# , t2 = join0# b
+    where
+      join0# : hlʳ ~ hrʳ ⊔ hl + n → ∃ λ i → BOBMap V ₗ ᵘ (i ⊕ suc (hl + n))
+      join0# bal with bigbal (lemA bal prfL prfR)
+      join0# bal | inr (inr (fst , snd))
+        rewrite fst rewrite snd = joinʳ⁺ (k , f v value) t1 (0# , t2) ~0
+      join0# _ | inl (fst , snd) with gJoin (k , f v value) t1 t2
+      ... | j , t rewrite fst rewrite snd rewrite m⊔sm⇒sm {hl + n} = j , t
+      join0# _ | inr (inl (fst , snd)) with gJoin (k , f v value) t1 t2
+      ... | j , t rewrite fst rewrite snd rewrite lemRR {max hrʳ hR} = j , t
   ... | 1# , t2 = lem (gJoin (k , f v value) t1 t2)
     where
       lem : ∃ (λ i → BOBMap V ₗ ᵘ (i ⊕ max (suc (max hlʳ hL)) (1# ⊕ max hrʳ hR)))
           → ∃ (λ i → BOBMap V ₗ ᵘ (i ⊕ suc (hl + n)))
       lem (i , t) rewrite fixHeight1# b prfR prfL = i , t
-  ... | 0# , t2 = {!gJoin (k , f v value) t1 t2!}
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 
