@@ -776,6 +776,35 @@ module _ {v} {V : Set v} where
   m⊔sm⇒sm {zero} = refl
   m⊔sm⇒sm {suc m} rewrite m⊔sm⇒sm {m} = refl
 
+  fixMapUR : ∀ {n hlʳ hrʳ hl hR hL} {l u : Key⁺}
+    → (k : Key)
+    → (f : V → Maybe V → V)
+    → (v : V)
+    → (value : Maybe V)
+    → hlʳ ~ hrʳ ⊔ hl + n
+    → hR ≤ hl
+    → hL ≤ hl
+    → BOBMap V l [ k ] (suc (max hlʳ hL))
+    → ∃ (λ j → BOBMap V [ k ] u (j ⊕ max hrʳ hR))
+    → ∃ (λ i → BOBMap V l u (i ⊕ suc (hl + n)))
+  fixMapUR k f v value bal prfR prfL t1 (j , t2) with bigbal (lemA bal prfL prfR)
+  fixMapUR {n} {hl = hl} k f v value bal prfR prfL t1 (j , t2)
+    | inl (fst , snd) rewrite fst rewrite snd with gJoin (k , f v value) t1 t2
+  ... | i , t with j
+  ... | 0# rewrite m⊔sm⇒sm {hl + n} = i , t
+  ... | 1# rewrite n⊔n≡n (hl + n) = i , t
+  fixMapUR {hrʳ = hrʳ} {hR = hR} k f v value bal prfR prfL t1 (j , t2)
+    | inr (inl (fst , snd)) rewrite fst with gJoin (k , f v value) t1 t2
+  ... | i , t with j
+  ... | 0# rewrite snd rewrite lemRR {max hrʳ hR} = i , t
+  ... | 1# rewrite lemm (suc≡≤ snd) = i , t
+  fixMapUR {n} {hl = hl} k f v value bal prfR prfL t1 (j , t2)
+    | inr (inr (fst , snd)) rewrite fst with j
+  ... | 0# rewrite snd = joinʳ⁺ (k , f v value) t1 (0# , t2) ~0
+  ... | 1# with gJoin (k , f v value) t1 t2
+  ... | i , t rewrite lemm' (suc≡≤ snd) = i , t
+
+
   -- Optimization
   -- unionRight f leaf (node p l r b) = 0# , (node p l r b)
   -- {-# CATCHALL #-}
@@ -790,6 +819,8 @@ module _ {v} {V : Set v} where
   unionRight {hl} {n} {ₗ} {ᵘ} f m (node {hlʳ} {hrʳ} (k , v) l r b)
     | split value (hL , prfL , treeL) (hR , prfR , treeR)
     | 1# , t1 with unionWith f r treeR
+  ... | t2 = fixMapUR k f v value b prfR prfL t1 t2
+    {-
   ... | 0# , t2 = join0# b
     where
       join0# : hlʳ ~ hrʳ ⊔ hl + n → ∃ λ i → BOBMap V ₗ ᵘ (i ⊕ suc (hl + n))
@@ -805,7 +836,7 @@ module _ {v} {V : Set v} where
       lem : ∃ (λ i → BOBMap V ₗ ᵘ (i ⊕ max (suc (max hlʳ hL)) (1# ⊕ max hrʳ hR)))
           → ∃ (λ i → BOBMap V ₗ ᵘ (i ⊕ suc (hl + n)))
       lem (i , t) rewrite fixHeight1# b prfR prfL = i , t
-
+  -}
   -- * DELETE STARTS HERE ----------------------------------------------------
 
   delete : ∀ {l u : Key⁺} {h : ℕ} (k : Key)
