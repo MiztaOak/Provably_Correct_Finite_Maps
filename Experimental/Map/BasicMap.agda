@@ -25,7 +25,7 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
       _∈_   : K → Map → Set (ℓ ⊔ ℓ' ⊔ ℓ₁)
       _↦_∈_ : K → V → Map → Set (ℓ ⊔ ℓ' ⊔ ℓ₁) -- Domain
       unionWith : (V → Maybe V → V) → Map → Map → Map
-      lookup : Map → K → Maybe V   -- Apply
+      lookup : Map → K → Maybe V   -- Apply should this be removed?
       lookup∈ : ∀ {k m} → k ∈ m → V
       insertWith : K → (Maybe V → V) → Map → Map
       delete : K → Map → Map
@@ -84,6 +84,11 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
 
       ∈⇒lookup : ∀ m k {v} → [ k ↦ v ] m → k ↦ v ∈ m
       lookup⇒∈ : ∀ m k v → k ↦ v ∈ m → [ k ↦ v ] m
+
+      lookup≡lookup∈ : ∀ k m → (k∈m : k ∈ m) → just (lookup∈ k∈m) ≡ lookup m k
+
+      -- would this be usefull?
+      mapsTo : ∀ {m k} → (k∈m : k ∈ m) → k ↦ lookup∈ k∈m ∈ m
 
       {-
       ⊢ ∀ f a b . lookup (insert f (a , b)) a = b
@@ -145,6 +150,11 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
       del-∉ : ∀ {k m} → k ∉ m → delete k m ≐ m
       del-∈ : ∀ {k m} → k ∈ m → k ∉ delete k m
       del-safe : ∀ {k k' v m} → k' ↦ v ∈ m → k ≢ k' → k' ↦ v ∈ delete k m
+
+      ---------------------------------------------------------------------------------
+      -- Insertion and Deletion properties
+      ---------------------------------------------------------------------------------
+
 
     ip : (P : Map → Set (ℓ ⊔ ℓ'))
           → P ∅ × (∀ m → P m → ∀ k v → P (insertWith k (λ _ → v) m))

@@ -4,7 +4,7 @@
 open import Relation.Binary.Bundles using (StrictTotalOrder)
 open import OrdSet using (OrdSet; toStrictTotalOrder)
 
-module Map.Proofs.InsertionProofs {k ℓ₁ v} (order : OrdSet k ℓ₁) (V : Set v) where
+module Map.Proofs.Insertion.Proofs {k ℓ₁ v} (order : OrdSet k ℓ₁) (V : Set v) where
 open import Data.Nat.Base using (ℕ; _*_; suc; zero)
 open import Data.Empty using (⊥)
 open import Relation.Binary.PropositionalEquality hiding (trans; [_])
@@ -21,7 +21,7 @@ open import Prelude
 open import Map.BOBMap order as BOB
 open StrictTotalOrder (toStrictTotalOrder order) renaming (Carrier to Key)
 open import Map.Proofs.Proofs order V
-open import Map.Proofs.InsertionHelpers order V
+open import Map.Proofs.Insertion.Helpers order V
 
 ---------------------------------------------------------------------------------
 -- Induction Principle using insert
@@ -38,65 +38,6 @@ ip-insert : ∀ {l u : Key⁺} --⦃ @erased l<u : l <⁺ u ⦄
             → (∀ {h} → (m : BOBMap V l u h) → P m)
 ip-insert P (base , step) leaf = base leaf
 ip-insert P (base , step) (node p lm rm bal) = {!!}
-
-
----------------------------------------------------------------------------------
--- lookup∈ : Lookup function that uses a proof of membership to gurantee a value
----------------------------------------------------------------------------------
-lookup∈ : ∀ {l u : Key⁺} {h : ℕ} {k : Key} {m : BOBMap V l u h}
-          → k ∈ m → V
-lookup∈ {k = k} {node .(k , _) lm rm bal} (here {v = v} x) = v
-lookup∈ {k = k} {node p lm rm bal} (left prf) = lookup∈ prf
-lookup∈ {k = k} {node p lm rm bal} (right prf) = lookup∈ prf
-
----------------------------------------------------------------------------------
--- ∈⇒lookup
----------------------------------------------------------------------------------
-∈⇒lookup : ∀ {l u : Key⁺} {h : ℕ} (m : BOBMap V l u h) (k : Key) {v : V}
-                   → lookup m k ≡ just v
-                   → k ↦ v ∈ m
-∈⇒lookup (node p lm rm bal) k prf with compare k (proj₁ p)
-... | tri< a _ _    = left ⦃ [ a ]ᴿ ⦄ (∈⇒lookup lm k prf)
-... | tri≈ _ refl _ = here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ (sym $ eqFromJust prf)
-... | tri> _ _ c    = right ⦃ [ c ]ᴿ ⦄ (∈⇒lookup rm k prf)
-
----------------------------------------------------------------------------------
--- lookup⇒∈
----------------------------------------------------------------------------------
-lookup⇒∈ : ∀ {l u : Key⁺} {h : ℕ} (k : Key) {v : V} (m : BOBMap V l u h)
-            → k ↦ v ∈ m
-            → lookup m k ≡ just v
-lookup⇒∈ k (node .(k , _) lm rm bal) (here refl) with compare k k
-... | tri< _ ¬b _   = ⊥-elim (¬b refl)
-... | tri≈ _ refl _ = refl
-... | tri> _ ¬b _   = ⊥-elim (¬b refl)
-lookup⇒∈ k (node p lm rm bal) (left {{ord}} prf) with compare k (proj₁ p)
-... | tri< _ _ _    = lookup⇒∈ k lm prf
-... | tri≈ _ refl _ = ⊥-elim (irrefl⁺ [ proj₁ p ] ord)
-... | tri> ¬a _ _   = ⊥-elim (¬a [ ord ]-lower)
-lookup⇒∈ k (node p lm rm bal) (right {{ord}} prf) with compare k (proj₁ p)
-... | tri< _ _ ¬c   = ⊥-elim (¬c [ ord ]-lower)
-... | tri≈ _ refl _ = ⊥-elim (irrefl⁺ [ proj₁ p ] ord)
-... | tri> _ _ _    = lookup⇒∈ k rm prf
-
----------------------------------------------------------------------------------
--- lookup-insert
----------------------------------------------------------------------------------
-lookup-insert : ∀ {l u : Key⁺} {h : ℕ} (k : Key)
-                {{l≤k : l <⁺ [ k ]}} {{k≤u : [ k ] <⁺ u}}
-                → (m : BOBMap V l u h)
-                → (f : Maybe V → V)
-                → lookup (proj₂ (insertWith k f m)) k ≡ just (f (lookup m k))
-lookup-insert k leaf f with compare k k
-... | tri< _ ¬b _   = ⊥-elim (¬b refl)
-... | tri≈ _ refl _ = refl
-... | tri> _ ¬b _   = ⊥-elim (¬b refl)
-lookup-insert k ⦃ l<k ⦄ ⦃ k<u ⦄ (node p lm rm b) f with compare k (proj₁ p) in cmp
-... | tri< a _ _ rewrite joinˡ⁺-lookup k p (insertWith k f ⦃ l<k ⦄ ⦃ [ a ]ᴿ ⦄ lm) rm b a =
-  lookup-insert k ⦃ k≤u = [ a ]ᴿ ⦄ lm f
-... | tri≈ _ refl _ rewrite cmp = refl
-... | tri> _ _ c rewrite joinʳ⁺-lookup k p lm (insertWith k f ⦃ [ c ]ᴿ ⦄ ⦃ k<u ⦄ rm) b c =
-  lookup-insert k ⦃ [ c ]ᴿ ⦄ rm f
 
 ---------------------------------------------------------------------------------
 -- Prove that Insert results in ∈

@@ -2,7 +2,7 @@
 open import Relation.Binary.Bundles using (StrictTotalOrder)
 open import OrdSet
 
-module Map.Proofs.InsertionHelpers {k ℓ₁ ℓ} (order : OrdSet k ℓ₁) (V : Set ℓ) where
+module Map.Proofs.Insertion.Helpers {k ℓ₁ ℓ} (order : OrdSet k ℓ₁) (V : Set ℓ) where
 
 open import Data.Nat.Base using (ℕ)
 open import Data.Product using (_×_; ∃; proj₁; proj₂; _,_)

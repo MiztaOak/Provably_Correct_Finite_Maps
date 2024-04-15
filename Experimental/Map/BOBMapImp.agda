@@ -41,9 +41,10 @@ data AllM {V : Set ℓ'} (P : Pred (Key × V) ℓₐ) : AVLMap V → Set (k ⊔ 
 
 
 module BMapAVLInstance (V : Set ℓ) where
-  open import Map.Proofs.InsertionProofs order V as insP
+  open import Map.Proofs.Insertion.Proofs order V
   open import Map.Proofs.Proofs order V as Proofs
-  open import Map.Proofs.DeletionProofs order V
+  open import Map.Proofs.Deletion.Proofs order V
+  open import Map.Proofs.Lookup.Proofs order V
 
   private
     height : AVLMap V → ℕ
@@ -116,11 +117,15 @@ module BMapAVLInstance (V : Set ℓ) where
 
     BMap.∈-∅ BOBMapImp _ (map ())
 
-    BMap.∈⇒lookup BOBMapImp (map m) k prf = map $ insP.∈⇒lookup m k prf
+    BMap.∈⇒lookup BOBMapImp (map m) k prf = map $ ∈⇒lookup m k prf
 
-    BMap.lookup⇒∈ BOBMapImp (map m) k v (map prf) = insP.lookup⇒∈ k m prf
+    BMap.lookup⇒∈ BOBMapImp (map m) k v (map prf) = lookup⇒∈ k m prf
 
-    BMap.lookup-insert BOBMapImp k (map m) f = insP.lookup-insert k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m f
+    BMap.mapsTo BOBMapImp (map prf) = map (mapsTo prf)
+
+    BMap.lookup-insert BOBMapImp k (map m) f = lookup-insert k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m f
+
+    BMap.lookup≡lookup∈ BOBMapImp k (map m) (map prf) = lookup≡lookup∈ k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m prf
 
     BMap.ins-comm BOBMapImp k k' v v' (map m) notEq =
       ( λ z v x → map (leftSide z v (toAny x)) ) , λ z v x → map (rightSide z v (toAny x))

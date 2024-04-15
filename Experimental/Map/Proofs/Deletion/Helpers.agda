@@ -2,7 +2,7 @@
 open import Relation.Binary.Bundles using (StrictTotalOrder)
 open import OrdSet
 
-module Map.Proofs.DeletionHelpers {k ℓ₁ ℓ} (order : OrdSet k ℓ₁) (V : Set ℓ) where
+module Map.Proofs.Deletion.Helpers {k ℓ₁ ℓ} (order : OrdSet k ℓ₁) (V : Set ℓ) where
 
 open import Data.Nat.Base using (ℕ; suc)
 open import Data.Product using (_×_; ∃; proj₁; proj₂; _,_)
@@ -18,7 +18,7 @@ open import Prelude
 open import Map.BOBMap order as BOB
 open import Map.Proofs.Proofs order V
 open StrictTotalOrder (toStrictTotalOrder order) renaming (Carrier to Key)
-open import Map.Proofs.InsertionHelpers order V
+open import Map.Proofs.Insertion.Helpers order V
 
 notInLeft : ∀ {l : Key⁺} {h : ℕ}
             (k : Key)
