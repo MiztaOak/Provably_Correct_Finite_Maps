@@ -441,14 +441,7 @@ module _ {v} {V : Set v} where
              → (m : BOBMap V l u h)
              → Split k l u h
   splitAt {ₗ} {ᵘ} {zero} k leaf
-    = split nothing (0 , z≤n , lt) (0 , z≤n , rt)
-    where
-      -- sinful stuff
-      lt : BOBMap V ₗ [ k ] 0
-      lt = leaf
-
-      rt : BOBMap V [ k ] ᵘ 0
-      rt = leaf
+    = split nothing (0 , z≤n , leaf) (0 , z≤n , leaf)
 
   splitAt {h = suc h} k (node (k' , v') l r b) with compare k k'
   splitAt {ₗ} {ᵘ} {h} k {{l<k = l<k}} (node {hl = hl} {hr = hr} (k' , v') l r b)
@@ -563,26 +556,6 @@ module _ {v} {V : Set v} where
         , β
 
   -- * UNION STARTS HERE -----------------------------------------------------
-
-  -- UNION DECLARATIONS ------------------------------------------------------
-  unionRight : {hl n : ℕ} → {l u : Key⁺}
-               → (V → Maybe V → V)
-               → BOBMap V l u hl
-               → BOBMap V l u (suc (hl + n))
-               → ∃ λ i → BOBMap V l u (i ⊕ suc (hl + n))
-  unionWith : {h1 h2 : ℕ} → ∀ {l u}
-              → (V → Maybe V → V)
-              → BOBMap V l u h1
-              → BOBMap V l u h2
-              → ∃ λ n → BOBMap V l u (n ⊕ max h1 h2)
-
-  -- UNION IMPLEMENTATIONS ---------------------------------------------------
-
-  unionWith {h1} {h2} f n m with compareℕ h1 h2
-  ... | Ordℕ.less    .h1 k rewrite lemL {k} {h1} = {!!}
-  ... | Ordℕ.equal   .h1   rewrite lemC {h1}     = {!!}
-  ... | Ordℕ.greater .h2 k rewrite lemR {k} {h2} = unionRight f m n
-
   n+0 : ∀ {n} → n + 0 ≡ n
   n+0 {n} = +-identityʳ n
 
@@ -804,39 +777,54 @@ module _ {v} {V : Set v} where
   ... | 1# with gJoin (k , f v value) t1 t2
   ... | i , t rewrite lemm' (suc≡≤ snd) = i , t
 
+ -- UNION ------------------------------------------------------
+{- 
+  unionRight : {hl n : ℕ} → {l u : Key⁺}
+               → (V → Maybe V → V)
+               → BOBMap V l u hl
+               → BOBMap V l u (suc (hl + n))
+               → ∃ λ i → BOBMap V l u (i ⊕ suc (hl + n))
+
+  unionWith : {h1 h2 : ℕ} → ∀ {l u}
+              → (V → Maybe V → V)
+              → BOBMap V l u h1
+              → BOBMap V l u h2
+              → ∃ λ n → BOBMap V l u (n ⊕ max h1 h2)
+  unionWith {h1} {h2} f n m with compareℕ h1 h2
+  ... | Ordℕ.less    .h1 k rewrite lemL {k} {h1} = unionRight f n m
+  ... | Ordℕ.equal   .h1   rewrite lemC {h1}     = {!!}
+  ... | Ordℕ.greater .h2 k rewrite lemR {k} {h2} = unionRight f m n
 
   -- Optimization
   -- unionRight f leaf (node p l r b) = 0# , (node p l r b)
   -- {-# CATCHALL #-}
-  unionRight {hl} f m (node p l r b)
+  unionRight f leaf n = 0# , n
+  unionRight {hl} f m@(node _ _ _ _) (node p l r b)
     with splitAt (proj₁ p) {{mklim l}} {{mklim r}} m
   unionRight {hl} f m (node p l r b)
     | split value (hL , prfL , treeL) (hR , prfR , treeR)
-    with unionWith f l treeL
+    with unionWith f treeL l
   unionRight {hl} {n} {ₗ} {ᵘ} f m (node {hlʳ} {hrʳ} (k , v) l r b)
     | split value (hL , prfL , treeL) (hR , prfR , treeR)
-    | 0# , t1 = joinʳ⁺ (k , f v value) t1 (unionWith f r treeR) (lemA b prfL prfR)
+    | 0# , t1 = joinʳ⁺ (k , f v value) t1 (unionWith f r treeR) {!!} -- (lemA b prfL prfR)
   unionRight {hl} {n} {ₗ} {ᵘ} f m (node {hlʳ} {hrʳ} (k , v) l r b)
     | split value (hL , prfL , treeL) (hR , prfR , treeR)
-    | 1# , t1 with unionWith f r treeR
-  ... | t2 = fixMapUR k f v value b prfR prfL t1 t2
-    {-
-  ... | 0# , t2 = join0# b
-    where
-      join0# : hlʳ ~ hrʳ ⊔ hl + n → ∃ λ i → BOBMap V ₗ ᵘ (i ⊕ suc (hl + n))
-      join0# bal with bigbal (lemA bal prfL prfR)
-      join0# bal | inr (inr (fst , snd))
-        rewrite fst rewrite snd = joinʳ⁺ (k , f v value) t1 (0# , t2) ~0
-      join0# _ | inl (fst , snd) with gJoin (k , f v value) t1 t2
-      ... | j , t rewrite fst rewrite snd rewrite m⊔sm⇒sm {hl + n} = j , t
-      join0# _ | inr (inl (fst , snd)) with gJoin (k , f v value) t1 t2
-      ... | j , t rewrite fst rewrite snd rewrite lemRR {max hrʳ hR} = j , t
-  ... | 1# , t2 = lem (gJoin (k , f v value) t1 t2)
-    where
-      lem : ∃ (λ i → BOBMap V ₗ ᵘ (i ⊕ max (suc (max hlʳ hL)) (1# ⊕ max hrʳ hR)))
-          → ∃ (λ i → BOBMap V ₗ ᵘ (i ⊕ suc (hl + n)))
-      lem (i , t) rewrite fixHeight1# b prfR prfL = i , t
-  -}
+    | 1# , t1 with unionWith f treeR r
+  ... | t2 = fixMapUR k f v value b prfR prfL {!!} {!!} 
+-}
+  union : {h1 h2 : ℕ} → ∀ {l u}
+          → (V → Maybe V → V)
+          → BOBMap V l u h1
+          → BOBMap V l u h2
+          → ∃ λ n → BOBMap V l u (n ⊕ max h1 h2)
+  union f leaf n@leaf = 0# , (leaf ⦃ mklim n ⦄)
+  union f leaf n@(node _ _ _ _) = 0# , n
+  union f m@(node _ _ _ _) leaf = 0# , m
+  union f m@(node _ _ _ _) n@(node p lt rt bal) with splitAt (proj₁ p) ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ m
+  ... | split value (hL , prfL , treeL) (hR , prfR , treeR) with union f treeL lt
+  ... | i , t1 with union f treeR rt
+  ... | j , t2 = {!!}
+
   -- * DELETE STARTS HERE ----------------------------------------------------
 
   delete : ∀ {l u : Key⁺} {h : ℕ} (k : Key)
