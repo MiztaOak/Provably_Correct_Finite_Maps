@@ -36,8 +36,14 @@ open BMapAVLInstance Type
 Ctx : Set
 Ctx = AVLMap Type
 
+[] : Ctx
+[] = ∅
+
 Env : Ctx → Set
 Env c = AllM (λ x → [[ proj₂ x ]]) c
+
+[]Env : Env []
+[]Env = all∅ (λ x → [[ proj₂ x ]])
 
 envLookup : ∀ {x : Var} {τ : Type} {Γ : Ctx} → x ↦ τ ∈ Γ → Env Γ → [[ τ ]]
 envLookup prf env = allMLookup prf env
@@ -82,6 +88,8 @@ translate env (T-Var {x = x'} prf) = envLookup prf env
 translate env (T-Abs {x = x} e) e' = translate (allMInsert e' env) e
 translate env (T-App e₁ e₂) = translate env e₁ (translate env e₂)
 
+sucL : ℕ → ℕ
+sucL n = translate {[]} []Env (T-App (T-Abs (T-Add (T-Var (insert∈ 0 int [])) (T-Int 1))) (T-Int n))
 -- -}
 -- -}
 -- -}
