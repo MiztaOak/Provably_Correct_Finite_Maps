@@ -277,6 +277,10 @@ module _ {v} {V : Set v} where
   lemLL+n {n} {zero} = refl
   lemLL+n {n} {suc m} rewrite lemLL+n {n} {m} = refl
 
+  lemLL : {m : ℕ} → max m (suc (suc m)) ≡ suc (suc m)
+  lemLL {zero} = refl
+  lemLL {suc m} rewrite lemLL {m} = refl
+
   lemC : {m : ℕ} → max m m ≡ m
   lemC {zero} = refl
   lemC {suc m} rewrite lemC {m} = refl
@@ -630,20 +634,20 @@ module _ {v} {V : Set v} where
          → hlʳ ~ hrʳ ⊔ hl + n
          → hL ≤ hl
          → hR ≤ hl
-         → max hlʳ hL ~ max hrʳ hR ⊔ hl + n
+         → max hL hlʳ ~ max hR hrʳ ⊔ hl + n
   lemA {hlʳ} {hrʳ} {hl} {zero} {hL} {hR} b hl<hl hr<hl
     rewrite n+0 {hl} with bigbal b
   ... | inl (refl , refl)
-    rewrite lemm hl<hl rewrite lemm hr<hl = b
+    rewrite lemm hl<hl rewrite lemm hr<hl = {!b!}
   ... | inr (inl (refl , refl))
-    rewrite lemm hl<hl rewrite lemm hr<hl = fun
+    rewrite lemm hl<hl rewrite lemm hr<hl = {!fun!}
     where
       fun : suc hrʳ ~ max hrʳ hR ⊔ suc hrʳ
       fun with hR ≤? hrʳ
       ... | yes x rewrite lemm x = ~-
       ... | no  x rewrite a≰b∧a≤sb⇒a=sb x hr<hl rewrite lem4R {hrʳ} = ~0
   ... | inr (inr (refl , refl))
-    rewrite lemm hl<hl rewrite lemm hr<hl = fun
+    rewrite lemm hl<hl rewrite lemm hr<hl = {!fun!}
     where
       fun : max hlʳ hL ~ suc hlʳ ⊔ suc hlʳ
       fun with hL ≤? hlʳ
@@ -652,15 +656,15 @@ module _ {v} {V : Set v} where
   lemA {hlʳ} {hrʳ} {hl} {suc n} {hL} {hR} b hl<hl hr<hl
     with bigbal b
   ... | inl (refl , refl)
-    rewrite lemm+n {n = suc n} hl<hl rewrite lemm+n {n = suc n} hr<hl = b
+    rewrite lemm+n {n = suc n} hl<hl rewrite lemm+n {n = suc n} hr<hl = {!b!}
   ... | inr (inl (refl , t))
     rewrite lemm+n {n = suc n} hl<hl
     rewrite a+sb≡sc⇒a+b≡c t
-    rewrite lemm+n {n = n} hr<hl = b
+    rewrite lemm+n {n = n} hr<hl = {!b!}
   ... | inr (inr (refl , t))
     rewrite lemm+n {n = suc n} hr<hl
     rewrite a+sb≡sc⇒a+b≡c t
-    rewrite lemm+n {n = n} hl<hl = b
+    rewrite lemm+n {n = n} hl<hl = {!b!}
 
   postulate
     tttt : ∀ {a b n} → a + suc n ≡ suc b → a + n ≡ b
@@ -721,6 +725,14 @@ module _ {v} {V : Set v} where
   ≤suc z≤n = z≤n
   ≤suc (s≤s prf) = s≤s (≤suc prf)
 
+  sm⊔m⇒sm : ∀ {m} → max (suc m) m ≡ suc m
+  sm⊔m⇒sm {zero} = refl
+  sm⊔m⇒sm {suc m} rewrite sm⊔m⇒sm {m} = refl
+
+  m⊔sm⇒sm : ∀ {m} → max m (suc m) ≡ suc m
+  m⊔sm⇒sm {n} rewrite mab≡mba {n} {suc n} = sm⊔m⇒sm {n}
+
+{-
   fixHeight : ∀ {n hlʳ hrʳ hl hR hL} j
     → hlʳ ~ hrʳ ⊔ hl + n
     → hR ≤ hl
@@ -744,10 +756,6 @@ module _ {v} {V : Set v} where
   ... | inl (fst , snd) rewrite fst rewrite snd rewrite n⊔n≡n (hl + n) = refl
   ... | inr (inl (fst , snd)) rewrite fst rewrite lemm (suc≡≤ snd) = refl
   ... | inr (inr (fst , snd)) rewrite fst rewrite lemm' (suc≡≤ snd) = refl
-
-  m⊔sm⇒sm : ∀ {m} → max (suc m) m ≡ suc m
-  m⊔sm⇒sm {zero} = refl
-  m⊔sm⇒sm {suc m} rewrite m⊔sm⇒sm {m} = refl
 
   fixMapUR : ∀ {n hlʳ hrʳ hl hR hL} {l u : Key⁺}
     → (k : Key)
@@ -778,7 +786,7 @@ module _ {v} {V : Set v} where
   ... | i , t rewrite lemm' (suc≡≤ snd) = i , t
 
  -- UNION ------------------------------------------------------
-{- 
+
   unionRight : {hl n : ℕ} → {l u : Key⁺}
                → (V → Maybe V → V)
                → BOBMap V l u hl
@@ -810,7 +818,27 @@ module _ {v} {V : Set v} where
   unionRight {hl} {n} {ₗ} {ᵘ} f m (node {hlʳ} {hrʳ} (k , v) l r b)
     | split value (hL , prfL , treeL) (hR , prfR , treeR)
     | 1# , t1 with unionWith f treeR r
-  ... | t2 = fixMapUR k f v value b prfR prfL {!!} {!!} 
+  ... | t2 = fixMapUR k f v value b prfR prfL {!!} {!!}
+-}
+  lem : ∀ {h h₁ hl hr hL hR}
+    → (i j : ℕ₂)
+    → hL ≤ suc h₁
+    → hR ≤ suc h₁
+    → max (i ⊕ max hL hl) (j ⊕ max hR hr) ≡ suc (max h h₁)
+  -- prfL = hL ≤ suc h₁
+  -- prfR = hR ≤ suc h₁
+  lem i j prfL prfR = {!!}
+
+{-
+  join0# : hl₁ʳ ~ hr₁ ⊔ h₁ → ∃ λ i → BOBMap V ₗ ᵘ (i ⊕ suc (hl + n))
+  join0# bal with bigbal (lemA bal prfL prfR)
+  join0# bal | inr (inr (fst , snd))
+    rewrite fst rewrite snd = joinʳ⁺ (k , f v value) t1 (0# , t2) ~0
+  join0# _ | inl (fst , snd) with gJoin (k , f v value) t1 t2
+  ... | j , t rewrite fst rewrite snd rewrite m⊔sm⇒sm {hl + n} = j , t
+  join0# _ | inr (inl (fst , snd)) with gJoin (k , f v value) t1 t2
+  ... | j , t rewrite fst rewrite snd rewrite lemRR {max hrʳ hR} = j , t
+  ... | 1# , t2 = lem (gJoin (k , f v value) t1 t2)
 -}
   union : {h1 h2 : ℕ} → ∀ {l u}
           → (V → Maybe V → V)
@@ -820,10 +848,57 @@ module _ {v} {V : Set v} where
   union f leaf n@leaf = 0# , (leaf ⦃ mklim n ⦄)
   union f leaf n@(node _ _ _ _) = 0# , n
   union f m@(node _ _ _ _) leaf = 0# , m
-  union f m@(node _ _ _ _) n@(node p lt rt bal) with splitAt (proj₁ p) ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ m
+  union {l = l} {u = u} f m@(node {hl₁} {hr₁} {h₁} _ _ _ bm) n@(node {hl} {hr} {h} (k , v) lt rt bal)
+    with splitAt k ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ m
   ... | split value (hL , prfL , treeL) (hR , prfR , treeR) with union f treeL lt
   ... | i , t1 with union f treeR rt
-  ... | j , t2 = {!!}
+  ... | j , t2 = {!gJoin (k , f v value) t1 t2!} --lx i j (gJoin (k , f v value) t1 t2)
+    where
+      lx2 : ∀ {l u}
+        → (i j : ℕ₂)
+        → BOBMap V l [ k ] (i ⊕ max hL hl)
+        → BOBMap V [ k ] u (j ⊕ max hR hr)
+        → ∃ λ y → BOBMap V l u (y ⊕ suc (max h₁ h))
+      lx2 i j t1 t2 with compareℕ h h₁
+      ... | Ordℕ.less .h a = {!!}
+      ... | Ordℕ.equal .h₁ = {!!}
+      ... | Ordℕ.greater .h₁ a = {!!}
+{-
+      lx : ∀ {l u}
+        → (i j : ℕ₂)
+        → BOBMap V l [ k ] (i ⊕ max hL hl)
+        → BOBMap V [ k ] u (j ⊕ max hR hr)
+        → ∃ λ y → BOBMap V l u (y ⊕ suc (max h₁ h))
+      lx i j t1 t2 with compareℕ h₁ h
+      lx i 0# t1 t2 | Ordℕ.less .h₁ a
+        rewrite lemL {a} {h₁}
+        = joinˡ⁺ (k , f v value) (i , t1) t2 (lemA bal prfL prfR)
+      lx 0# 1# t1 t2 | Ordℕ.less .h₁ a with gJoin (k , f v value) t1 t2
+      lx 0# 1# t1 t2 | Ordℕ.less .h₁ a | xx , tx
+        rewrite lemL {a} {h₁}
+        with bigbal (lemA bal prfL prfR)
+      ... | inl (fst , snd)
+        rewrite fst
+        rewrite snd
+        rewrite m⊔sm⇒sm {h₁ + a} = xx , tx
+      ... | inr (inl (fst , snd))
+        rewrite fst
+        rewrite snd
+        = joinˡ⁺ (k , f v value) (0# , t1) t2 ~0
+      ... | inr (inr (fst , snd))
+        rewrite fst
+        rewrite snd
+        rewrite lemLL {max hL hl}
+        = xx , tx
+      lx 1# 1# t1 t2 | Ordℕ.less .h₁ a = {!!}
+      lx i j t1 t2 | Ordℕ.equal .h₁ rewrite lemC {h₁} = {!!}
+      lx 0# 0# t1 t2 | Ordℕ.greater .h a rewrite lemR {a} {h} = {!t2!}
+      lx 0# 1# t1 t2 | Ordℕ.greater .h a rewrite lemR {a} {h} = {!!}
+      lx 1# 0# t1 t2 | Ordℕ.greater .h a rewrite lemR {a} {h} = {!!}
+      lx 1# 1# t1 t2 | Ordℕ.greater .h a rewrite lemR {a} {h} = {!!}
+-- -}
+-- -}
+-- -}
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 
