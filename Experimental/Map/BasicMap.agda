@@ -17,20 +17,16 @@ private
 
 module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
 
-  record BMap : Set (lsuc (ℓ ⊔ ℓ' ⊔ ℓ₁)) where
+  record BMap (Map : Set (ℓ ⊔ ℓ' ⊔ ℓ₁)) : Set (lsuc (ℓ ⊔ ℓ' ⊔ ℓ₁)) where
     constructor mkMap
     field
-      Map    : Set (ℓ ⊔ ℓ' ⊔ ℓ₁)
       ∅      : Map                 -- Empty
+      singleton : K → V → Map
       _∈_   : K → Map → Set (ℓ ⊔ ℓ' ⊔ ℓ₁)
       _↦_∈_ : K → V → Map → Set (ℓ ⊔ ℓ' ⊔ ℓ₁) -- Domain
-      unionWith : (V → Maybe V → V) → Map → Map → Map
       lookup : Map → K → Maybe V   -- Apply should this be removed?
       lookup∈ : ∀ {k m} → k ∈ m → V
       insertWith : K → (Maybe V → V) → Map → Map
-      delete : K → Map → Map
-
-    syntax Map {K = K} {V = V} = Map⟨ K ↦ V ⟩
 
     infix  7 lookup
     infix  5 _↦_∈_
@@ -55,12 +51,22 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
     n ≐ m = (n ⊆ m) × (m ⊆ n)
 
     field
+      refl⊆ : Reflexive _⊆_
+      -- ⊆ is not symmetric or asymmetric becuase
+      -- a ⊆ b ⇏ b ⊆ a
+      -- a ⊆ a ⇏ ¬ a ⊆ a
+      trans⊆ : Transitive _⊆_
       refl≐ : Reflexive _≐_
       sym≐  : Symmetric _≐_
       trans≐ : Transitive _≐_
 
     field
       ↦∈To∈ : ∀ {k v m} → k ↦ v ∈ m → k ∈ m
+
+      ∈↦-∅ : ∀ k v → k ↦ v ∉ ∅
+      ∈-∅ : ∀ k → k ∉ ∅
+
+      ∈-singleton : ∀ k k' v v' → k ↦ v ∈ singleton k' v' → k ≡ k' × v ≡ v'
 
       -- induction principle (stronger)
       {-
@@ -79,8 +85,6 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
       -- Insertion and lookup properties
       ---------------------------------------------------------------------------------
       lookup-∅ : ∀ k → lookup ∅ k ≡ nothing
-      ∈↦-∅ : ∀ k v → ¬ (k ↦ v ∈ ∅)
-      ∈-∅ : ∀ k → k ∉ ∅
 
       ∈⇒lookup : ∀ m k {v} → [ k ↦ v ] m → k ↦ v ∈ m
       lookup⇒∈ : ∀ m k v → k ↦ v ∈ m → [ k ↦ v ] m
@@ -119,37 +123,6 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
       ∈insert : ∀ k {v} {v'} m → k ↦ v ∈ (insert k v' m) → v ≡ v'
 
       insert-safe : ∀ {k k' v v' m} → k ↦ v ∈ m → k ≢ k' → k ↦ v ∈ (insert k' v' m)
-
-      ---------------------------------------------------------------------------------
-      -- Union Properties
-      ---------------------------------------------------------------------------------
-      -- is this possible? Issue with L/R bias in implementation
-      ∪-∅ᴸ : ∀ m f → unionWith f m ∅ ≐ m
-      ∪-∅ᴿ : ∀ m f → unionWith f ∅ m ≐ m
-      ∪-∅ : ∀ m f → unionWith f m ∅ ≐ unionWith f ∅ m
-
-      ∪-∈ : ∀ m1 m2 f k
-            → k ∈ unionWith f m1 m2
-            → k ∈ m1 ⊎ k ∈ m2
-
-      -- safety prop of above?
-      ∪-∈' : ∀ m1 m2 f k
-            → k ∈ m1 ⊎ k ∈ m2
-            → k ∈ unionWith f m1 m2
-      -- eq
-      {-
-      ⊢ ∀ f g x . (x ∈ f ∧ x ∈ g) ∧ (lookup x f ≡ lookup x g) → f ≡ g
-      -}
-      -- should be covered by refl, sym and trans?
-      --eq? : (f g : Map) → (∀ k v → k ↦ v ∈ f × k ↦ v ∈ g) → f ≐ g
-
-
-      ---------------------------------------------------------------------------------
-      -- Deletion properties
-      ---------------------------------------------------------------------------------
-      del-∉ : ∀ {k m} → k ∉ m → delete k m ≐ m
-      del-∈ : ∀ {k m} → k ∈ m → k ∉ delete k m
-      del-safe : ∀ {k k' v m} → k' ↦ v ∈ m → k ≢ k' → k' ↦ v ∈ delete k m
 
       ---------------------------------------------------------------------------------
       -- Insertion and Deletion properties

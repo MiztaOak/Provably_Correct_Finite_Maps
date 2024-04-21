@@ -26,6 +26,14 @@ open import Map.Proofs.Insertion.Helpers order V
 ---------------------------------------------------------------------------------
 -- Induction Principle using insert
 ---------------------------------------------------------------------------------
+∈-singleton : ∀ {l u : Key⁺} {k k' v v'}
+  ⦃ l<k' : l <⁺ [ k' ] ⦄ ⦃ k'<u : [ k' ] <⁺ u ⦄
+  → k ↦ v ∈ singleton k' v' → k ≡ k' × v ≡ v'
+∈-singleton (here x) = refl , x
+
+---------------------------------------------------------------------------------
+-- Induction Principle using insert
+---------------------------------------------------------------------------------
 ip-insert : ∀ {l u : Key⁺} --⦃ @erased l<u : l <⁺ u ⦄
             (P : {h : ℕ} → BOBMap V l u h → Set (k ⊔ v))
             → (∀ (m : BOBMap V l u 0) → P m )

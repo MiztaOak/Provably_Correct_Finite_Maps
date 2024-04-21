@@ -1,11 +1,8 @@
-{-# OPTIONS --allow-unsolved-metas #-}
-
 module NatOrder where
 
 open import Level renaming (zero to lzero; suc to lsuc)
 open import Relation.Binary.Bundles using (StrictTotalOrder)
 open import Data.Nat.Base
-open import Relation.Binary.Structures
 open import Data.Nat.Properties using (<-isStrictTotalOrder)
 
 open import OrdSet

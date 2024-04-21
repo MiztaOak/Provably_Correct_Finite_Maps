@@ -14,7 +14,7 @@ open import Data.Nat.Base
   using (ℕ; zero; suc; pred; _+_; _*_; _<_; _≤_; z<s; s<s; z≤n; s≤s; s≤s⁻¹)
   renaming (_⊔_ to max; compare to compareℕ; Ordering to Ordℕ)
 open import Data.Nat.Properties
-  using (n<1+n; n≤1+n; ≤-refl; <⇒≤; m≤n⇒m≤1+n; ≤-trans; +-identityʳ; m≤n⇒m⊔n≡n; ⊔-comm; _≤?_; n≤0⇒n≡0; suc-injective; ≤-reflexive)
+  using (n<1+n; n≤1+n; ≤-refl; <⇒≤; m≤n⇒m≤1+n; ≤-trans; +-identityʳ; m≤n⇒m⊔n≡n; ⊔-comm; _≤?_; n≤0⇒n≡0; suc-injective; ≤-reflexive )
 open import Data.Fin.Base using (Fin) renaming (zero to fzero; suc to fsuc)
 open import Data.Product
 open import Data.Sum using (_⊎_) renaming (inj₁ to inl; inj₂ to inr)
@@ -78,6 +78,10 @@ data BOBMap (V : Set v) (l u : Key⁺) : ℕ → Set (k ⊔ v ⊔ ℓ₁) where
          → BOBMap V l u (suc h)
 
 module _ {v} {V : Set v} where
+  singleton : ∀ {l u : Key⁺} (k : Key) → V
+    → ⦃ l<k : l <⁺ [ k ] ⦄ ⦃ k<u : [ k ] <⁺ u ⦄
+    → BOBMap V l u 1
+  singleton k v = node (k , v) leaf leaf ~0
 
   data Any (P : Pred V ℓₚ) {l u : Key⁺} (kₚ : Key) :
     ∀ {h : ℕ} → BOBMap V l u h → Set (k ⊔ ℓ₁ ⊔ v ⊔ ℓₚ) where
@@ -580,8 +584,8 @@ module _ {v} {V : Set v} where
   n⊔n≡n : ∀ n → max n n ≡ n
   n⊔n≡n n = lemC {n}
 
-  postulate
-    mab≡mba : ∀ {a b} → max a b ≡ max b a
+  mab≡mba : ∀ a b → max a b ≡ max b a
+  mab≡mba a b = ⊔-comm a b
 
   n≡n⇒sn≡sn : ∀ {n m} → n ≡ m → suc n ≡ suc m
   n≡n⇒sn≡sn {n} refl = refl
@@ -715,25 +719,11 @@ module _ {v} {V : Set v} where
           → b ≤ c
           → max (max a b) (suc a) ≡ suc a
   sss2L {a} {b} {c} p1 p2 with sss2 p1 p2
-  ... | x rewrite mab≡mba {max a b} {suc a} = x
+  ... | x rewrite mab≡mba (max a b) (suc a) = x
 
   ≤suc : ∀ {n m} → n ≤ m → n ≤ (suc m)
   ≤suc z≤n = z≤n
   ≤suc (s≤s prf) = s≤s (≤suc prf)
-
-  fixHeight : ∀ {n hlʳ hrʳ hl hR hL} j
-    → hlʳ ~ hrʳ ⊔ hl + n
-    → hR ≤ hl
-    → hL ≤ hl
-    → max (suc (max hlʳ hL)) (j ⊕ max hrʳ hR) ≡ suc (hl + n)
-  fixHeight {n} {hl = hl} 0# bal prfR prfL with bigbal (lemA bal prfL prfR)
-  ... | inl (fst , snd) rewrite fst rewrite snd rewrite lem4L {hl + n} = refl
-  ... | inr (inl (fst , snd)) rewrite fst = lemm (≤suc (suc≡≤ snd))
-  ... | inr (inr (fst , snd)) rewrite fst rewrite (sym snd) rewrite n⊔n≡n (hl + n) = {!!}
-  fixHeight {n} {hl = hl} 1# bal prfR prfL with bigbal (lemA bal prfL prfR)
-  ... | inl (fst , snd) rewrite fst rewrite snd rewrite n⊔n≡n (hl + n) = refl
-  ... | inr (inl (fst , snd)) rewrite fst rewrite lemm (suc≡≤ snd) = refl
-  ... | inr (inr (fst , snd)) rewrite fst rewrite lemm' (suc≡≤ snd) = refl
 
   fixHeight1# : ∀ {n hlʳ hrʳ hl hR hL}
     → hlʳ ~ hrʳ ⊔ hl + n
@@ -777,8 +767,66 @@ module _ {v} {V : Set v} where
   ... | 1# with gJoin (k , f v value) t1 t2
   ... | i , t rewrite lemm' (suc≡≤ snd) = i , t
 
+  lemA' : ∀ {hlʳ hrʳ hL hR hl n : ℕ}
+      → hlʳ ~ hrʳ ⊔ hl + n
+      → hL ≤ hl → hR ≤ hl
+      → max hL hlʳ ~ max hR hrʳ ⊔ hl + n
+  lemA' {hlʳ} {hrʳ} {hL} {hR} bal prfL prfR rewrite ⊔-comm hL hlʳ rewrite ⊔-comm hR hrʳ = lemA bal prfL prfR
+
+  ≤or≡ : ∀ {n m} → n ≤ suc m → n ≤ m ⊎ (n ≡ suc m)
+  ≤or≡ {.zero} {m} z≤n = inl z≤n
+  ≤or≡ {.1} {zero} (s≤s {zero} prf) = inr refl
+  ≤or≡ {suc zero} {suc m} (s≤s prf) = inl (s≤s z≤n)
+  ≤or≡ {suc (suc n)} {suc m} (s≤s prf) with ≤or≡ prf
+  ... | inl x = inl (s≤s x)
+  ... | inr refl = inr refl
+
+  lemA0 : ∀ {hlʳ hrʳ hL hR hl : ℕ}
+      → hlʳ ~ hrʳ ⊔ hl
+      → hL ≤ suc hl → hR ≤ suc hl
+      → max hL hlʳ ~ max hR hrʳ ⊔ hl
+  lemA0 bal prfL prfR with ≤or≡ prfL
+  ... | inl x = {!!}
+  ... | inr refl with ≤or≡ prfR
+  ... | inl x = {!!}
+  ... | inr refl = {!!}
+
+  lemASuc : ∀ {hlʳ hrʳ hL hR hl n : ℕ}
+      → hlʳ ~ hrʳ ⊔ hl
+      → hL ≤ suc (hl + n) → hR ≤ suc (hl + n)
+      → max hL hlʳ ~ max hR hrʳ ⊔ suc (hl + n)
+  lemASuc bal prfL prfR = {!!}
+
+  fixMap : ∀ {i h₁ h₂ hl hr hR hL} {l u : Key⁺}
+    → (k : Key)
+    → (f : V → Maybe V → V)
+    → (v : V)
+    → (value : Maybe V)
+    → hl ~ hr ⊔ h₂
+    → hR ≤ (suc h₁)
+    → hL ≤ (suc h₁)
+    → BOBMap V l [ k ] (i ⊕ (max hL hl))
+    → ∃ (λ j → BOBMap V [ k ] u (j ⊕ max hR hr))
+    → ∃ (λ k → BOBMap V l u (k ⊕ suc (max h₁ h₂)))
+  fixMap {i} {h₁} {h₂} k f v v' bal prfR prfL t1 (j , t2) with compareℕ h₁ h₂
+  ---- h₁ < h₂ ----
+  fixMap {0#} {h₁} {h₂} k f v v' bal prfR prfL t1 (j , t2)
+    | Ordℕ.less .h₁ n rewrite lemL {n} {h₁} = joinʳ⁺ (k , f v v') t1 (j , t2) (lemA' bal prfL prfR)
+  fixMap {1#} {h₁} {h₂} k f v v' bal prfR prfL t1 (j , t2)
+    | Ordℕ.less .h₁ n rewrite lemL {n} {h₁} = {!fixMapUR k f v v' bal prfR prfL  !}
+  ---- h₁ ≡ h₂ ----
+  fixMap {0#} {h₁} {.h₁} k f v v' bal prfR prfL t1 (j , t2)
+    | Ordℕ.equal .h₁ rewrite n⊔n≡n h₁ = joinʳ⁺ (k , f v v') t1 (j , t2) (lemA0 bal prfL prfR)
+  fixMap {1#} {h₁} {.h₁} k f v v' bal prfR prfL t1 (j , t2)
+    | Ordℕ.equal .h₁ rewrite n⊔n≡n h₁ = joinʳ⁺ (k , f v v') t1 (j , t2) {!!}
+  ---- h₁ > h₂ ----
+  fixMap {0#} {h₁} {h₂} k f v v' bal prfR prfL t1 (j , t2)
+    | Ordℕ.greater .h₂ n rewrite lemR {n} {h₂} = joinʳ⁺ (k , f v v') t1 (j , t2) {!lemASuc bal  !}
+  fixMap {1#} {h₁} {h₂} k f v v' bal prfR prfL t1 (j , t2)
+    | Ordℕ.greater .h₂ n rewrite lemR {n} {h₂} = {!!}
+
  -- UNION ------------------------------------------------------
-{- 
+{-
   unionRight : {hl n : ℕ} → {l u : Key⁺}
                → (V → Maybe V → V)
                → BOBMap V l u hl
@@ -806,11 +854,11 @@ module _ {v} {V : Set v} where
     with unionWith f treeL l
   unionRight {hl} {n} {ₗ} {ᵘ} f m (node {hlʳ} {hrʳ} (k , v) l r b)
     | split value (hL , prfL , treeL) (hR , prfR , treeR)
-    | 0# , t1 = joinʳ⁺ (k , f v value) t1 (unionWith f r treeR) {!!} -- (lemA b prfL prfR)
+    | 0# , t1 = joinʳ⁺ (k , f v value) t1 (unionWith f treeR r) {!!} -- (lemA b prfL prfR)
   unionRight {hl} {n} {ₗ} {ᵘ} f m (node {hlʳ} {hrʳ} (k , v) l r b)
     | split value (hL , prfL , treeL) (hR , prfR , treeR)
     | 1# , t1 with unionWith f treeR r
-  ... | t2 = fixMapUR k f v value b prfR prfL {!!} {!!} 
+  ... | t2 = fixMapUR k f v value b prfR prfL {!!} {!!}
 -}
   union : {h1 h2 : ℕ} → ∀ {l u}
           → (V → Maybe V → V)
@@ -820,10 +868,9 @@ module _ {v} {V : Set v} where
   union f leaf n@leaf = 0# , (leaf ⦃ mklim n ⦄)
   union f leaf n@(node _ _ _ _) = 0# , n
   union f m@(node _ _ _ _) leaf = 0# , m
-  union f m@(node _ _ _ _) n@(node p lt rt bal) with splitAt (proj₁ p) ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ m
+  union f m@(node _ _ _ _) n@(node (k , v) lt rt bal) with splitAt k ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ m
   ... | split value (hL , prfL , treeL) (hR , prfR , treeR) with union f treeL lt
-  ... | i , t1 with union f treeR rt
-  ... | j , t2 = {!!}
+  ... | i , t1 = fixMap {i} k f v value bal prfR prfL t1 (union f treeR rt)
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 
