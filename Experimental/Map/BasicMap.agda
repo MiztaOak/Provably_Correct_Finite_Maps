@@ -21,6 +21,7 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
     constructor mkMap
     field
       ∅      : Map                 -- Empty
+      singleton : K → V → Map
       _∈_   : K → Map → Set (ℓ ⊔ ℓ' ⊔ ℓ₁)
       _↦_∈_ : K → V → Map → Set (ℓ ⊔ ℓ' ⊔ ℓ₁) -- Domain
       lookup : Map → K → Maybe V   -- Apply should this be removed?
@@ -50,12 +51,22 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
     n ≐ m = (n ⊆ m) × (m ⊆ n)
 
     field
+      refl⊆ : Reflexive _⊆_
+      -- ⊆ is not symmetric or asymmetric becuase
+      -- a ⊆ b ⇏ b ⊆ a
+      -- a ⊆ a ⇏ ¬ a ⊆ a
+      trans⊆ : Transitive _⊆_
       refl≐ : Reflexive _≐_
       sym≐  : Symmetric _≐_
       trans≐ : Transitive _≐_
 
     field
       ↦∈To∈ : ∀ {k v m} → k ↦ v ∈ m → k ∈ m
+
+      ∈↦-∅ : ∀ k v → k ↦ v ∉ ∅
+      ∈-∅ : ∀ k → k ∉ ∅
+
+      ∈-singleton : ∀ k k' v v' → k ↦ v ∈ singleton k' v' → k ≡ k' × v ≡ v'
 
       -- induction principle (stronger)
       {-
@@ -74,8 +85,6 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
       -- Insertion and lookup properties
       ---------------------------------------------------------------------------------
       lookup-∅ : ∀ k → lookup ∅ k ≡ nothing
-      ∈↦-∅ : ∀ k v → ¬ (k ↦ v ∈ ∅)
-      ∈-∅ : ∀ k → k ∉ ∅
 
       ∈⇒lookup : ∀ m k {v} → [ k ↦ v ] m → k ↦ v ∈ m
       lookup⇒∈ : ∀ m k v → k ↦ v ∈ m → [ k ↦ v ] m

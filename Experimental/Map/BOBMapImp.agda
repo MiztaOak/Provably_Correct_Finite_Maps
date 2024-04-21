@@ -47,7 +47,7 @@ all∅ f = map (leaf ⦃ ⊥⁺<⊤⁺ ⦄)
 
 module BMapAVLInstance (V : Set ℓ) where
   open import Map.Proofs.Insertion.Proofs order V
-  open import Map.Proofs.Proofs order V as Proofs
+  open import Map.Proofs.Proofs order V
   open import Map.Proofs.Deletion.Proofs order V
   open import Map.Proofs.Lookup.Proofs order V
 
@@ -85,6 +85,7 @@ module BMapAVLInstance (V : Set ℓ) where
     -- Assigning map functionality to interface
     ---------------------------------------------------------------------------------
     BMap.∅ basicMap = map (leaf {{⊥⁺<⊤⁺}})
+    BMap.singleton basicMap k v = map (singleton k v ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄)
     BMap._∈_ basicMap k m = AnyM {ℓₚ = z} (λ _ → True) k m
     BMap._↦_∈_ basicMap k v m = AnyM (λ v' → v ≡ v') k m
     BMap.lookup basicMap (map m) = lookup m
@@ -94,18 +95,21 @@ module BMapAVLInstance (V : Set ℓ) where
     ---------------------------------------------------------------------------------
     -- Relational properties
     ---------------------------------------------------------------------------------
+    BMap.refl⊆ basicMap k v x = x
+    BMap.trans⊆ basicMap a b = λ k v x → b k v (a k v x)
     BMap.refl≐ basicMap = (λ k₁ v x₁ → x₁) , (λ k₁ v x₁ → x₁)
     BMap.sym≐ basicMap (α , β) = (λ k v x → β k v x ) , (λ k v x → α k v x)
     BMap.trans≐ basicMap (a , b) (c , d) = (λ k v x → c k v (a k v x)) , (λ k v x → b k v (d k v x))
     BMap.↦∈To∈ basicMap (map m) = map (↦∈To∈ m)
+    BMap.∈-singleton basicMap _ k' _ _ (map prf) = ∈-singleton ⦃ ⊥⁺<[ k' ] ⦄ ⦃ [ k' ]<⊤⁺ ⦄ prf
+    BMap.∈↦-∅ basicMap _ _ (map ())
+    BMap.∈-∅ basicMap _ (map ())
 
     ---------------------------------------------------------------------------------
     -- Insertion and lookup proofs
     ---------------------------------------------------------------------------------
     BMap.ips basicMap = {!!}
     BMap.lookup-∅ basicMap _ = refl
-    BMap.∈↦-∅ basicMap _ _ (map ())
-    BMap.∈-∅ basicMap _ (map ())
     BMap.∈⇒lookup basicMap (map m) k prf = map $ ∈⇒lookup m k prf
     BMap.lookup⇒∈ basicMap (map m) k v (map prf) = lookup⇒∈ k m prf
     BMap.lookup≡lookup∈ basicMap k (map m) (map prf) = lookup≡lookup∈ k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m prf
@@ -145,9 +149,6 @@ module BMapAVLInstance (V : Set ℓ) where
     ---------------------------------------------------------------------------------
     ---------------------------------------------------------------------------------
     deleteMap : DMap {ℓ₁ = ℓ₁} {K = Key} {V} (AVLMap V)
-    ---------------------------------------------------------------------------------
-    -- Assigning map functionality to interface
-    ---------------------------------------------------------------------------------
     DMap.bMap deleteMap = basicMap
     DMap.delete deleteMap k (map m) = map (proj₂ $ delete k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m)
 
@@ -170,16 +171,26 @@ module BMapAVLInstance (V : Set ℓ) where
     mergeMap : MMap {ℓ₁ = ℓ₁} {K = Key} {V} (AVLMap V)
     MMap.bMap mergeMap = basicMap
     MMap.unionWith mergeMap f (map m) (map n) = map $ proj₂ (union f m n)
-    MMap.∪-∅ᴸ mergeMap = {!!}
-    MMap.∪-∅ᴿ mergeMap = {!!}
-    MMap.∪-∅ mergeMap = {!!}
+
+    ---------------------------------------------------------------------------------
+    -- Union proofs
+    ---------------------------------------------------------------------------------
+    proj₁ (MMap.∪-∅ᴸ mergeMap (map leaf) f) _ _ (map ())
+    proj₁ (MMap.∪-∅ᴸ mergeMap (map (node _ _ _ _)) f) _ _ x = x
+    proj₂ (MMap.∪-∅ᴸ mergeMap (map leaf) f) _ _ (map ())
+    proj₂ (MMap.∪-∅ᴸ mergeMap (map (node _ _ _ _)) f) _ _ x = x
+    proj₁ (MMap.∪-∅ᴿ mergeMap (map leaf) f) _ _ (map ())
+    proj₁ (MMap.∪-∅ᴿ mergeMap (map (node _ _ _ _)) f) _ _ x = x
+    proj₂ (MMap.∪-∅ᴿ mergeMap (map leaf) f) _ _ (map ())
+    proj₂ (MMap.∪-∅ᴿ mergeMap (map (node _ _ _ _)) f) _ _ x = x
+    MMap.∪-∅ mergeMap m f = {!!} , {!!}
     MMap.∪-∈ mergeMap = {!!}
     MMap.∪-∈' mergeMap = {!!}
 
-    BOBMapImp : CMap {ℓ₁ = ℓ₁} {K = Key} {V} (AVLMap V)
+{-    BOBMapImp : CMap {ℓ₁ = ℓ₁} {K = Key} {V} (AVLMap V)
     CMap.dMap BOBMapImp = deleteMap
     CMap.mMap BOBMapImp = mergeMap
-
+-}
   allMLookup : ∀ {m : AVLMap V} {k : Key} {v : V} {P : Pred (Key × V) ℓₐ}
     → AnyM (_≡_ v) k m
     → AllM P m
