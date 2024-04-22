@@ -12,7 +12,7 @@ open import Data.Product hiding (map)
 open import Function.Base
 open import Relation.Unary using (Pred)
 open import Data.Empty using (⊥)
-open import Relation.Binary.PropositionalEquality hiding (trans)
+open import Relation.Binary.PropositionalEquality hiding (trans; [_])
 open import Data.Maybe.Base hiding (map)
 open import Data.Sum hiding (map)
 open import Relation.Nullary using (¬_)
@@ -202,7 +202,6 @@ module BMapAVLInstance (V : Set ℓ) where
     → AllM P m
     → AllM P (BMap.insert basicMap k v m)
   allMInsert {P = P} {k , v} p (map m) = map $ allInsert ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ p m
-
 -- -}
 -- -}
 -- -}

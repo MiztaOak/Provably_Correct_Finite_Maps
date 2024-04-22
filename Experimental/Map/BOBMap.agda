@@ -884,11 +884,18 @@ module _ {v} {V : Set v} where
   ... | tri≈ _ refl _ = join lt rt bal
   ... | tri> _ _ p<k = joinʳ⁻ p lt (delete k {{[ p<k ]ᴿ}} rt) bal
 
+  -- Validity of the insert + lookup operations should come from the map that
+  -- they are decorating. In other words allInsert is correct since it mimics
+  -- insert which is proven correct.
+  -- Maybe a bit of a weak argument but its the best I have got.
+  -- And allLookup is correct since it uses a membership proof for the lookup
+  -- just like lookup∈
   data All (P : Pred (Key × V) ℓₐ) {l u : Key⁺}
       : ∀ {h : ℕ} → BOBMap V l u h → Set (k ⊔ ℓ₁ ⊔ v ⊔ ℓₐ) where
     leaf : ⦃ @erased l<u : l <⁺ u ⦄ → All P leaf
     node : ∀ {hl hr h}
-           → {(k , v) : Key × V}
+           → {p : Key × V}
+           (let (k , v) = p)
            {lt : BOBMap V l [ k ] hl}
            {rt : BOBMap V [ k ] u hr}
            {bal : hl ~ hr ⊔ h}
