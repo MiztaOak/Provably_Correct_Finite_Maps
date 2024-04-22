@@ -396,12 +396,33 @@ module _ {v} {V : Set v} where
   n≤sn : ∀ {n} → n ≤ suc n
   n≤sn {n} = <⇒≤ (n<1+n n)
 
-  record Split (x : Key) (l u : Key⁺) (h : ℕ) : Set (k ⊔ v ⊔ ℓ₁) where
+  record SplitAlt (x : Key) (l u : Key⁺) (h : ℕ) : Set (k ⊔ v ⊔ ℓ₁) where
     constructor split
     field
       value : Maybe V
-      leftT : ∃ λ hl → hl ≤ h × BOBMap V l [ x ] hl
-      rightT : ∃ λ hr → hr ≤ h × BOBMap V [ x ] u hr
+      leftT : ∃ λ leftH → leftH ≤ h × BOBMap V l [ x ] leftH
+      rightT : ∃ λ rightH → rightH ≤ h × BOBMap V [ x ] u rightH
+
+  data Split {l u : Key⁺} {h : ℕ} (x : Key) (m : BOBMap V l u (suc h)) : Set (k ⊔ v ⊔ ℓ₁) where
+    -- name after pivot
+    middle : {hl hr : ℕ}
+      → Maybe V
+      → hl ~ hr ⊔ h
+      → (lt : BOBMap V l [ x ] hl)
+      → (rt : BOBMap V [ x ] u hr)
+      → Split x m
+    left : {hl hr : ℕ}
+      → Maybe V
+      → (prf : ∃ λ i → hl < h × h ≡ i ⊕ hr)
+      → (lt : BOBMap V l [ x ] hl)
+      → (rt : BOBMap V [ x ] u hr)
+      → Split x m
+    right : {hl hr : ℕ}
+      → Maybe V
+      → (prf : ∃ λ i → h ≡ i ⊕ hl × hr < h)
+      → (lt : BOBMap V l [ x ] hl)
+      → (rt : BOBMap V [ x ] u hr)
+      → Split x m
 
   bigbal : ∀ {a b c}
           → a ~ b ⊔ c
@@ -442,8 +463,10 @@ module _ {v} {V : Set v} where
   splitAt : ∀ {l u h}
              → (k : Key)
              → {{@erased l<k : l <⁺ [ k ]}} → {{@erased k<u : [ k ] <⁺ u}}
-             → (m : BOBMap V l u h)
-             → Split k l u h
+             → (m : BOBMap V l u (suc h))
+             → Split k m
+  splitAt k m = {!!}
+{-
   splitAt {ₗ} {ᵘ} {zero} k leaf
     = split nothing (0 , z≤n , leaf) (0 , z≤n , leaf)
 
@@ -558,7 +581,9 @@ module _ {v} {V : Set v} where
           suc (max hl ht)
         , s≤s (lem≤max hl≤h (≤-trans ht<hr hr≤h))
         , β
-
+-- -}
+-- -}
+-- -}
   -- * UNION STARTS HERE -----------------------------------------------------
   n+0 : ∀ {n} → n + 0 ≡ n
   n+0 {n} = +-identityʳ n
@@ -839,7 +864,8 @@ module _ {v} {V : Set v} where
   join0# _ | inr (inl (fst , snd)) with gJoin (k , f v value) t1 t2
   ... | j , t rewrite fst rewrite snd rewrite lemRR {max hrʳ hR} = j , t
   ... | 1# , t2 = lem (gJoin (k , f v value) t1 t2)
--}
+-- -}
+
   union : {h1 h2 : ℕ} → ∀ {l u}
           → (V → Maybe V → V)
           → BOBMap V l u h1
@@ -848,7 +874,19 @@ module _ {v} {V : Set v} where
   union f leaf n@leaf = 0# , (leaf ⦃ mklim n ⦄)
   union f leaf n@(node _ _ _ _) = 0# , n
   union f m@(node _ _ _ _) leaf = 0# , m
-  union {l = l} {u = u} f m@(node {hl₁} {hr₁} {h₁} _ _ _ bm) n@(node {hl} {hr} {h} (k , v) lt rt bal)
+  union {suc h1} {suc h2} {l} {u} f
+        m@(node {hl₁} {hr₁} {h₁} _ _ _ bm)
+        n@(node {hl} {hr} {h} (k , v) lt rt bal)
+    with splitAt k ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ m
+  ... | middle value sb ll rr = {!!}
+    where
+      ur : ∃ λ n → BOBMap V l u (n ⊕ suc (max h1 h2))
+      ur with union f ll lt
+      ... | i , t1 with union f rr rt
+      ... | j , t2 = {!bal!}
+  ... | left value prf ll rr = {!!}
+  ... | right value prf ll rr = {!!}
+{-
     with splitAt k ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ m
   ... | split value (hL , prfL , treeL) (hR , prfR , treeR) with union f treeL lt
   ... | i , t1 with union f treeR rt
