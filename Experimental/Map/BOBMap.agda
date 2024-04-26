@@ -84,26 +84,26 @@ module _ {v} {V : Set v} where
   singleton k v = node (k , v) leaf leaf ~0
 
   data Any (P : Pred V ℓₚ) {l u : Key⁺} (kₚ : Key) :
-    ∀ {h : ℕ} → BOBMap V l u h → Set (k ⊔ ℓ₁ ⊔ v ⊔ ℓₚ) where
+    ∀ {h : ℕ} → @erased BOBMap V l u h → Set (k ⊔ ℓ₁ ⊔ v ⊔ ℓₚ) where
     here : ∀ {h hl hr} {v : V}
            {{@erased l≤k : l <⁺ [ kₚ ]}} {{@erased k≤u : [ kₚ ] <⁺ u}}
            → P v
-           → {lm : BOBMap V l [ kₚ ] hl}
-           {rm : BOBMap V [ kₚ ] u hr}
-           {bal : hl ~ hr ⊔ h}
+           → {@erased lm : BOBMap V l [ kₚ ] hl}
+           {@erased rm : BOBMap V [ kₚ ] u hr}
+           {@erased bal : hl ~ hr ⊔ h}
            → Any P kₚ (node (kₚ , v) lm rm bal)
 
     left : ∀ {h hl hr} {(k' , v) : Key × V}
-           {lm : BOBMap V l [ k' ] hl}
+           {@erased lm : BOBMap V l [ k' ] hl}
            {{@erased k≺k' : [ kₚ ] <⁺ [ k' ]}}
            → Any P kₚ lm
-           → {rm : BOBMap V [ k' ] u hr}
-           {bal : hl ~ hr ⊔ h}
+           → {@erased rm : BOBMap V [ k' ] u hr}
+           {@erased bal : hl ~ hr ⊔ h}
            → Any P kₚ (node (k' , v) lm rm bal)
 
     right : ∀ {h hl hr} {(k' , v) : Key × V}
-           {lm : BOBMap V l [ k' ] hl}
-           {rm : BOBMap V [ k' ] u hr}
+           {@erased lm : BOBMap V l [ k' ] hl}
+           {@erased rm : BOBMap V [ k' ] u hr}
            {{@erased k'≤k : [ k' ] <⁺ [ kₚ ]}}
            → Any P kₚ rm
            → {bal : hl ~ hr ⊔ h}
