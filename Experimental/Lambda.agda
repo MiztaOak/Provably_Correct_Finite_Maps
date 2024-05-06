@@ -20,7 +20,7 @@ Var : Set
 Var = ℕ
 
 data Type : Set where
-  int : Type
+  nat : Type
   unit : Type
   _=>_ : Type → Type → Type
 
@@ -28,7 +28,7 @@ data Type : Set where
 open BMapAVLInstance Type
 
 [[_]] : Type → Set
-[[ int ]] = ℕ
+[[ nat ]] = ℕ
 [[ unit ]] = Unit
 [[ τ => τ' ]] = [[ τ ]] → [[ τ' ]]
 
@@ -52,13 +52,13 @@ data _⊢_ : Ctx → Type → Set where
   T-Int  : ∀ {Γ : Ctx}
              → ℕ
            ------------
-             → Γ ⊢ int
+             → Γ ⊢ nat
 
   T-Add  : ∀ {Γ : Ctx}
-             → Γ ⊢ int
-             → Γ ⊢ int
+             → Γ ⊢ nat
+             → Γ ⊢ nat
            ------------
-             → Γ ⊢ int
+             → Γ ⊢ nat
 
   T-Unit : ∀ {Γ : Ctx}
            -------------
@@ -89,7 +89,7 @@ translate env (T-Abs {x = x} e) e' = translate (allMInsert e' env) e
 translate env (T-App e₁ e₂) = translate env e₁ (translate env e₂)
 
 sucL : ℕ → ℕ
-sucL n = translate {[]} []Env (T-App (T-Abs (T-Add (T-Var (insert∈ 0 int [])) (T-Int 1))) (T-Int n))
+sucL n = translate {[]} []Env (T-App (T-Abs (T-Add (T-Var (insert∈ 0 nat [])) (T-Int 1))) (T-Int n))
 -- -}
 -- -}
 -- -}

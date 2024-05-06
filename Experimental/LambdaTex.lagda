@@ -10,7 +10,7 @@ open import Map.BasicMap
 open import Data.Sum using (inj₁ ; inj₂)
 open import Relation.Binary.PropositionalEquality
 
-open import Map.BOBMapImp ℕOrder hiding (insert)
+open import Map.BOBMapImp ℕOrder
 
 module LambdaTex where
 
@@ -43,40 +43,20 @@ open BMapAVLInstance Type
 
 \newcommand{\TypeTrans}{
 \begin{code}
-[[_]] : Type → Set₁
-[[ int ]] = Lift (Level.suc Level.zero) ℕ
-[[ unit ]] = Lift (Level.suc Level.zero) Unit
+[[_]] : Type → Set
+[[ int ]] = ℕ
+[[ unit ]] = Unit
 [[ τ => τ' ]] = [[ τ ]] → [[ τ' ]]
 \end{code}
 }
 
-\newcommand{\CtxDef}{
+\newcommand{\CtxEnvDef}{
 \begin{code}
 Ctx : Set
 Ctx = AVLMap Type
-\end{code}
-}
 
-\newcommand{\EnvDef}{
-\begin{code}
-data Env {ℓ : Level} (f : Type → Set ℓ) : Ctx → Set ℓ where
-    [] : Env f ∅
-    _,_∷_ : ∀ (k : Var) {v : Type}
-            → f v
-            → {c : Ctx}
-            → Env f c
-            → Env f (insert k v c)
-\end{code}
-}
-
-\newcommand{\envLookup}{
-\begin{code}
-envLookup : ∀ {x : Var} {τ : Type} {Γ : Ctx} → x ↦ τ ∈ Γ → Env [[_]] Γ → [[ τ ]]
-envLookup {x} {τ} prf [] with ∈↦-∅ x τ prf
-... | ()
-envLookup {x} {τ} {Γ} prf (_,_∷_ x' {τ'} res {c} env) with ∈-ins c x' x τ (λ _ → τ') prf
-... | inj₁ refl rewrite ∈insert x {τ} {τ'} c prf = res
-... | inj₂ a = envLookup a env
+Env : Ctx → Set
+Env c = AllM (λ x → [[ proj₂ x ]]) c
 \end{code}
 }
 
@@ -118,12 +98,12 @@ data _⊢_ : Ctx → Type → Set where
 
 \newcommand{\LambdaTrans}{
 \begin{code}
-translate : ∀ {Γ : Ctx} {τ : Type} → Env [[_]] Γ → Γ ⊢ τ → [[ τ ]]
-translate _ (T-Int n) = Level.lift n
-translate env (T-Add e₁ e₂) = Level.lift (lower (translate env e₁) + lower (translate env e₂))
-translate env T-Unit = Level.lift unit
-translate env (T-Var {x = x'} prf) = envLookup prf env
-translate env (T-Abs {x = x} e) e' = translate (x , e' ∷ env) e
+translate : ∀ {Γ : Ctx} {τ : Type} → Env Γ → Γ ⊢ τ → [[ τ ]]
+translate _ (T-Int n) = n
+translate env (T-Add e₁ e₂) = translate env e₁ + translate env e₂
+translate env T-Unit = unit
+translate env (T-Var {x = x'} prf) = allMLookup prf env
+translate env (T-Abs {x = x} e) e' = translate (allMInsert e' env) e
 translate env (T-App e₁ e₂) = translate env e₁ (translate env e₂)
 \end{code}
 }
