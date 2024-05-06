@@ -32,8 +32,14 @@ data ATree (l u : ℕ) : ℕ → Set where
     → (v : ℕ)
     → (lt : ATree l v sl)
     → (rt : ATree v u sr)
-    → {{ balance sl sr ω }}
+    → {{balance sl sr ω }}
     → ATree l u (1 + sl + sr)
+
+mklim : ∀ {l u s}
+  → ATree l u s
+  → l < u
+mklim (leaf ⦃ l<u ⦄) = l<u
+mklim (node v lt rt) = <-trans (mklim lt) (mklim rt)
 
 join : ∀ {sl sr l u}
   → (v : ℕ)
@@ -267,17 +273,14 @@ unionᵒᵏ : ∀ {s₁ s₂ l u}
   → ATree l u s₁
   → ATree l u s₂
   → ∃ λ (s : ℕ)
-    → ATree l u s × s ≤ (s₁ + s₂) × (s₁ ⊔ s₂) ≤ s
-unionᵒᵏ {_} {s} leaf t = _ , t , n≤n s , n≤n s
-unionᵒᵏ {s} t leaf rewrite n+0 s rewrite n⊔0 s = _ , t , n≤n s , n≤n s
-unionᵒᵏ {s₁} {s₂} t₁@(node v₁ l₁ r₁) t₂@(node v₂ l₂ r₂) with splitAt v₂ {{{!!}}} {{{!!}}} t₁
+    → ATree l u s
+unionᵒᵏ {_} {s} leaf t = _ , t
+unionᵒᵏ {s} t leaf rewrite n+0 s rewrite n⊔0 s = _ , t
+unionᵒᵏ {s₁} {s₂} t₁@(node v₁ l₁ r₁) t₂@(node v₂ l₂ r₂) with splitAt v₂ {{mklim l₂}} {{mklim r₂}} t₁
 ... | split {sl} {sr} w lv rv hp with unionᵒᵏ lv l₂
-... | sL , tL , p+L , p⊔L with unionᵒᵏ rv r₂
-... | sR , tR , p+R , p⊔R
-  = suc (sL + sR)
-  , join v₂ tL tR
-  , s≤s (sss≤ssss {sL} {sR} {sl} {sr} hp p+L p+R)
-  , s≤s (ss⊔ss≤sss {sL} {sR} {sl} {sr} hp p⊔L p⊔R)
+... | sL , tL with unionᵒᵏ rv r₂
+... | sR , tR = suc (sL + sR) , join v₂ tL tR
+
 {-with unionᵒᵏ lv l₂
 ... | sL , tL , p+L , p⊔L with unionᵒᵏ rv r₂
 ... | sR , tR , p+R , p⊔R
@@ -302,4 +305,4 @@ union : ∀ {s₁ s₂ l u}
 union t leaf = _ , leaf
 union leaf t = _ , leaf
 union {suc s₁} {suc s₂} t₁ t₂ with unionᵒᵏ t₁ t₂
-... | s , t , _ , _ = s , {!t!}
+... | s , t = s , t
