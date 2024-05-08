@@ -32,8 +32,9 @@ data ATree (l u : ℕ) : ℕ → Set where
     → (v : ℕ)
     → (lt : ATree l v sl)
     → (rt : ATree v u sr)
-    → {{balance sl sr ω }}
-    → ATree l u (1 + sl + sr)
+    -- this causes issues with matching on sl and sr for some reason
+--    → {{ balance sl sr ω }}
+    → ATree l u (suc (sl + sr))
 
 mklim : ∀ {l u s}
   → ATree l u s
@@ -94,9 +95,6 @@ a≤b+c zero zero c p = z≤n
 a≤b+c zero (suc b) c p = z≤n
 a≤b+c (suc a) (suc b) c p = s+a≤b+c a b c (a≤b+c a b c (s≤s⁻¹ p))
 
-a≤b2 : ∀ {a d b c e f} → a ≤ b + c → d ≤ e + f → a + d ≤ b + c + e + f
-a≤b2 = {!!}
-
 ⊔-sym : ∀ a b → a ⊔ b ≡ b ⊔ a
 ⊔-sym zero zero = refl
 ⊔-sym zero (suc b) = refl
@@ -113,49 +111,23 @@ a+sb≡b+sa (suc a) (suc b) rewrite a+sb≡b+sa a b = cong suc h
     h1 = a+sb≡b+sa b a -- how is this ok
 
     h : a + 2+ b ≡ b + 2+ a
-    h rewrite a+sb≡b+sa a (suc b) rewrite a+sb≡b+sa b (suc a) = cong suc h1
+    h rewrite a+sb≡b+sa a (suc b)
+      rewrite a+sb≡b+sa b (suc a)
+      = cong suc h1
 
 a⊔b≤c⇒a≤c∧b≤c : ∀ {a b c} → a ⊔ b ≤ c → a ≤ c × b ≤ c
 a⊔b≤c⇒a≤c∧b≤c {zero} {zero} p = p , p
 a⊔b≤c⇒a≤c∧b≤c {zero} {suc b} {suc c} p = z≤n , p
 a⊔b≤c⇒a≤c∧b≤c {suc a} {zero} {suc c} p = p , z≤n
-a⊔b≤c⇒a≤c∧b≤c {suc a} {suc b} {suc c} p with a⊔b≤c⇒a≤c∧b≤c {a} {b} {c} (s≤s⁻¹ p)
+a⊔b≤c⇒a≤c∧b≤c {suc a} {suc b} {suc c} p
+  with a⊔b≤c⇒a≤c∧b≤c {a} {b} {c} (s≤s⁻¹ p)
 ... | pa , pb = s≤s pa , s≤s pb
 
 a≤b+c≤d⇒a+c≤b+d : ∀ a b c d → a ≤ b → c ≤ d → a + c ≤ b + d
 a≤b+c≤d⇒a+c≤b+d zero zero c d p1 p2 = p2
 a≤b+c≤d⇒a+c≤b+d zero b c d p1 p2 = a≤b+c c d b p2
-a≤b+c≤d⇒a+c≤b+d (suc a) (suc b) c d p1 p2 = s≤s $ a≤b+c≤d⇒a+c≤b+d a b c d (s≤s⁻¹ p1) p2
-
-data _∈_ {l u : ℕ} (v : ℕ) : {s : ℕ} → ATree l u s → Set where
-  here : {s sl sr : ℕ}
-    → {{ sl + sr ≡ s }}
-    → {lm : ATree l v sl}
-    → {rm : ATree v u sr}
-    → {{ prf : balance sl sr ω }}
-    → v ∈ (node v lm rm {{prf}})
-  left : {s sl sr : ℕ} → {w : ℕ}
-    → {{ sl + sr ≡ s}}
-    → {lm : ATree l w sl}
-    → {{ w < v }}
-    → v ∈ lm
-    → {rm : ATree w u sr}
-    → {{ prf : balance sl sr ω }}
-    → v ∈ (node w lm rm {{prf}})
-  right : {s sl sr : ℕ} → {w : ℕ}
-    → {{ sl + sr ≡ s}}
-    → {lm : ATree l w sl}
-    → {rm : ATree w u sr}
-    → {{ v < w }}
-    → v ∈ rm
-    → {{ prf : balance sl sr ω }}
-    → v ∈ (node w lm rm {{prf}})
-
-member : ∀ {l u s} → (v : ℕ) → (m : ATree l u (suc s)) → Maybe (v ∈ m)
-member {l} {u} v _ = {!!}
-
-postulate
-  compv : Trichotomous _≡_ _<_
+a≤b+c≤d⇒a+c≤b+d (suc a) (suc b) c d p1 p2
+  = s≤s $ a≤b+c≤d⇒a+c≤b+d a b c d (s≤s⁻¹ p1) p2
 
 data Split {l u s : ℕ} (v : ℕ) (m : ATree l u (suc s)) : Set where
   split : ∀ {sl sr}
@@ -175,55 +147,88 @@ m≡n⇒m+c≡n+c : ∀ m n c → m ≡ n → m + c ≡ n + c
 m≡n⇒m+c≡n+c zero zero c p = refl
 m≡n⇒m+c≡n+c (suc m) (suc n) c p rewrite m≡n⇒m+c≡n+c m n c (sn≡sn⇒n≡n p) = refl
 
+n+c≡c+n : ∀ n c → n + c ≡ c + n
+n+c≡c+n zero c rewrite n+0 c = refl
+n+c≡c+n (suc n) c rewrite c+sb≡sc+b c n rewrite n+c≡c+n n c = refl
+
+m≡n⇒c+m≡c+n : ∀ m n c → m ≡ n → c + m ≡ c + n
+m≡n⇒c+m≡c+n zero zero c p = refl
+m≡n⇒c+m≡c+n (suc m) (suc n) c p rewrite c+sb≡sc+b c m rewrite c+sb≡sc+b c n
+  = n≡n⇒sn≡sn (m≡n⇒c+m≡c+n m n c (sn≡sn⇒n≡n p))
+
+abc≡abc : ∀ a b c → a + (b + c) ≡ a + b + c
+abc≡abc zero zero zero = refl
+abc≡abc zero zero (suc c) = refl
+abc≡abc zero (suc b) zero = refl
+abc≡abc zero (suc b) (suc c) = refl
+abc≡abc (suc a) zero zero rewrite n+0 a rewrite n+0 a = refl
+abc≡abc (suc a) zero (suc c) rewrite n+0 a = refl
+abc≡abc (suc a) (suc b) zero rewrite n+0 b rewrite n+0 (a + suc b) = refl
+abc≡abc (suc a) (suc b) (suc c) rewrite abc≡abc a (suc b) (suc c) = refl
+
+postulate
+  compv : Trichotomous _≡_ _<_
+
 splitAt : ∀ {s l u}
   → (v : ℕ)
   → {{l < v}} → {{v < u}}
   → (m : ATree l u (suc s))
   → Split v m
 splitAt {s} {l} {u} v t@(node w lt rt) with compv v w
-splitAt {s} {l} {u} v t@(node w leaf rt) | tri< a ¬b ¬c = ans
+splitAt {s} {l} {u} v {{p1}} t@(node w leaf rt) | tri< a ¬b ¬c = ans
   where
     ans : Split v t
-    ans = split nothing (leaf {{{!!}}}) (join w (leaf {{a}}) rt) (1# , refl)
+    ans = split nothing (leaf {{p1}}) (join w (leaf {{a}}) rt) (1# , refl)
 
-splitAt {s} {l} {u} v {{p1}} t@(node w lt@(node _ _ _) rt)
+splitAt {s} {l} {u} v {{p1}} t@(node w lt@(node {sl} {sr} _ _ _) rt)
   | tri< a ¬b ¬c with splitAt v {{p1}} {{a}} lt
 ... | split value ll rr prf
-  = split value ll (join w rr rt) (ans prf)
+  = split value ll (join w rr rt) (ans {sl} {sr} prf)
   where
+    -- mirror for right
     ans : ∀ {sl sr sl₁ sr₁ sr₂}
       → (∃ λ j → j ⊕ (sl + sr) ≡ sl₁ + sr₂)
       → (∃ λ i → i ⊕ suc (sl + sr + sr₁) ≡ sl₁ + suc (sr₂ + sr₁))
     ans {sl} {sr} {sl₁} {sr₁} {sr₂} (0# , prf)
-      rewrite c+sb≡sc+b sl₁ (sr₂ + sr₁)
-      = 0# , {!n≡n⇒sn≡sn (m≡n⇒m+c≡n+c (sl + sr) (sl₁ + sr₂) sr₁ prf)!}
-    ans (1# , prf) rewrite prf = {!!}
+      rewrite c+sb≡sc+b sl₁ (sr₂ + sr₁) rewrite abc≡abc sl₁ sr₂ sr₁
+      = 0# , n≡n⇒sn≡sn (m≡n⇒m+c≡n+c (sl + sr) (sl₁ + sr₂) sr₁ prf)
+    ans {sl} {sr} {sl₁} {sr₁} {sr₂} (1# , prf)
+      rewrite c+sb≡sc+b sl₁ (sr₂ + sr₁) rewrite abc≡abc sl₁ sr₂ sr₁
+      = 1# , n≡n⇒sn≡sn (m≡n⇒m+c≡n+c (suc (sl + sr)) (sl₁ + sr₂) sr₁ prf)
 
 splitAt {s} {l} {u} v t@(node w lt rt) | tri≈ ¬a refl ¬c
   = split (just w) lt rt (0# , refl)
-splitAt {s} {l} {u} v t@(node w lt rt) | tri> ¬a ¬b c = {!!}
-{-splitAt {s} {l} {u} v t@(node w ll@(node vw lt ct) rt) = ans
+splitAt {s} {l} {u} v {{_}} {{p2}} t@(node {sl} w lt leaf) | tri> ¬a ¬b c
+  = ans
   where
-    ans : ∃ λ ((sl , sr) : ℕ × ℕ)
-      → (ATree l [ v ] sl × s ≡ (sl + sr) × ATree [ v ] u sr)
-    ans with splitAt v ll rel
-    ... | (sl , sr) , (slt , prf , srt) = _ , slt , {!!} , join w srt rt
-    -- should be ok but strange error when attempting to rewrite
-splitAt {s} {l} {u} v t@(node w lt rr@(node vw ct rt)) (right rel) = ans
-  where
-    ans : ∃ λ ((sl , sr) : ℕ × ℕ)
-      → (ATree l [ v ] sl × s ≡ (sl + sr) × ATree [ v ] u sr)
-    ans with splitAt v rr rel
-    ... | (sl , sr) , (slt , prf , srt) = _ , join w lt slt , {!!} , srt
--}
+    ans : Split v t
+    ans = split nothing (join w lt (leaf {{c}})) (leaf {{p2}})
+                (1# , n≡n⇒sn≡sn (sym (n+0 (sl + 0))))
 
-{-
-Goal: suc (sL + sR) ≤ s₁ + suc (sl₁ + sr₁)
---------------------------------------------------
-s₁ ≡ sl + sr ∸ 1
-p+L : sL ≤ sl + sl₁
-p+R : sR ≤ sr + sr₁
--}
+splitAt {s} {l} {u} v {{_}} {{p2}} t@(node w lt rt@(node {sl} {sr} _ _ _))
+ | tri> ¬a ¬b c with splitAt v {{c}} {{p2}} rt
+... | split value ll rr prf
+  = split value (join w lt ll) rr (ans {sl} {sr} prf)
+  where
+    ans : ∀ {sl sr sl₁ sr₁ sl₂}
+      → (∃ λ j → j ⊕ (sl + sr) ≡ sl₂ + sr₁)
+      → (∃ λ i → i ⊕ (sl₁ + suc (sl + sr)) ≡ suc (sl₁ + sl₂ + sr₁))
+    ans {sl} {sr} {sl₁} {sr₁} {sl₂} (0# , prf)
+      rewrite c+sb≡sc+b sl₁ (sl + sr)
+      with n≡n⇒sn≡sn (m≡n⇒c+m≡c+n (sl + sr) (sl₂ + sr₁) sl₁ prf)
+    ... | xx rewrite abc≡abc sl₁ sl₂ sr₁ = 0# , xx
+    ans {sl} {sr} {sl₁} {sr₁} {sl₂} (1# , prf)
+      rewrite prf rewrite abc≡abc sl₁ sl₂ sr₁
+      = 1# , refl
+
+abcd≡acbd : ∀ a b c d → a + b + (c + d) ≡ a + c + b + d
+abcd≡acbd a b c d
+  -- very funny
+  rewrite abc≡abc (a + b) c d
+  rewrite +-comm (a + b) c
+  rewrite abc≡abc c a b
+  rewrite +-comm c a
+  = refl
 
 sss≤ssss : ∀ {sL sR sl sr sl₁ sr₁ sl₂ sr₂}
   → (∃ λ i → i ⊕ (sl₁ + sr₁) ≡ sl + sr)
@@ -231,7 +236,22 @@ sss≤ssss : ∀ {sL sR sl sr sl₁ sr₁ sl₂ sr₂}
   → sR ≤ sr + sr₂
   → sL + sR ≤ sl₁ + sr₁ + suc (sl₂ + sr₂)
   -- we can either take from i or arbitrarily increase
-sss≤ssss {sL} {sR} {sl} {sr} {sl₁} {sr₁} {sl₂} {sr₂} p1 p2 p3 = {!!}
+sss≤ssss {sL} {sR} {sl} {sr} {sl₁} {sr₁} {sl₂} {sr₂} (0# , p1) p2 p3
+  with a≤b+c≤d⇒a+c≤b+d sL (sl + sl₂) sR (sr + sr₂) p2 p3
+... | xx
+  -- beautiful
+  rewrite c+sb≡sc+b (sl₁ + sr₁) (sl₂ + sr₂)
+  rewrite abcd≡acbd sl sl₂ sr sr₂
+  rewrite p1
+  rewrite abc≡abc (sl + sr) sl₂ sr₂ = m≤n⇒m≤1+n xx
+sss≤ssss {sL} {sR} {sl} {sr} {sl₁} {sr₁} {sl₂} {sr₂} (1# , p1) p2 p3
+  with a≤b+c≤d⇒a+c≤b+d sL (sl + sl₂) sR (sr + sr₂) p2 p3
+... | xx
+  -- beautiful
+  rewrite c+sb≡sc+b (sl₁ + sr₁) (sl₂ + sr₂)
+  rewrite abcd≡acbd sl sl₂ sr sr₂
+  rewrite abc≡abc (sl₁ + sr₁) sl₂ sr₂
+  rewrite sym p1 = xx
 
 ss⊔ss≤sss : ∀ {sL sR sl sr sl₁ sr₁ sl₂ sr₂}
   → (∃ λ i → i ⊕ (sl₁ + sr₁) ≡ sl + sr)
@@ -273,31 +293,19 @@ unionᵒᵏ : ∀ {s₁ s₂ l u}
   → ATree l u s₁
   → ATree l u s₂
   → ∃ λ (s : ℕ)
-    → ATree l u s
-unionᵒᵏ {_} {s} leaf t = _ , t
-unionᵒᵏ {s} t leaf rewrite n+0 s rewrite n⊔0 s = _ , t
-unionᵒᵏ {s₁} {s₂} t₁@(node v₁ l₁ r₁) t₂@(node v₂ l₂ r₂) with splitAt v₂ {{mklim l₂}} {{mklim r₂}} t₁
+    → ATree l u s × s ≤ (s₁ + s₂) × (s₁ ⊔ s₂) ≤ s
+unionᵒᵏ {_} {s} leaf t = _ , t , n≤n s , n≤n s
+unionᵒᵏ {s} t leaf rewrite n+0 s rewrite n⊔0 s = _ , t , n≤n s , n≤n s
+unionᵒᵏ {s₁} {s₂} t₁@(node {sl₁} {sr₁} v₁ l₁ r₁) t₂@(node v₂ l₂ r₂)
+  with splitAt v₂ {{mklim l₂}} {{mklim r₂}} t₁
 ... | split {sl} {sr} w lv rv hp with unionᵒᵏ lv l₂
-... | sL , tL with unionᵒᵏ rv r₂
-... | sR , tR = suc (sL + sR) , join v₂ tL tR
-
-{-with unionᵒᵏ lv l₂
 ... | sL , tL , p+L , p⊔L with unionᵒᵏ rv r₂
 ... | sR , tR , p+R , p⊔R
   = suc (sL + sR)
   , join v₂ tL tR
-  , s≤s (sss≤ssss {sL} {sR} {sl} {sr} hp p+L p+R)
-  , s≤s (ss⊔ss≤sss {sL} {sR} {sl} {sr} hp p⊔L p⊔R)
--}
-{-  with splitAt v {{{!!}}} {{{!!}}} t₁
-... | (sl , sr) , (lv , hp , rv) with unionᵒᵏ lv l
-... | sL , tL , p+L , p⊔L with unionᵒᵏ rv r
-... | sR , tR , p+R , p⊔R
-  = suc (sL + sR)
-  , join v tL tR
-  , {!!} --sss≤ssss {sL} {sR} {s₁} {sl} {sr} hp p+L p+R --sss≤ssss {sL} {sR} {s₁} {sl} {sr} hp p+L p+R
-  , {!!} --s≤s (ss⊔ss≤sss {sL} {sR} {{!!}} {{!!}} {{!!}} {{!!}} p⊔L p⊔R)
--}
+  , s≤s (sss≤ssss {sL} {sR} {sl} {sr} {sl₁} {sr₁} hp p+L p+R)
+  , s≤s (ss⊔ss≤sss {sL} {sR} {sl} {sr} {sl₁} {sr₁} hp p⊔L p⊔R)
+
 union : ∀ {s₁ s₂ l u}
   → ATree l u s₁
   → ATree l u s₂
@@ -305,4 +313,4 @@ union : ∀ {s₁ s₂ l u}
 union t leaf = _ , leaf
 union leaf t = _ , leaf
 union {suc s₁} {suc s₂} t₁ t₂ with unionᵒᵏ t₁ t₂
-... | s , t = s , t
+... | s , t , _ , _ = s , t
