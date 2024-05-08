@@ -37,7 +37,6 @@ data Type : Set where
   unit : Type
   _=>_ : Type → Type → Type
 
-
 [[_]] : Type → Set
 [[ int ]] = ℕ
 [[ unit ]] = Unit

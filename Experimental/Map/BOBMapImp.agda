@@ -23,6 +23,7 @@ open import Map.BasicMap using (BMap)
 open import Map.DeletableMap using (DMap)
 open import Map.MergableMap using (MMap)
 open import Map.CompleteMap using (CMap)
+open import Map.CorrectAll
 import Map.BOBMap order as BOB
 open StrictTotalOrder (toStrictTotalOrder order) renaming (Carrier to Key)
 
@@ -202,6 +203,13 @@ module BMapAVLInstance (V : Set ℓ) where
     → AllM P m
     → AllM P (BMap.insert basicMap k v m)
   allMInsert {P = P} {k , v} p (map m) = map $ allInsert ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ p m
+
+  instance
+    correctAll : ∀ {ℓₐ : Level} → CorrectAll {ℓ₁ = ℓ₁} {ℓₐ = ℓₐ} {Key} {V} (AVLMap V) basicMap
+    CorrectAll.All correctAll = AllM
+    CorrectAll.allInsert correctAll = allMInsert
+    CorrectAll.allLookup correctAll = allMLookup
+
 -- -}
 -- -}
 -- -}
