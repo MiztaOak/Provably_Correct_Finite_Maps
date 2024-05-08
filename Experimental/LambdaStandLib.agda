@@ -4,9 +4,11 @@ open import Data.Nat.Base using (ℕ; _+_; suc; zero)
 open import NatOrder
 open import Data.Product using (_×_; proj₁; proj₂; _,_)
 open import Data.Sum using (inj₁ ; inj₂)
-open import Relation.Binary.PropositionalEquality
+open import Relation.Binary.PropositionalEquality hiding ([_])
 open import Data.Nat.Properties using (<-strictTotalOrder)
 open import Relation.Binary.Bundles using (StrictTotalOrder)
+open import Relation.Binary.Definitions
+open import Data.Product using (∃)
 
 open import Data.Tree.AVL.Map <-strictTotalOrder
 open import Data.Tree.AVL <-strictTotalOrder using (tree)
@@ -15,8 +17,12 @@ open import Data.Tree.AVL.Indexed.Relation.Unary.All <-strictTotalOrder
 open import Data.Tree.AVL.Indexed.Relation.Unary.Any <-strictTotalOrder
 open import Data.Tree.AVL.Relation.Unary.Any <-strictTotalOrder using (tree)
 open import Data.Tree.AVL.Value (setoid ℕ)
-open import Data.Tree.AVL.Indexed <-strictTotalOrder using (Tree; Key⁺)
+open import Data.Tree.AVL.Indexed <-strictTotalOrder
+  using (Tree; Key⁺; _<_<_; ⊥⁺<[_]<⊤⁺; _⊕_; _∼_⊔_; joinˡ⁺; [_]; 1#; 0#; [_]ᴿ; ∼+; ∼0; ∼-; joinʳ⁺)
+    renaming (insert to insertT)
 open import Function.Base using (_∘′_)
+
+open StrictTotalOrder <-strictTotalOrder using (compare)
 
 module LambdaStandLib where
 
@@ -37,7 +43,6 @@ data Type : Set where
 [[ unit ]] = Unit
 [[ τ => τ' ]] = [[ τ ]] → [[ τ' ]]
 
-
 Ctx : Set
 Ctx = Map Type
 
@@ -55,6 +60,56 @@ envLookup (tree prf) env = eLookup prf env
     eLookup (here (refl , refl)) (node p lt rt) = p
     eLookup (left prf) (node p lt rt) = eLookup prf lt
     eLookup (right prf) (node p lt rt) = eLookup prf rt
+
+envInsert : ∀ {x : Var} {τ : Type} {Γ : Ctx} → Env Γ → [[ τ ]] → Env (insert x τ Γ)
+envInsert {x} {Γ = tree Γ} env p = eInsert env p ⊥⁺<[ x ]<⊤⁺
+  where
+    alljoinᴸ : ∀ {l u : Key⁺} {hl hr h : ℕ} {x : Var} {τ : Type}
+      → {lt⁺ : ∃ λ i → Tree (const Type) l [ x ] (i ⊕ hl)}
+      → {rt : Tree (const Type) [ x ] u hr}
+      → [[ τ ]]
+      → All (λ (_ , v) → [[ v ]]) (proj₂ lt⁺)
+      → All (λ (_ , v) → [[ v ]]) rt
+      → (bal : hl ∼ hr ⊔ h)
+      → All (λ (_ , v) → [[ v ]]) (proj₂ (joinˡ⁺ (x , τ) lt⁺ rt bal))
+    alljoinᴸ {lt⁺ = (0# , lt)} p allL allR bal = node p allL allR
+    alljoinᴸ {lt⁺ = (1# , lt)} p allL allR ∼+ = node p allL allR
+    alljoinᴸ {lt⁺ = (1# , lt)} p allL allR ∼0 = node p allL allR
+    alljoinᴸ {lt⁺ = 1# , Tree.node _ _ _ ∼0 } p (node a aL aR) allR ∼- = node a aL (node p aR allR)
+    alljoinᴸ {lt⁺ = 1# , Tree.node _ _ _ ∼- } p (node a aL aR) allR ∼- = node a aL (node p aR allR)
+    alljoinᴸ {lt⁺ = 1# , Tree.node _ _ (Tree.node _ _ _ _) ∼+ } p (node a aL (node aᴿ aLᴿ aRᴿ)) allR ∼- =
+      node aᴿ (node a aL aLᴿ) (node p aRᴿ allR)
+
+    alljoinᴿ : ∀ {l u : Key⁺} {hl hr h : ℕ} {x : Var} {τ : Type}
+      → {lt : Tree (const Type) l [ x ] hl}
+      → {rt⁺ : ∃ λ i → Tree (const Type) [ x ] u (i ⊕ hr)}
+      → [[ τ ]]
+      → All (λ (_ , v) → [[ v ]]) lt
+      → All (λ (_ , v) → [[ v ]]) (proj₂ rt⁺)
+      → (bal : hl ∼ hr ⊔ h)
+      → All (λ (_ , v) → [[ v ]]) (proj₂ (joinʳ⁺ (x , τ) lt rt⁺ bal))
+    alljoinᴿ {rt⁺ = (0# , rt)} p allL allR bal = node p allL allR
+    alljoinᴿ {rt⁺ = (1# , rt)} p allL allR ∼- = node p allL allR
+    alljoinᴿ {rt⁺ = (1# , rt)} p allL allR ∼0 = node p allL allR
+    alljoinᴿ {rt⁺ = (1# , Tree.node _ _ _ ∼+)} p allL (node a aL aR) ∼+ = node a (node p allL aL) aR
+    alljoinᴿ {rt⁺ = (1# , Tree.node _ _ _ ∼0)} p allL (node a aL aR) ∼+ = node a (node p allL aL) aR
+    alljoinᴿ {rt⁺ = (1# , Tree.node _ (Tree.node _ _ _ _) _ ∼-)} p allL (node a (node aᴸ aLᴸ aRᴸ) aR) ∼+ =
+      node aᴸ (node p allL aLᴸ) (node a aRᴸ aR)
+
+    eInsert : ∀ {l u : Key⁺} {h : ℕ} {t : Tree (const Type) l u h} {τ : Type} {x : Var}
+      → All (λ (_ , v) → [[ v ]]) t
+      → [[ τ ]]
+      → (ord : l < x < u)
+      → All (λ (_ , v) → [[ v ]]) (proj₂ (insertT x τ t ord))
+    eInsert leaf p ord = node p leaf leaf
+    eInsert {τ = τ} {x} (node {kv = x'} {lt} {rt} {bal} p' l r) p (ordᴸ , ordᴿ) with compare x (key x')
+    ... | tri< a _ _ = alljoinᴸ {lt⁺ = m } p' (eInsert l p (ordᴸ , [ a ]ᴿ)) r bal
+      where
+        m = insertT x τ lt (ordᴸ , [ a ]ᴿ)
+    ... | tri≈ _ refl _ = node p l r
+    ... | tri> _ _ c = alljoinᴿ {rt⁺ = m} p' l (eInsert r p ([ c ]ᴿ , ordᴿ)) bal
+      where
+        m = insertT x τ rt ([ c ]ᴿ , ordᴿ)
 
 data _⊢_ : Ctx → Type → Set where
   T-Int  : ∀ {Γ : Ctx}
@@ -93,7 +148,7 @@ translate _ (T-Int n) = n
 translate env (T-Add e₁ e₂) = translate env e₁ + translate env e₂
 translate env T-Unit = unit
 translate env (T-Var {x = x'} prf) = envLookup prf env
-translate env (T-Abs {x = x} e) e' = translate {!!} e
+translate env (T-Abs {x = x} e) e' = translate (envInsert env e') e
 translate env (T-App e₁ e₂) = translate env e₁ (translate env e₂)
 
 -- -}
