@@ -60,6 +60,19 @@ inRaise' {k = k} {node p l r b} (here tt) = here ⦃ k≤u = mklim r ⦄ tt
 inRaise' {k = k} {node p l r b} (left prf) = left prf
 inRaise' {k = k} {node p l r b} (right prf) = right (inRaise' prf)
 
+inMapsRaise' : ∀ {l y u : Key⁺} {h : ℕ}
+          ⦃ @erased y<u : y <⁺ u ⦄
+          {k : Key}
+          {v : V}
+          {m : BOBMap V l y h}
+          → k ↦ v ∈ (raise m)
+          → k ↦ v ∈ m
+inMapsRaise' {k = k} {m = leaf} ()
+inMapsRaise' {k = k} {m = node p l r b} (here refl) = here ⦃ k≤u = mklim r ⦄ refl
+inMapsRaise' {k = k} {m = node p l r b} (left prf) = left prf
+inMapsRaise' {k = k} {m = node p l r b} (right prf) = right (inMapsRaise' prf)
+
+
 anyᴿ-joinᴿ⁻ : ∀ {l u : Key⁺} {hl hr h : ℕ}
     {k : Key}
     {v : V}
@@ -360,3 +373,78 @@ inC-joinᴸ⁻ {hl = suc _} (0# , lt) rt ~+ prf = inC-joinᴿ⁺ lt (1# , rt) ~+
 inC-joinᴸ⁻ {hl = suc _} (1# , lt) rt bal (here x) = x
 inC-joinᴸ⁻ {hl = suc _} (1# , lt) rt bal (left ⦃ ord ⦄ prf) = ⊥-elim (irrefl refl [ ord ]-lower)
 inC-joinᴸ⁻ {hl = suc _} (1# , lt) rt bal (right ⦃ ord ⦄ prf) = ⊥-elim (irrefl refl [ ord ]-lower)
+
+inJoinᴸ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    {k kₚ : Key}
+    {v : V}
+    (lm : BOBMap V l [ kₚ ] hl)
+    (rm : BOBMap V [ kₚ ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → Any (_≡_ v) k (proj₂ (join lm rm bal))
+    → @erased k < kₚ
+    → Any (_≡_ v) k lm
+inJoinᴸ {k = k} {kₚ} lm leaf ~0 prf ord = inMapsRaise' prf
+inJoinᴸ {k = k} {kₚ} lm leaf ~- prf ord = inMapsRaise' prf
+inJoinᴸ {k = k} {kₚ} lm rm@(node _ _ _ _) bal prf ord with uncons rm
+... | cons head l<u tail =
+  inMapsRaise' ⦃ l<u ⦄ (inᴸ-joinᴿ⁻ (raise ⦃ l<u ⦄ lm) tail bal [ trans ord [ l<u ]-lower ]ᴿ prf)
+
+{-# TERMINATING #-}
+-- trust me bro (but for real this needs to be fixxed)
+inUncons : ∀ {l u h} {k : Key} {v : V}
+    {m : BOBMap V l u (suc h)}
+    → k ↦ v ∈ proj₂ (Cons.tail $ uncons m)
+    → k ↦ v ∈ m
+inUncons {m = node p leaf rm@(node _ _ _ _) ~+} prf = right ⦃ anyMinOrd prf ⦄ prf
+inUncons {m = node p leaf leaf ~0} ()
+inUncons {k = k} {m = node p lm@(node p' l r b) rm bal} prf with uncons lm in unConsEq
+... | cons h ord t with compare k (proj₁ p)
+... | eq refl rewrite inC-joinᴸ⁻ t rm bal prf = here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ refl
+... | ge p<k = right ⦃ [ p<k ]ᴿ ⦄ (inᴿ-joinᴸ⁻ t rm bal [ p<k ]ᴿ prf)
+... | le k<p with inᴸ-joinᴸ⁻ t rm bal [ k<p ]ᴿ prf
+... | prf' with unConsEq
+... | refl = left ⦃ anyMaxOrd prf' ⦄ (inUncons prf')
+
+isHeadUncons : ∀ {l u h} {k : Key} {v : V}
+    {m : BOBMap V l u (suc h)}
+    → (k , v) ≡ (Cons.head $ uncons m)
+    → k ↦ v ∈ m
+isHeadUncons {m = node p leaf rm ~+} refl = here ⦃ k≤u = mklim rm ⦄ refl
+isHeadUncons {m = node p leaf leaf ~0} refl = here refl
+isHeadUncons {k = k} {m = node p lm@(node _ _ rm' _) rm bal} prf with isHeadUncons {m = lm} prf
+... | prf = left ⦃ anyMaxOrd prf ⦄ prf
+
+notInLeft' : ∀ {l : Key⁺} {h : ℕ} {k u : Key}
+  → (m : BOBMap V l [ u ] h)
+  → @erased u < k
+  → k ∉ m
+notInLeft' leaf ord ()
+notInLeft' (node p lm rm bal) ord (here _) = ⊥-elim (asym ord [ mklim rm ]-lower)
+notInLeft' (node p lm rm bal) ord (left ⦃ ord' ⦄ _) =
+  ⊥-elim (asym ord (trans [ ord' ]-lower [ mklim rm ]-lower ))
+notInLeft' (node p lm rm bal) ord (right prf) = notInLeft' rm ord prf
+
+inJoinᴿ : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    {k kₚ : Key}
+    {v : V}
+    (lm : BOBMap V l [ kₚ ] hl)
+    (rm : BOBMap V [ kₚ ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → Any (_≡_ v) k (proj₂ (join lm rm bal))
+    → @erased kₚ < k
+    → Any (_≡_ v) k rm
+inJoinᴿ lm leaf ~0 prf ord = ⊥-elim (notInLeft' lm ord (↦∈To∈ (inMapsRaise' prf)))
+inJoinᴿ lm leaf ~- prf ord = ⊥-elim (notInLeft' lm ord (↦∈To∈ (inMapsRaise' prf)))
+inJoinᴿ {k = k} lm rm@(node _ _ _ _) bal prf ord with uncons rm in eqUncons
+... | cons head l<u tail with eqUncons
+... | refl with compare k (proj₁ head)
+... | le a = ⊥-elim (notInLeft' lm ord (↦∈To∈ prf'))
+  where
+    prf' = inMapsRaise' ⦃ l<u ⦄ (inᴸ-joinᴿ⁻ (raise ⦃ l<u ⦄ lm) tail bal [ a ]ᴿ prf)
+... | eq refl rewrite inC-joinᴿ⁻ (raise ⦃ l<u ⦄ lm) tail bal prf = isHeadUncons refl
+... | ge c with inᴿ-joinᴿ⁻ (raise ⦃ l<u ⦄ lm) tail bal [ c ]ᴿ prf
+... | x = inUncons {m = rm} x
+
+--- -}
+--- -}
+--- -}

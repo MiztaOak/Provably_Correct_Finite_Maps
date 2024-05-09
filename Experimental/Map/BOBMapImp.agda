@@ -163,6 +163,25 @@ module BMapAVLInstance (V : Set ℓ) where
     DMap.del-∈ deleteMap {k} {map m} prf = toNotAnyM $ del-∈ k m ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ (toAny prf)
     DMap.del-safe deleteMap {k} {k'} {m = map m} (map prf) nEq =
       map $ del-safe k k' m ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ prf nEq
+    DMap.del-comm deleteMap k k' (map m) =
+      (λ k'' v x → map $ leftSide k'' v (toAny x)) , λ k'' v x → map $ rightSide k'' v (toAny x)
+      where
+        l<k' : ⊥⁺ <⁺ BOB.[ k' ]
+        l<k' = ⊥⁺<[ k' ]
+        k'<u : BOB.[ k' ] <⁺ ⊤⁺
+        k'<u = [ k' ]<⊤⁺
+        l<k : ⊥⁺ <⁺ BOB.[ k ]
+        l<k = ⊥⁺<[ k ]
+        k<u : BOB.[ k ] <⁺ ⊤⁺
+        k<u = [ k ]<⊤⁺
+        leftSide : ∀ k'' v
+          → k'' ↦ v ∈ proj₂ (delete k ⦃ l<k ⦄ ⦃ k<u ⦄ (proj₂ (delete k' ⦃ l<k' ⦄ ⦃ k'<u ⦄ m)))
+          → k'' ↦ v ∈ proj₂ (delete k' ⦃ l<k' ⦄ ⦃ k'<u ⦄ (proj₂ (delete k ⦃ l<k ⦄ ⦃ k<u ⦄ m)))
+        leftSide k'' v x = del-comm k k' k'' ⦃ l<k ⦄ ⦃ k<u ⦄ ⦃ l<k' ⦄ ⦃ k'<u ⦄ m x
+        rightSide : ∀ k'' v
+          → k'' ↦ v ∈ proj₂ (delete k' ⦃ l<k' ⦄ ⦃ k'<u ⦄ (proj₂ (delete k ⦃ l<k ⦄ ⦃ k<u ⦄ m)))
+          → k'' ↦ v ∈ proj₂ (delete k ⦃ l<k ⦄ ⦃ k<u ⦄ (proj₂ (delete k' ⦃ l<k' ⦄ ⦃ k'<u ⦄ m)))
+        rightSide k'' v x = del-comm k' k k'' ⦃ l<k' ⦄ ⦃ k'<u ⦄ ⦃ l<k ⦄ ⦃ k<u ⦄ m x
 
     ---------------------------------------------------------------------------------
     ---------------------------------------------------------------------------------

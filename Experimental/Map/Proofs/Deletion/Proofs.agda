@@ -176,6 +176,31 @@ del-safe k k' (node p lm rm b) (right ⦃ p<k' ⦄ prf) nEq with compare k (proj
     prfᴿ = del-safe k k' rm ⦃ [ c ]ᴿ ⦄ prf nEq
     rm⁻ = delete k ⦃ [ c ]ᴿ ⦄ rm
 
+notInJoin : ∀ {l u : Key⁺} {hl hr h : ℕ}
+  → (k : Key)
+  → {v : V}
+  → (lm : BOBMap V l [ k ] hl)
+  → (rm : BOBMap V [ k ] u hr)
+  → (bal : hl ~ hr ⊔ h)
+  → ¬ (k ↦ v ∈ proj₂ (join lm rm bal))
+notInJoin k lm leaf ~0 prf = notInLeft k lm (inRaise' (↦∈To∈ prf))
+notInJoin k lm leaf ~- prf = notInLeft k lm (inRaise' (↦∈To∈ prf))
+notInJoin k lm rm@(node _ _ _ _) bal prf with uncons rm
+... | cons head l<u tail = notInLeft k lm (inRaise' ⦃ l<u ⦄ (↦∈To∈ prf'))
+  where
+    prf' = inᴸ-joinᴿ⁻ (raise ⦃ l<u ⦄ lm) tail bal l<u prf
+
+del-safe' : ∀ {l u : Key⁺} {h : ℕ} (k : Key) {v : V} (m : BOBMap V l u h)
+           ⦃ @erased l<k : l <⁺ [ k ] ⦄ ⦃ @erased k<u : [ k ] <⁺ u ⦄
+           → ¬ (k ↦ v ∈ proj₂ (delete k m))
+del-safe' k leaf ()
+del-safe' k (node p lm rm bal) prf with compare k (proj₁ p)
+... | tri< k<p _ _ =
+  del-safe' k lm ⦃ k<u = [ k<p ]ᴿ ⦄ (inᴸ-joinᴸ⁻ (delete k ⦃ p≤u = [ k<p ]ᴿ ⦄ lm) rm bal [ k<p ]ᴿ prf)
+... | tri> _ _ p<k =
+  del-safe' k rm ⦃ [ p<k ]ᴿ ⦄ (inᴿ-joinᴿ⁻ lm (delete k ⦃ [ p<k ]ᴿ ⦄ rm) bal [ p<k ]ᴿ prf)
+... | tri≈ _ refl _ = notInJoin k lm rm bal prf
+
 ---------------------------------------------------------------------------------
 -- del-∉
 ---------------------------------------------------------------------------------
@@ -229,6 +254,152 @@ del-∉ : ∀ {l u : Key⁺} {h : ℕ} (k : Key)
         → proj₂ (delete k m) ≐ m
 del-∉ k m prf = (del-∉del⊆ k m prf) , (del-∉m⊆ k m prf)
 
+---------------------------------------------------------------------------------
+-- proof that delete does not add any elements to the map
+---------------------------------------------------------------------------------
+del-noAdd : ∀ {l u : Key⁺} {h : ℕ} (k k' : Key) {v : V}
+  ⦃ @erased l<k : l <⁺ [ k' ] ⦄ ⦃ @erased k<u : [ k' ] <⁺ u ⦄
+  → (m : BOBMap V l u h)
+  → k ↦ v ∈ proj₂ (delete k' m)
+  → k ↦ v ∈ m
+del-noAdd k k' leaf ()
+del-noAdd k k' (node p lm rm bal) prf with compare k k'
+del-noAdd k k' (node p lm rm bal) prf | tri< k<k' _ _ with compare k' (proj₁ p)
+... | tri< k'<p _ _ = left ⦃ [ k<p ]ᴿ ⦄ (del-noAdd k k' ⦃ k<u = [ k'<p ]ᴿ ⦄ lm prf')
+  where
+    k<p = trans k<k' k'<p
+    prf' = inᴸ-joinᴸ⁻ (delete k' ⦃ p≤u = [ k'<p ]ᴿ ⦄ lm) rm bal [ k<p ]ᴿ prf
+... | tri≈ _ refl _ with compare k (proj₁ p)
+... | tri< k<p _ _ = left ⦃ [ k<p ]ᴿ ⦄ (inJoinᴸ lm rm bal prf k<p)
+... | tri≈ _ refl _ = ⊥-elim (notInJoin k lm rm bal prf)
+... | tri> _ _ p<k = right ⦃ [ p<k ]ᴿ ⦄ (inJoinᴿ lm rm bal prf p<k)
+del-noAdd k k' (node p lm rm bal) prf | tri< k<k' _ _ | tri> _ _ p<k' with compare k (proj₁ p)
+... | tri< k<p _ _  = left ⦃ [ k<p ]ᴿ ⦄ prf'
+  where
+    prf' = inᴸ-joinᴿ⁻ lm (delete k' ⦃ [ p<k' ]ᴿ ⦄ rm) bal [ k<p ]ᴿ prf
+... | tri≈ _ refl _ rewrite inC-joinᴿ⁻ lm (delete k' ⦃ [ p<k' ]ᴿ ⦄ rm) bal prf =
+  here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ refl
+... | tri> _ _ p<k = right ⦃ [ p<k ]ᴿ ⦄ (del-noAdd k k' ⦃ [ p<k' ]ᴿ ⦄ rm prf')
+  where
+    prf' = inᴿ-joinᴿ⁻ lm (delete k' ⦃ [ p<k' ]ᴿ ⦄ rm) bal [ p<k ]ᴿ prf
+del-noAdd k k' (node p lm rm bal) prf | tri≈ _ refl _ = ⊥-elim (del-safe' k' (node p lm rm bal) prf)
+del-noAdd k k' (node p lm rm bal) prf | tri> _ _ k'<k with compare k' (proj₁ p)
+... | tri> _ _ p<k' = right ⦃ [ p<k ]ᴿ ⦄ (del-noAdd k k' ⦃ [ p<k' ]ᴿ ⦄ rm prf')
+  where
+    p<k = trans p<k' k'<k
+    prf' = inᴿ-joinᴿ⁻ lm (delete k' ⦃ [ p<k' ]ᴿ ⦄ rm) bal [ p<k ]ᴿ prf
+... | tri< k'<p _ _ with compare k (proj₁ p)
+... | tri< k<p _ _ = left ⦃ [ k<p ]ᴿ ⦄ (del-noAdd k k' ⦃ k<u = [ k'<p ]ᴿ ⦄ lm prf')
+  where
+    prf' = inᴸ-joinᴸ⁻ (delete k' ⦃ p≤u = [ k'<p ]ᴿ ⦄ lm) rm bal [ k<p ]ᴿ prf
+... | tri≈ _ refl _ rewrite inC-joinᴸ⁻ (delete k' ⦃ p≤u = [ k'<p ]ᴿ ⦄ lm) rm bal prf =
+  here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ refl
+... | tri> _ _ p<k = right ⦃ [ p<k ]ᴿ ⦄ prf'
+  where
+    prf' = inᴿ-joinᴸ⁻ (delete k' ⦃ p≤u = [ k'<p ]ᴿ ⦄ lm) rm bal [ p<k ]ᴿ prf
+del-noAdd k k' (node p lm rm bal) prf | tri> _ _ k'<k | tri≈ _ refl _ with compare k (proj₁ p)
+... | tri< k<p _ _ = left ⦃ [ k<p ]ᴿ ⦄ (inJoinᴸ lm rm bal prf k<p)
+... | tri≈ _ refl _ = ⊥-elim (notInJoin (proj₁ p) lm rm bal prf)
+... | tri> _ _ p<k = right ⦃ [ p<k ]ᴿ ⦄ (inJoinᴿ lm rm bal prf p<k)
+
+---------------------------------------------------------------------------------
+-- delete commutativity
+---------------------------------------------------------------------------------
+isEq? : ∀ (x y : Key) → x ≡ y ⊎ x ≢ y
+isEq? x y with compare x y
+... | tri< _ nEq _  = inj₂ nEq
+... | tri≈ _ refl _ = inj₁ refl
+... | tri> _ nEq _  = inj₂ nEq
+
+delete-joinR→R : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    (x y z : Key)
+    (p : Key × V)
+    {v : V}
+    ⦃ l<x : l <⁺ [ x ] ⦄ ⦃ p<x : [ proj₁ p ] <⁺ [ x ] ⦄ ⦃ x<u : [ x ] <⁺ u ⦄
+    ⦃ l<y : l <⁺ [ y ] ⦄ ⦃ p<y : [ proj₁ p ] <⁺ [ y ] ⦄ ⦃ y<u : [ y ] <⁺ u ⦄
+    (lt : BOBMap V l [ proj₁ p ] hl)
+    (rt : BOBMap V [ proj₁ p ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → z ↦ v ∈ (proj₂ (delete x (proj₂ (joinʳ⁻ p lt (delete y rt) bal))))
+    → z ↦ v ∈ (proj₂ (delete y (proj₂ (joinʳ⁻ p lt (delete x rt) bal))))
+delete-joinR→R x y z p lt rt bal prf with delete y rt
+... | rtʸ with joinʳ⁻ p lt rtʸ bal in eqJoin
+... | rt⁺ with del-noAdd z x (proj₂ rt⁺) prf
+... | prf' with compare z x
+... | tri≈ _ refl _ = ⊥-elim (del-safe' x (proj₂ rt⁺) prf)
+... | tri< z<x _ _ rewrite sym eqJoin = {!prf'!}
+... | tri> _ _ x<z rewrite sym eqJoin = {!prf'!}
+
+delete-joinL→L : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    (x y z : Key)
+    (p : Key × V)
+    {v : V}
+    ⦃ l<x : l <⁺ [ x ] ⦄ ⦃ x<p : [ x ] <⁺ [ proj₁ p ] ⦄ ⦃ x<u : [ x ] <⁺ u ⦄
+    ⦃ l<y : l <⁺ [ y ] ⦄ ⦃ y<p : [ y ] <⁺ [ proj₁ p ] ⦄ ⦃ y<u : [ y ] <⁺ u ⦄
+    (lt : BOBMap V l [ proj₁ p ] hl)
+    (rt : BOBMap V [ proj₁ p ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → z ↦ v ∈ (proj₂ (delete x (proj₂ (joinˡ⁻ p (delete y lt) rt bal))))
+    → z ↦ v ∈ (proj₂ (delete y (proj₂ (joinˡ⁻ p (delete x lt) rt bal))))
+delete-joinL→R : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    (x y z : Key)
+    (p : Key × V)
+    {v : V}
+    ⦃ l<x : l <⁺ [ x ] ⦄ ⦃ p<x : [ proj₁ p ] <⁺ [ x ] ⦄ ⦃ x<u : [ x ] <⁺ u ⦄
+    ⦃ l<y : l <⁺ [ y ] ⦄ ⦃ y<p : [ y ] <⁺ [ proj₁ p ] ⦄ ⦃ y<u : [ y ] <⁺ u ⦄
+    (lt : BOBMap V l [ proj₁ p ] hl)
+    (rt : BOBMap V [ proj₁ p ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → z ↦ v ∈ (proj₂ (delete x (proj₂ (joinˡ⁻ p (delete y lt) rt bal))))
+    → z ↦ v ∈ (proj₂ (delete y (proj₂ (joinʳ⁻ p lt (delete x rt) bal))))
+delete-joinR→L : ∀ {l u : Key⁺} {hl hr h : ℕ}
+    (x y z : Key)
+    (p : Key × V)
+    {v : V}
+    ⦃ l<x : l <⁺ [ x ] ⦄ ⦃ x<p : [ x ] <⁺ [ proj₁ p ] ⦄ ⦃ x<u : [ x ] <⁺ u ⦄
+    ⦃ l<y : l <⁺ [ y ] ⦄ ⦃ p<y : [ proj₁ p ] <⁺ [ y ] ⦄ ⦃ y<u : [ y ] <⁺ u ⦄
+    (lt : BOBMap V l [ proj₁ p ] hl)
+    (rt : BOBMap V [ proj₁ p ] u hr)
+    (bal : hl ~ hr ⊔ h)
+    → z ↦ v ∈ (proj₂ (delete x (proj₂ (joinʳ⁻ p lt (delete y rt) bal))))
+    → z ↦ v ∈ (proj₂ (delete y (proj₂ (joinˡ⁻ p (delete x lt) rt bal))))
+
+del-comm : ∀ {l u : Key⁺} {h : ℕ}
+  → (x y k : Key)
+  → {v : V}
+  ⦃ l<x : l <⁺ [ x ] ⦄ ⦃ x<u : [ x ] <⁺ u ⦄
+  ⦃ l<y : l <⁺ [ y ] ⦄ ⦃ y<u : [ y ] <⁺ u ⦄
+  → (m : BOBMap V l u h)
+  → k ↦ v ∈ proj₂ (delete x (proj₂ (delete y m)))
+  → k ↦ v ∈ proj₂ (delete y (proj₂ (delete x m)))
+del-comm x y k (node p lm rm bal) prf with compare x y
+... | tri≈ _ refl _ = prf
+del-comm x y k (node p lm rm bal) prf | tri< x<y _ _ with compare y (proj₁ p)
+... | tri< y<p _ _ with compare x (proj₁ p)
+... | tri< x<p _ _ = delete-joinL→L x y k p ⦃ x<p = [ x<p ]ᴿ ⦄ ⦃ y<p = [ y<p ]ᴿ ⦄ lm rm bal prf
+... | tri≈ _ refl _ = {!!}
+... | tri> _ _ p<x = delete-joinL→R x y k p ⦃ p<x = [ p<x ]ᴿ ⦄ ⦃ y<p = [ y<p ]ᴿ ⦄ lm rm bal prf
+del-comm x y k (node p lm rm bal) prf | tri< x<y _ _ | tri≈ _ refl _ with compare x (proj₁ p)
+... | tri< x<p _ _ = {!!}
+... | tri≈ _ refl _ = prf
+... | tri> _ _ p<x = {!!}
+del-comm x y k (node p lm rm bal) prf | tri< x<y _ _ | tri> _ _ p<y with compare x (proj₁ p)
+... | tri< x<p _ _ = delete-joinR→L x y k p ⦃ x<p = [ x<p ]ᴿ ⦄ ⦃ p<y = [ p<y ]ᴿ ⦄ lm rm bal prf
+... | tri≈ _ refl _ = {!!}
+... | tri> _ _ p<x = delete-joinR→R x y k p ⦃ p<x = [ p<x ]ᴿ ⦄ ⦃ p<y = [ p<y ]ᴿ ⦄ lm rm bal prf
+del-comm x y k (node p lm rm bal) prf | tri> _ _ y<x with compare y (proj₁ p)
+... | tri< y<p _ _ with compare x (proj₁ p)
+... | tri< x<p _ _ = delete-joinL→L x y k p ⦃ x<p = [ x<p ]ᴿ ⦄ ⦃ y<p = [ y<p ]ᴿ ⦄ lm rm bal prf
+... | tri≈ _ refl _ = {!!}
+... | tri> _ _ p<x = delete-joinL→R x y k p ⦃ p<x = [ p<x ]ᴿ ⦄ ⦃ y<p = [ y<p ]ᴿ ⦄ lm rm bal prf
+del-comm x y k (node p lm rm bal) prf | tri> _ _ y<x | tri≈ _ refl _ with compare x (proj₁ p)
+... | tri< x<p _ _ = {!!}
+... | tri≈ _ refl _ = prf
+... | tri> _ _ p<x = {!!}
+del-comm x y k (node p lm rm bal) prf | tri> _ _ y<x | tri> _ _ p<y with compare x (proj₁ p)
+... | tri< x<p _ _ = delete-joinR→L x y k p ⦃ x<p = [ x<p ]ᴿ ⦄ ⦃ p<y = [ p<y ]ᴿ ⦄ lm rm bal prf
+... | tri≈ _ refl _ = {!!}
+... | tri> _ _ p<x = delete-joinR→R x y k p ⦃ p<x = [ p<x ]ᴿ ⦄ ⦃ p<y = [ p<y ]ᴿ ⦄ lm rm bal prf
 -- -}
 -- -}
 -- -}

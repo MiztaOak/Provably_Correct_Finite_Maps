@@ -30,3 +30,4 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
       del-∉ : ∀ {k m} → k ∉ m → delete k m ≐ m
       del-∈ : ∀ {k m} → k ∈ m → k ∉ delete k m
       del-safe : ∀ {k k' v m} → k' ↦ v ∈ m → k ≢ k' → k' ↦ v ∈ delete k m
+      del-comm : ∀ k k' m → delete k (delete k' m) ≐ delete k' (delete k m)

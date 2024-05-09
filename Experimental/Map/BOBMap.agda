@@ -797,6 +797,16 @@ module _ {v} {V : Set v} where
       → max hL hlʳ ~ max hR hrʳ ⊔ suc (hl + n)
   lemASuc bal prfL prfR = {!!}
 
+  fixHeight : ∀ i j {h₁ h₂ hl hr hR hL}
+    → hl ~ hr ⊔ h₂
+    → hR ≤ (suc h₁)
+    → hL ≤ (suc h₁)
+    → suc (max h₁ h₂) ≡ max (i ⊕ max hL hl) (j ⊕ max hR hr)
+  fixHeight 0# 0# bal prfR prfL = {!!}
+  fixHeight 0# 1# bal prfR prfL = {!!}
+  fixHeight 1# 0# bal prfR prfL = {!!}
+  fixHeight 1# 1# bal prfR prfL = {!!}
+
   fixMap : ∀ {i h₁ h₂ hl hr hR hL} {l u : Key⁺}
     → (k : Key)
     → (f : V → Maybe V → V)
@@ -870,7 +880,8 @@ module _ {v} {V : Set v} where
   union f m@(node _ _ _ _) leaf = 0# , m
   union f m@(node _ _ _ _) n@(node (k , v) lt rt bal) with splitAt k ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ m
   ... | split value (hL , prfL , treeL) (hR , prfR , treeR) with union f treeL lt
-  ... | i , t1 = fixMap {i} k f v value bal prfR prfL t1 (union f treeR rt)
+  ... | i , t1 with union f treeR rt
+  ... | j , t2 rewrite fixHeight i j bal prfR prfL = gJoin (k , f v value) t1 t2 -- fixMap {i} k f v value bal prfR prfL t1 (union f treeR rt)
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 

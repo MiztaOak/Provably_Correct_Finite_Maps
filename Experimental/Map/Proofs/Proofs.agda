@@ -78,6 +78,14 @@ anyMinOrd (here ⦃ l<k ⦄ x) = l<k
 anyMinOrd (left ⦃ l<k ⦄ prf) = anyMinOrd prf
 anyMinOrd {l = l} (right {lm = lm} ⦃ p<k ⦄ prf) = trans⁺ l (mklim lm) p<k
 
+
+@erased anyMaxOrd : ∀ {ℓₚ} {P : Pred V ℓₚ} {l u : Key⁺} {h : ℕ} {m : BOBMap V l u h} {k : Key}
+  → Any P k m
+  → [ k ] <⁺ u
+anyMaxOrd (here ⦃ k≤u = ord ⦄ _)= ord
+anyMaxOrd {k = k} (left ⦃ ord ⦄ _ {rm}) = trans⁺ [ k ] ord (mklim rm)
+anyMaxOrd (right ⦃ ord ⦄ prf) = anyMaxOrd prf
+
 ∉Left : ∀ {l u : Key⁺} {hl hr h : ℕ}
   {k k' : Key}
   {v : V}
