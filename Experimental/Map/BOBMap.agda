@@ -14,7 +14,7 @@ open import Data.Nat.Base
   using (ℕ; zero; suc; pred; _+_; _*_; _<_; _≤_; z<s; s<s; z≤n; s≤s; s≤s⁻¹)
   renaming (_⊔_ to max; compare to compareℕ; Ordering to Ordℕ)
 open import Data.Nat.Properties
-  using (n<1+n; n≤1+n; ≤-refl; <⇒≤; m≤n⇒m≤1+n; ≤-trans; +-identityʳ; m≤n⇒m⊔n≡n; ⊔-comm; _≤?_; n≤0⇒n≡0; suc-injective; ≤-reflexive )
+  using (n<1+n; n≤1+n; ≤-refl; <⇒≤; m≤n⇒m≤1+n; ≤-trans; +-identityʳ; m≤n⇒m⊔n≡n; ⊔-comm; _≤?_; n≤0⇒n≡0; suc-injective; ≤-reflexive; ⊔-assoc; ⊔-idem; ⊔-sel; ⊔-lub; m≤n⇒m≤n⊔o; m≤n⇒m≤o⊔n)
 open import Data.Fin.Base using (Fin) renaming (zero to fzero; suc to fsuc)
 open import Data.Product
 open import Data.Sum using (_⊎_) renaming (inj₁ to inl; inj₂ to inr)
@@ -27,6 +27,8 @@ open import Function using (_∘_; _$_; const; case_of_)
 open import Relation.Binary.Definitions
 open import Relation.Nullary using (¬_; contradiction)
 open import Relation.Nullary.Decidable using (yes; no)
+
+open import Map.UnionLemmas
 
 open StrictTotalOrder Order using (compare) renaming (Carrier to Key)
 open import Data.Tree.AVL.Key Order public
@@ -68,7 +70,7 @@ max~ ~- = ~0
 ~max ~0 = ~0
 ~max ~- = ~+
 
-data BOBMap (V : Set v) (l u : Key⁺) : ℕ → Set (k ⊔ v ⊔ ℓ₁) where
+data BOBMap (V : Set v) (l u : Key⁺) : @0 ℕ → Set (k ⊔ v ⊔ ℓ₁) where
   leaf : {{@erased l<u : l <⁺ u}} → BOBMap V l u 0
   node : ∀ {hl hr h}
          → ((k , v) : Key × V)
@@ -560,8 +562,6 @@ module _ {v} {V : Set v} where
         , β
 
   -- * UNION STARTS HERE -----------------------------------------------------
-  n+0 : ∀ {n} → n + 0 ≡ n
-  n+0 {n} = +-identityʳ n
 
   sa+n : ∀ {a n} → suc (a + n) ≡ a + suc n
   sa+n {zero} {zero} = refl
@@ -571,7 +571,7 @@ module _ {v} {V : Set v} where
   ≤+n : ∀ {a b n} → a ≤ b → a ≤ b + n
   ≤+n {zero} {b} {n} p = z≤n
   {-# CATCHALL #-}
-  ≤+n {a} {b} {zero} p rewrite n+0 {b} = p
+  ≤+n {a} {b} {zero} p rewrite n+0 b = p
   {-# CATCHALL #-}
   ≤+n {a} {b} {suc n} p with m≤n⇒m≤1+n (≤+n {a} {b} {n} p)
   ... | x rewrite sa+n {b} {n} = x
@@ -586,12 +586,6 @@ module _ {v} {V : Set v} where
 
   mab≡mba : ∀ a b → max a b ≡ max b a
   mab≡mba a b = ⊔-comm a b
-
-  n≡n⇒sn≡sn : ∀ {n m} → n ≡ m → suc n ≡ suc m
-  n≡n⇒sn≡sn {n} refl = refl
-
-  sn≡sn⇒n≡n : ∀ {n m} → suc n ≡ suc m → n ≡ m
-  sn≡sn⇒n≡n {n} refl = refl
 
   lemm : ∀ {a b} → b ≤ a → max a b ≡ a
   lemm {zero} {zero} p1 = refl
@@ -636,7 +630,7 @@ module _ {v} {V : Set v} where
          → hR ≤ hl
          → max hlʳ hL ~ max hrʳ hR ⊔ hl + n
   lemA {hlʳ} {hrʳ} {hl} {zero} {hL} {hR} b hl<hl hr<hl
-    rewrite n+0 {hl} with bigbal b
+    rewrite n+0 hl with bigbal b
   ... | inl (refl , refl)
     rewrite lemm hl<hl rewrite lemm hr<hl = b
   ... | inr (inl (refl , refl))
@@ -675,7 +669,7 @@ module _ {v} {V : Set v} where
          → b ≤ c
          → suc (max a b) ≡ c + n ⊎ suc (max a b) ≡ suc c + n
   ssss {a} {b} {c} {zero} c0=sa b<c
-    rewrite n+0 {c}
+    rewrite n+0 c
     rewrite c0=sa
     with b ≤? a
   ... | yes x
@@ -699,13 +693,13 @@ module _ {v} {V : Set v} where
          → max (suc a) (max a b) ≡ suc a
   sss2 {a} {b} {c} c0=sa b<c with ssss c0=sa b<c
   ... | inr x
-    rewrite n+0 {c}
+    rewrite n+0 c
     rewrite suc-injective x
     rewrite c0=sa
     rewrite n⊔n≡n a
     = refl
   ... | inl x
-    rewrite n+0 {c}
+    rewrite n+0 c
     rewrite c0=sa
     rewrite suc-injective x
     rewrite lem4L {a}
@@ -822,13 +816,15 @@ module _ {v} {V : Set v} where
   ---- h₁ < h₂ ----
   fixMap {0#} {h₁} {h₂} k f v v' bal prfR prfL t1 (j , t2)
     | Ordℕ.less .h₁ n rewrite lemL {n} {h₁} = joinʳ⁺ (k , f v v') t1 (j , t2) (lemA' bal prfL prfR)
-  fixMap {1#} {h₁} {h₂} k f v v' bal prfR prfL t1 (j , t2)
-    | Ordℕ.less .h₁ n rewrite lemL {n} {h₁} = {!fixMapUR k f v v' bal prfR prfL  !}
+  fixMap {1#} {h₁} {h₂} {hl} {hr} {hL} {hR} k f v v' bal prfR prfL t1 (j , t2)
+    | Ordℕ.less .h₁ n rewrite lemL {n} {h₁}
+      rewrite ⊔-comm hR hl rewrite ⊔-comm hL hr
+      = fixMapUR k f v v' bal prfR prfL t1 (j , t2)
   ---- h₁ ≡ h₂ ----
   fixMap {0#} {h₁} {.h₁} k f v v' bal prfR prfL t1 (j , t2)
     | Ordℕ.equal .h₁ rewrite n⊔n≡n h₁ = joinʳ⁺ (k , f v v') t1 (j , t2) (lemA0 bal prfL prfR)
   fixMap {1#} {h₁} {.h₁} k f v v' bal prfR prfL t1 (j , t2)
-    | Ordℕ.equal .h₁ rewrite n⊔n≡n h₁ = joinʳ⁺ (k , f v v') t1 (j , t2) {!!}
+    | Ordℕ.equal .h₁ rewrite n⊔n≡n h₁ = {!gJoin (k , f v v') t1 t2!}
   ---- h₁ > h₂ ----
   fixMap {0#} {h₁} {h₂} k f v v' bal prfR prfL t1 (j , t2)
     | Ordℕ.greater .h₂ n rewrite lemR {n} {h₂} = joinʳ⁺ (k , f v v') t1 (j , t2) {!lemASuc bal  !}
@@ -836,40 +832,7 @@ module _ {v} {V : Set v} where
     | Ordℕ.greater .h₂ n rewrite lemR {n} {h₂} = {!!}
 
  -- UNION ------------------------------------------------------
-{-
-  unionRight : {hl n : ℕ} → {l u : Key⁺}
-               → (V → Maybe V → V)
-               → BOBMap V l u hl
-               → BOBMap V l u (suc (hl + n))
-               → ∃ λ i → BOBMap V l u (i ⊕ suc (hl + n))
 
-  unionWith : {h1 h2 : ℕ} → ∀ {l u}
-              → (V → Maybe V → V)
-              → BOBMap V l u h1
-              → BOBMap V l u h2
-              → ∃ λ n → BOBMap V l u (n ⊕ max h1 h2)
-  unionWith {h1} {h2} f n m with compareℕ h1 h2
-  ... | Ordℕ.less    .h1 k rewrite lemL {k} {h1} = unionRight f n m
-  ... | Ordℕ.equal   .h1   rewrite lemC {h1}     = {!!}
-  ... | Ordℕ.greater .h2 k rewrite lemR {k} {h2} = unionRight f m n
-
-  -- Optimization
-  -- unionRight f leaf (node p l r b) = 0# , (node p l r b)
-  -- {-# CATCHALL #-}
-  unionRight f leaf n = 0# , n
-  unionRight {hl} f m@(node _ _ _ _) (node p l r b)
-    with splitAt (proj₁ p) {{mklim l}} {{mklim r}} m
-  unionRight {hl} f m (node p l r b)
-    | split value (hL , prfL , treeL) (hR , prfR , treeR)
-    with unionWith f treeL l
-  unionRight {hl} {n} {ₗ} {ᵘ} f m (node {hlʳ} {hrʳ} (k , v) l r b)
-    | split value (hL , prfL , treeL) (hR , prfR , treeR)
-    | 0# , t1 = joinʳ⁺ (k , f v value) t1 (unionWith f treeR r) {!!} -- (lemA b prfL prfR)
-  unionRight {hl} {n} {ₗ} {ᵘ} f m (node {hlʳ} {hrʳ} (k , v) l r b)
-    | split value (hL , prfL , treeL) (hR , prfR , treeR)
-    | 1# , t1 with unionWith f treeR r
-  ... | t2 = fixMapUR k f v value b prfR prfL {!!} {!!}
--}
   union : {h1 h2 : ℕ} → ∀ {l u}
           → (V → Maybe V → V)
           → BOBMap V l u h1
@@ -882,6 +845,74 @@ module _ {v} {V : Set v} where
   ... | split value (hL , prfL , treeL) (hR , prfR , treeR) with union f treeL lt
   ... | i , t1 with union f treeR rt
   ... | j , t2 rewrite fixHeight i j bal prfR prfL = gJoin (k , f v value) t1 t2 -- fixMap {i} k f v value bal prfR prfL t1 (union f treeR rt)
+
+  baltomax : ∀ a b c → a ~ b ⊔ c → max a b ≡ c
+  baltomax a .(1 + a) .(1 + a) ~+ = n⊔sn≡sn a
+  baltomax a .a .a ~0 = n⊔n≡n a
+  baltomax .(1 + b) b .(1 + b) ~- rewrite ⊔-comm (suc b) b = n⊔sn≡sn b
+
+  balto≤ : ∀ a b c → a ~ b ⊔ c → a ≤ c × b ≤ c
+  balto≤ _ _ _ ~+ = (m≤n⇒m≤1+n ≤-refl) , ≤-refl
+  balto≤ _ _ _ ~0 = ≤-refl , ≤-refl
+  balto≤ _ _ _ ~- = ≤-refl , (m≤n⇒m≤1+n ≤-refl)
+
+  ubound : (s₁ s₂ hl hr hL hR uL uR : ℕ) → (i : ℕ₂)
+    → hl ~ hr ⊔ s₂
+    → hL ≤ suc s₁
+    → hR ≤ suc s₁
+    → uL ≤ hL + hl
+    → uR ≤ hR + hr
+    → i ⊕ max uL uR ≤ (suc s₁ + suc s₂)
+  ubound s₁ s₂ hl hr hL hR uL uR 0# b p1 p2 p3 p4
+    with balto≤ hl hr s₂ b
+  ... | fst , snd
+    with a≤b⇒a+c≤b+c p1 hl , a≤b⇒a+c≤b+c p2 hr
+  ... | xx , yy rewrite ⊔-comm uL uR
+    = ⊔-lub (≤-trans p4 (a≤b+c≤d⇒a+c≤b+d hR (suc s₁) hr (suc s₂) p2 (m≤n⇒m≤1+n snd)))
+            (≤-trans p3 (a≤b+c≤d⇒a+c≤b+d hL (suc s₁) hl (suc s₂) p1 (m≤n⇒m≤1+n fst)))
+  ubound s₁ s₂ hl hr hL hR uL uR 1# b p1 p2 p3 p4
+    with balto≤ hl hr s₂ b
+  ... | fst , snd
+    with a≤b⇒a+c≤b+c p1 hl , a≤b⇒a+c≤b+c p2 hr
+  ... | xx , yy rewrite c+sb≡sc+b s₁ s₂ rewrite ⊔-comm uL uR
+    = s≤s (⊔-lub (≤-trans p4 (a≤b+c≤d⇒a+c≤b+d hR (suc s₁) hr s₂ p2 snd))
+                 (≤-trans p3 (a≤b+c≤d⇒a+c≤b+d hL (suc s₁) hl s₂ p1 fst)))
+
+  -- Given a lower bound of max h1 h2 ≤ h where h is the output height and
+  -- h1 & h2 are input heights it is not possible to prove it with the
+  -- existing information.
+  -- The furthest I can get is
+  --   max hR hr ≤ suc (max s₁ s₂)
+  --   max hL hl ≤ suc (max s₁ s₂)
+  -- but this does not help showing that suc (max s₁ s₂) ≤ max uL uR as we
+  -- know nothing about the relation of uL/uR and s₁/s₂.
+  lbound : (s₁ s₂ hl hr hL hR uL uR : ℕ) → (i : ℕ₂)
+    → hl ~ hr ⊔ s₂
+    → hL ≤ suc s₁
+    → hR ≤ suc s₁
+    → max hL hl ≤ uL
+    → max hR hr ≤ uR
+    → suc (max s₁ s₂) ≤ i ⊕ max uL uR
+  lbound s₁ s₂ hl hr hL hR uL uR i b p1 p2 p3 p4 = {!!}
+
+  union-loose : {h1 h2 : ℕ} → {l u : Key⁺}
+    → (V → Maybe V → V)
+    → BOBMap V l u h1
+    → BOBMap V l u h2
+    → ∃ λ h
+      → BOBMap V l u h × h ≤ (h1 + h2)
+  union-loose {h1} {h2} f leaf t = h2 , t , ≤-refl
+  union-loose {h1} f t leaf rewrite n⊔0 h1 rewrite n+0 h1 = h1 , t , ≤-refl
+  union-loose {suc s₁} {suc s₂} f t₁@(node p₁ l₁ r₁ b₁) t₂@(node p₂ l₂ r₂ b₂)
+    with splitAt (proj₁ p₂) {{mklim l₂}} {{mklim r₂}} t₁
+  union-loose {suc s₁} {suc s₂} f t₁@(node p₁ l₁ r₁ b₁) t₂@(node {hl} {hr} p₂ l₂ r₂ b₂)
+    | split value (hL , prfL , treeL) (hR , prfR , treeR)
+    with union-loose f treeL l₂
+  ... | uL , tL , plL with union-loose f treeR r₂
+  ... | uR , tR , plR with gJoin (proj₁ p₂ , f (proj₂ p₂) value) tL tR
+  ... | i , t = i ⊕ max uL uR
+              , t
+              , ubound s₁ s₂ hl hr hL hR uL uR i b₂ prfL prfR plL plR
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 
