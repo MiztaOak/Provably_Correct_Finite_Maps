@@ -15,6 +15,7 @@ open import Relation.Nullary.Negation.Core using (contradiction)
 open import Relation.Binary.Definitions
 open import Relation.Binary.Construct.Add.Extrema.Strict using ([<]-injective)
 open import Relation.Unary using (Pred)
+open import Data.Sum hiding (map)
 
 open import Prelude
 open import Map.BOBMap order as BOB
@@ -122,6 +123,13 @@ anyMaxOrd (right ⦃ ord ⦄ prf) = anyMaxOrd prf
 ... | tri< _ ¬b _ = ¬b
 ... | tri≈ _ refl _ = ⊥-elim (prf prf')
 ... | tri> _ ¬b _ = ¬b
+
+isEq? : ∀ (x y : Key) → x ≡ y ⊎ x ≢ y
+isEq? x y with compare x y
+... | tri< _ nEq _  = inj₂ nEq
+... | tri≈ _ refl _ = inj₁ refl
+... | tri> _ nEq _  = inj₂ nEq
+
 
 ---------------------------------------------------------------------------------
 -- Convert _↦_∈_ to _∈_

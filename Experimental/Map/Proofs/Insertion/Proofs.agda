@@ -191,12 +191,6 @@ insEq x {v' = v'} (node p lt rt bal) prf | tri> _ _ p<x = insEq x ⦃ [ p<x ]ᴿ
 ---------------------------------------------------------------------------------
 -- ins-comm
 ---------------------------------------------------------------------------------
-isEq? : ∀ (x y : Key) → x ≡ y ⊎ x ≢ y
-isEq? x y with compare x y
-... | tri< _ nEq _  = inj₂ nEq
-... | tri≈ _ refl _ = inj₁ refl
-... | tri> _ nEq _  = inj₂ nEq
-
 insert-joinR→R : ∀ {l u : Key⁺} {hl hr h : ℕ}
     (x y z : Key)
     (p : Key × V)

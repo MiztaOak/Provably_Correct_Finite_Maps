@@ -163,6 +163,9 @@ module BMapAVLInstance (V : Set ℓ) where
     DMap.del-∈ deleteMap {k} {map m} prf = toNotAnyM $ del-∈ k m ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ (toAny prf)
     DMap.del-safe deleteMap {k} {k'} {m = map m} (map prf) nEq =
       map $ del-safe k k' m ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ prf nEq
+    DMap.del-noAdd deleteMap {k} {k'} {m = map m} (map prf) =
+      map $ del-noAdd k k' ⦃ ⊥⁺<[ k' ] ⦄ ⦃ [ k' ]<⊤⁺ ⦄ m prf
+    DMap.del-removeK deleteMap {k} {m = map m} (map prf) = del-safe' k m ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ prf
     DMap.del-comm deleteMap k k' (map m) =
       (λ k'' v x → map $ leftSide k'' v (toAny x)) , λ k'' v x → map $ rightSide k'' v (toAny x)
       where
@@ -203,7 +206,7 @@ module BMapAVLInstance (V : Set ℓ) where
     proj₁ (MMap.∪-∅ᴿ mergeMap (map (node _ _ _ _)) f) _ _ x = x
     proj₂ (MMap.∪-∅ᴿ mergeMap (map leaf) f) _ _ (map ())
     proj₂ (MMap.∪-∅ᴿ mergeMap (map (node _ _ _ _)) f) _ _ x = x
-    MMap.∪-∅ mergeMap m f = {!!} , {!!}
+    MMap.∪-∅ mergeMap m f = (λ k₁ v x → {!!}) , {!!}
     MMap.∪-∈ mergeMap = {!!}
     MMap.∪-∈' mergeMap = {!!}
 

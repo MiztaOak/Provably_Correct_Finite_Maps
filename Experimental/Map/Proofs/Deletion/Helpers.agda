@@ -4,7 +4,7 @@ open import OrdSet
 
 module Map.Proofs.Deletion.Helpers {k ℓ₁ ℓ} (order : OrdSet k ℓ₁) (V : Set ℓ) where
 
-open import Data.Nat.Base using (ℕ; suc)
+open import Data.Nat.Base using (ℕ; suc; zero)
 open import Data.Product using (_×_; ∃; proj₁; proj₂; _,_)
 open import Data.Empty using (⊥)
 open import Relation.Nullary using (¬_)
@@ -444,6 +444,109 @@ inJoinᴿ {k = k} lm rm@(node _ _ _ _) bal prf ord with uncons rm in eqUncons
 ... | eq refl rewrite inC-joinᴿ⁻ (raise ⦃ l<u ⦄ lm) tail bal prf = isHeadUncons refl
 ... | ge c with inᴿ-joinᴿ⁻ (raise ⦃ l<u ⦄ lm) tail bal [ c ]ᴿ prf
 ... | x = inUncons {m = rm} x
+
+∈ᴸ-joinᴸ⁻ : ∀ {l u : Key⁺} {hl hr h}
+            {k : Key}
+            {p : Key × V}
+            ⦃ @erased l<p : l <⁺ [ proj₁ p ] ⦄ ⦃ @erased p<u : [ proj₁ p ] <⁺ u ⦄
+            (lt⁻ : ∃ λ i → BOBMap V l [ proj₁ p ] pred[ i ⊕ hl ])
+            (rt : BOBMap V [ proj₁ p ] u hr)
+            (bal : hl ~ hr ⊔ h)
+            → @erased [ k ] <⁺ [ proj₁ p ]
+            → k ∈ (proj₂ (joinˡ⁻ p lt⁻ rt bal))
+            → k ∈ proj₂ lt⁻
+∈ᴸ-joinᴸ⁻ {hl = zero} {k = k} (0# , lt) rt bal ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+∈ᴸ-joinᴸ⁻ {hl = zero} {k = k} (0# , lt) rt bal ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+∈ᴸ-joinᴸ⁻ {hl = zero} {k = k} (1# , lt) rt bal ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+∈ᴸ-joinᴸ⁻ {hl = zero} {k = k} (1# , lt) rt bal ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+∈ᴸ-joinᴸ⁻ {hl = suc hl} {k = k} {p} (0# , lt) rt ~+ ord prf = inᴸ-joinᴿ⁺ lt (1# , rt) ~+ ord prf
+∈ᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (0# , lt) rt ~- ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+∈ᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (0# , lt) rt ~- ord (left prf) = prf
+∈ᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (0# , lt) rt ~- ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+∈ᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (0# , lt) rt ~0 ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+∈ᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (0# , lt) rt ~0 ord (left prf) = prf
+∈ᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (0# , lt) rt ~0 ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+∈ᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (1# , lt) rt bal ord (here x) = ⊥-elim (irrefl⁺ [ k ] ord)
+∈ᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (1# , lt) rt bal ord (left prf) = prf
+∈ᴸ-joinᴸ⁻ {hl = suc hl} {k = k} (1# , lt) rt bal ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+
+∈ᴿ-joinᴿ⁻ : ∀ {l u : Key⁺} {hl hr h}
+            {k : Key}
+            {p : Key × V}
+            ⦃ @erased l<p : l <⁺ [ proj₁ p ] ⦄ ⦃ @erased p<u : [ proj₁ p ] <⁺ u ⦄
+            (lt : BOBMap V l [ proj₁ p ] hl)
+            (rt⁻ : ∃ λ i → BOBMap V [ proj₁ p ] u pred[ i ⊕ hr ])
+            (bal : hl ~ hr ⊔ h)
+            → @erased [ proj₁ p ] <⁺ [ k ]
+            → k ∈ (proj₂ (joinʳ⁻ p lt rt⁻ bal))
+            → k ∈ proj₂ rt⁻
+∈ᴿ-joinᴿ⁻ {hr = zero} {k = k} lt (0# , rt) bal ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+∈ᴿ-joinᴿ⁻ {hr = zero} {k = k} lt (0# , rt) bal ord (left ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+∈ᴿ-joinᴿ⁻ {hr = zero} {k = k} lt (1# , rt) bal ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+∈ᴿ-joinᴿ⁻ {hr = zero} {k = k} lt (1# , rt) bal ord (left ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+∈ᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~+ ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+∈ᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~+ ord (left ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+∈ᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~+ ord (right prf) = prf
+∈ᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~0 ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+∈ᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~0 ord (left ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+∈ᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~0 ord (right prf) = prf
+∈ᴿ-joinᴿ⁻ {hr = suc _} {k = k} {p} lt (0# , rt) ~- ord prf = inᴿ-joinᴸ⁺ (1# , lt) rt ~- ord prf
+∈ᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (1# , rt) bal ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+∈ᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (1# , rt) bal ord (left ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+∈ᴿ-joinᴿ⁻ {hr = suc _} {k = k} lt (1# , rt) bal ord (right prf) = prf
+
+∈ᴸ-joinᴿ⁻ : ∀ {l u : Key⁺} {hl hr h}
+            {k : Key}
+            {p : Key × V}
+            ⦃ @erased l<p : l <⁺ [ proj₁ p ] ⦄ ⦃ @erased p<u : [ proj₁ p ] <⁺ u ⦄
+            (lt : BOBMap V l [ proj₁ p ] hl)
+            (rt⁻ : ∃ λ i → BOBMap V [ proj₁ p ] u pred[ i ⊕ hr ])
+            (bal : hl ~ hr ⊔ h)
+            → @erased [ k ] <⁺ [ proj₁ p ]
+            → k ∈ (proj₂ (joinʳ⁻ p lt rt⁻ bal))
+            → k ∈ lt
+∈ᴸ-joinᴿ⁻ {hr = zero} {k = k} lt (0# , rt) bal ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+∈ᴸ-joinᴿ⁻ {hr = zero} {k = k} lt (0# , rt) bal ord (left prf) = prf
+∈ᴸ-joinᴿ⁻ {hr = zero} {k = k} lt (1# , rt) bal ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+∈ᴸ-joinᴿ⁻ {hr = zero} {k = k} lt (1# , rt) bal ord (left prf) = prf
+∈ᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~+ ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+∈ᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~+ ord (left prf) = prf
+∈ᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~+ ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+∈ᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~0 ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+∈ᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~0 ord (left prf) = prf
+∈ᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (0# , rt) ~0 ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+∈ᴸ-joinᴿ⁻ {hr = suc _} {k = k} {p} lt (0# , rt) ~- ord prf = inᴸ-joinᴸ⁺ (1# , lt) rt ~- ord prf
+∈ᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (1# , rt) bal ord (here tt) = ⊥-elim (irrefl⁺ [ k ] ord)
+∈ᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (1# , rt) bal ord (left prf) = prf
+∈ᴸ-joinᴿ⁻ {hr = suc _} {k = k} lt (1# , rt) bal ord (right ⦃ ord' ⦄ prf) =
+  ⊥-elim (asym [ ord ]-lower [ ord' ]-lower)
+
+
+notInJoin : ∀ {l u : Key⁺} {hl hr h : ℕ}
+  → (k : Key)
+  → {v : V}
+  → (lm : BOBMap V l [ k ] hl)
+  → (rm : BOBMap V [ k ] u hr)
+  → (bal : hl ~ hr ⊔ h)
+  → ¬ (k ↦ v ∈ proj₂ (join lm rm bal))
+notInJoin k lm leaf ~0 prf = notInLeft k lm (inRaise' (↦∈To∈ prf))
+notInJoin k lm leaf ~- prf = notInLeft k lm (inRaise' (↦∈To∈ prf))
+notInJoin k lm rm@(node _ _ _ _) bal prf with uncons rm
+... | cons head l<u tail = notInLeft k lm (inRaise' ⦃ l<u ⦄ (↦∈To∈ prf'))
+  where
+    prf' = inᴸ-joinᴿ⁻ (raise ⦃ l<u ⦄ lm) tail bal l<u prf
 
 --- -}
 --- -}
