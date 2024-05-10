@@ -322,14 +322,32 @@ delete-joinR→R : ∀ {l u : Key⁺} {hl hr h : ℕ}
     (bal : hl ~ hr ⊔ h)
     → z ↦ v ∈ (proj₂ (delete x (proj₂ (joinʳ⁻ p lt (delete y rt) bal))))
     → z ↦ v ∈ (proj₂ (delete y (proj₂ (joinʳ⁻ p lt (delete x rt) bal))))
-delete-joinR→R x y z p lt rt bal prf with delete y rt
+delete-joinR→R x y z p lt rt bal prf with delete y rt in delEq
 ... | rtʸ with joinʳ⁻ p lt rtʸ bal in eqJoin
 ... | rt⁺ with del-noAdd z x (proj₂ rt⁺) prf
-... | prf' with compare z x
-... | tri≈ _ refl _ = ⊥-elim (del-safe' x (proj₂ rt⁺) prf)
-... | tri< z<x _ _ rewrite sym eqJoin = {!prf'!}
-... | tri> _ _ x<z rewrite sym eqJoin = {!prf'!}
-
+... | prf' rewrite sym eqJoin with isEq? y z
+... | inj₁ refl = {!!}
+... | inj₂ nEqY with compare z (proj₁ p)
+... | tri< z<p _ _ = del-safe y z (proj₂ (joinʳ⁻ p lt (delete x rt) bal)) prfJoin nEqY
+  where
+    prfL = inᴸ-joinᴿ⁻ lt rtʸ bal [ z<p ]ᴿ prf'
+    prfJoin = anyᴸ-joinᴿ⁻ lt (delete x rt) bal [ z<p ]ᴿ prfL
+... | tri≈ _ refl _ rewrite inC-joinᴿ⁻ lt rtʸ bal prf' =
+  del-safe y z (proj₂ (joinʳ⁻ p lt (delete x rt) bal)) prfJoin nEqY
+  where
+    prfJoin = herejoinᴿ⁻ lt (delete x rt) bal
+... | tri> _ _ p<z with inᴿ-joinᴿ⁻ lt rtʸ bal [ p<z ]ᴿ prf'
+... | prfᴿ with isEq? x z
+... | inj₁ refl = ⊥-elim (del-safe' x (proj₂ (joinʳ⁻ p lt rtʸ bal)) prf)
+... | inj₂ nEqX rewrite sym delEq = del-safe y z (proj₂ (joinʳ⁻ p lt (delete x rt) bal)) prfJoin nEqY
+  where
+    prfDel = del-noAdd z y rt prfᴿ
+    delX = del-safe x z rt prfDel nEqX
+    prfJoin = anyᴿ-joinᴿ⁻ lt (delete x rt) bal [ p<z ]ᴿ delX
+{-rewrite sym delEq with isEq? y z
+... | inj₁ refl = ⊥-elim (del-safe' y rt prfᴿ)
+... | inj₂ nEqY =
+-}
 delete-joinL→L : ∀ {l u : Key⁺} {hl hr h : ℕ}
     (x y z : Key)
     (p : Key × V)
@@ -341,6 +359,8 @@ delete-joinL→L : ∀ {l u : Key⁺} {hl hr h : ℕ}
     (bal : hl ~ hr ⊔ h)
     → z ↦ v ∈ (proj₂ (delete x (proj₂ (joinˡ⁻ p (delete y lt) rt bal))))
     → z ↦ v ∈ (proj₂ (delete y (proj₂ (joinˡ⁻ p (delete x lt) rt bal))))
+delete-joinL→L x y z p lt rt bal prf = {!!}
+
 delete-joinL→R : ∀ {l u : Key⁺} {hl hr h : ℕ}
     (x y z : Key)
     (p : Key × V)
@@ -352,6 +372,8 @@ delete-joinL→R : ∀ {l u : Key⁺} {hl hr h : ℕ}
     (bal : hl ~ hr ⊔ h)
     → z ↦ v ∈ (proj₂ (delete x (proj₂ (joinˡ⁻ p (delete y lt) rt bal))))
     → z ↦ v ∈ (proj₂ (delete y (proj₂ (joinʳ⁻ p lt (delete x rt) bal))))
+delete-joinL→R x y z p lt rt bal prf = {!!}
+
 delete-joinR→L : ∀ {l u : Key⁺} {hl hr h : ℕ}
     (x y z : Key)
     (p : Key × V)
@@ -363,6 +385,7 @@ delete-joinR→L : ∀ {l u : Key⁺} {hl hr h : ℕ}
     (bal : hl ~ hr ⊔ h)
     → z ↦ v ∈ (proj₂ (delete x (proj₂ (joinʳ⁻ p lt (delete y rt) bal))))
     → z ↦ v ∈ (proj₂ (delete y (proj₂ (joinˡ⁻ p (delete x lt) rt bal))))
+delete-joinR→L x y z p lt rt bal prf = {!!}
 
 del-comm : ∀ {l u : Key⁺} {h : ℕ}
   → (x y k : Key)
