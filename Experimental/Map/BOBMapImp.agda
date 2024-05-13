@@ -193,20 +193,20 @@ module BMapAVLInstance (V : Set ℓ) where
     ---------------------------------------------------------------------------------
     mergeMap : MMap {ℓ₁ = ℓ₁} {K = Key} {V} (AVLMap V)
     MMap.bMap mergeMap = basicMap
-    MMap.unionWith mergeMap f (map m) (map n) = map $ proj₂ (union f m n)
+    MMap.unionWith mergeMap f (map m) (map n) = map $ proj₁ $ proj₂ $ union-loose f m n
 
     ---------------------------------------------------------------------------------
     -- Union proofs
     ---------------------------------------------------------------------------------
     proj₁ (MMap.∪-∅ᴸ mergeMap (map leaf) f) _ _ (map ())
-    proj₁ (MMap.∪-∅ᴸ mergeMap (map (node _ _ _ _)) f) _ _ x = x
+    proj₁ (MMap.∪-∅ᴸ mergeMap (map (node _ _ _ _)) f) _ _ x = {!x!}
     proj₂ (MMap.∪-∅ᴸ mergeMap (map leaf) f) _ _ (map ())
-    proj₂ (MMap.∪-∅ᴸ mergeMap (map (node _ _ _ _)) f) _ _ x = x
+    proj₂ (MMap.∪-∅ᴸ mergeMap (map (node _ _ _ _)) f) _ _ x = {!x!}
     proj₁ (MMap.∪-∅ᴿ mergeMap (map leaf) f) _ _ (map ())
     proj₁ (MMap.∪-∅ᴿ mergeMap (map (node _ _ _ _)) f) _ _ x = x
     proj₂ (MMap.∪-∅ᴿ mergeMap (map leaf) f) _ _ (map ())
     proj₂ (MMap.∪-∅ᴿ mergeMap (map (node _ _ _ _)) f) _ _ x = x
-    MMap.∪-∅ mergeMap m f = (λ k₁ v x → {!!}) , {!!}
+    MMap.∪-∅ mergeMap m f = (λ k v x → {!proj₂ $ MMap.∪-∅ᴸ mergeMap m f!}) , {!!}
     MMap.∪-∈ mergeMap = {!!}
     MMap.∪-∈' mergeMap = {!!}
 

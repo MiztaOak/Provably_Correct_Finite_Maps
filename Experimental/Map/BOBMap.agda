@@ -831,7 +831,7 @@ module _ {v} {V : Set v} where
   fixMap {1#} {h₁} {h₂} k f v v' bal prfR prfL t1 (j , t2)
     | Ordℕ.greater .h₂ n rewrite lemR {n} {h₂} = {!!}
 
- -- UNION ------------------------------------------------------
+  -- UNION ------------------------------------------------------
 
   union : {h1 h2 : ℕ} → ∀ {l u}
           → (V → Maybe V → V)

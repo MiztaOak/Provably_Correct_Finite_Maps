@@ -28,7 +28,6 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
      ---------------------------------------------------------------------------------
       -- Union Properties
       ---------------------------------------------------------------------------------
-      -- is this possible? Issue with L/R bias in implementation
       ∪-∅ᴸ : ∀ m f → unionWith f m ∅ ≐ m
       ∪-∅ᴿ : ∀ m f → unionWith f ∅ m ≐ m
       ∪-∅ : ∀ m f → unionWith f m ∅ ≐ unionWith f ∅ m

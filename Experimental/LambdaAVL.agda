@@ -28,6 +28,14 @@ open LambdaImp public
 sucL : ℕ → ℕ
 sucL n = translate []Env (T-App (T-Abs (T-Add (T-Var (insert∈ 0 nat ∅)) (T-Int 1))) (T-Int n))
 
+open import Agda.Builtin.IO
+open import Agda.Builtin.List
+open import Agda.Builtin.Unit
+open import Criterion.Main
+
+main : IO ⊤
+main = defaultMain (bench "translate" (whnf sucL 100) ∷ [])
+
 -- -}
 -- -}
 -- -}
