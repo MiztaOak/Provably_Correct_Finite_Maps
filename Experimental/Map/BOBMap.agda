@@ -111,13 +111,13 @@ module _ {v} {V : Set v} where
            → {bal : hl ~ hr ⊔ h}
            → Any P kₚ (node (k' , v) lm rm bal)
 
-  foldr : ∀ {l u} {h : ℕ} {n : Level} {A : Set n}
+  fldr : ∀ {l u} {h : ℕ} {n : Level} {A : Set n}
           → (Key × V → A → A)
           → A
           → BOBMap V l u h
           → A
-  foldr f g leaf = g
-  foldr f g (node p l r bal) = foldr f (f p (foldr f g r)) l
+  fldr f g leaf = g
+  fldr f g (node p l r bal) = fldr f (f p (fldr f g r)) l
 
   record Cons (l u : Key⁺) (h : ℕ) : Set (k ⊔ v ⊔ ℓ₁) where
     constructor cons
@@ -321,11 +321,18 @@ module _ {v} {V : Set v} where
   ... | 1-offR .a = 1-offR (suc a)
   ... | right .a k = right (suc a) k
 
-  postulate
-    illegal~⊔2L : ∀ {a b c} → a ~ b ⊔ suc (suc a + c) → ⊥
-    illegal~⊔2R : ∀ {a b c} → a ~ b ⊔ suc (suc b + c) → ⊥
-    illegal~⊔3L : ∀ {a b c d} → a ~ b ⊔ suc (suc (suc a + c + d)) → ⊥
-    illegal~⊔3R : ∀ {a b c d} → a ~ b ⊔ suc (suc (suc b + c + d)) → ⊥
+  -- these are highlighted yellow, why?
+  illegal~⊔2L : ∀ {a b c} → a ~ b ⊔ suc (suc a + c) → ⊥
+  illegal~⊔2L {a} {b} {c} = λ ()
+
+  illegal~⊔2R : ∀ {a b c} → a ~ b ⊔ suc (suc b + c) → ⊥
+  illegal~⊔2R {a} {b} {c} = λ ()
+
+  illegal~⊔3L : ∀ {a b c d} → a ~ b ⊔ suc (suc (suc a + c + d)) → ⊥
+  illegal~⊔3L {a} {b} {c} {d} = λ ()
+
+  illegal~⊔3R : ∀ {a b c d} → a ~ b ⊔ suc (suc (suc b + c + d)) → ⊥
+  illegal~⊔3R {a} {b} {c} {d} = λ ()
 
   gJoinRight : {hr x : ℕ} {l u : Key⁺}
                 → ((k , v) : Key × V)
@@ -426,8 +433,8 @@ module _ {v} {V : Set v} where
   ... | inr (inl (refl , refl)) = inr (inl (n≤n , n≤n))
   ... | inr (inr (refl , refl)) = inl (n≤n , n≤n)
 
-  postulate
-    lem≤max : ∀ {a b c} → a ≤ c → b ≤ c → max a b ≤ c
+  lem≤max : ∀ {a b c} → a ≤ c → b ≤ c → max a b ≤ c
+  lem≤max p1 p2 = ⊔-lub p1 p2
 
   lemin : ∀ {l u h}
           → {x : Key}
@@ -856,7 +863,7 @@ module _ {v} {V : Set v} where
   balto≤ _ _ _ ~0 = ≤-refl , ≤-refl
   balto≤ _ _ _ ~- = ≤-refl , (m≤n⇒m≤1+n ≤-refl)
 
-  ubound : (s₁ s₂ hl hr hL hR uL uR : ℕ) → (i : ℕ₂)
+  @0 ubound : (s₁ s₂ hl hr hL hR uL uR : ℕ) → (i : ℕ₂)
     → hl ~ hr ⊔ s₂
     → hL ≤ suc s₁
     → hR ≤ suc s₁
@@ -895,24 +902,32 @@ module _ {v} {V : Set v} where
     → suc (max s₁ s₂) ≤ i ⊕ max uL uR
   lbound s₁ s₂ hl hr hL hR uL uR i b p1 p2 p3 p4 = {!!}
 
+  data UnionReturn {l u : Key⁺} {h1 h2 : ℕ} (t₁ : BOBMap V l u h1) (t₂ : BOBMap V l u h2) : Set (k ⊔ v ⊔ ℓ₁) where
+    retval : (h : ℕ) → BOBMap V l u h → {{@0 hprf : h ≤ (h1 + h2) }} → UnionReturn t₁ t₂
+
+  eqto≤ : ∀ n → n ≤ n → n ≤ n + 0
+  eqto≤ n p rewrite n+0 n = ≤-refl
+
   union-loose : {h1 h2 : ℕ} → {l u : Key⁺}
     → (V → Maybe V → V)
-    → BOBMap V l u h1
-    → BOBMap V l u h2
-    → ∃ λ h
-      → BOBMap V l u h × h ≤ (h1 + h2)
-  union-loose {h1} {h2} f leaf t = h2 , t , ≤-refl
-  union-loose {h1} f t leaf rewrite n⊔0 h1 rewrite n+0 h1 = h1 , t , ≤-refl
+    → (t1 : BOBMap V l u h1)
+    → (t2 : BOBMap V l u h2)
+    → UnionReturn t1 t2
+--    → ∃ λ h
+--      → BOBMap V l u h × h ≤ (h1 + h2)
+  union-loose {h1} {h2} f leaf t = retval h2 t {{≤-refl}}
+  union-loose {h1} f t leaf = retval h1 t {{eqto≤ h1 ≤-refl}}
   union-loose {suc s₁} {suc s₂} f t₁@(node p₁ l₁ r₁ b₁) t₂@(node p₂ l₂ r₂ b₂)
     with splitAt (proj₁ p₂) {{mklim l₂}} {{mklim r₂}} t₁
   union-loose {suc s₁} {suc s₂} f t₁@(node p₁ l₁ r₁ b₁) t₂@(node {hl} {hr} p₂ l₂ r₂ b₂)
     | split value (hL , prfL , treeL) (hR , prfR , treeR)
     with union-loose f treeL l₂
-  ... | uL , tL , plL with union-loose f treeR r₂
-  ... | uR , tR , plR with gJoin (proj₁ p₂ , f (proj₂ p₂) value) tL tR
-  ... | i , t = i ⊕ max uL uR
-              , t
-              , ubound s₁ s₂ hl hr hL hR uL uR i b₂ prfL prfR plL plR
+  ... | retval uL tL {{plL}} with union-loose f treeR r₂
+  ... | retval uR tR {{plR}} with gJoin (proj₁ p₂ , f (proj₂ p₂) value) tL tR
+  ... | i , t = retval
+                  (i ⊕ max uL uR)
+                  t
+                  {{ubound s₁ s₂ hl hr hL hR uL uR i b₂ prfL prfR plL plR}}
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 

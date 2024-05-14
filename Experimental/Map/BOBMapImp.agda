@@ -46,6 +46,9 @@ data AllM {V : Set ℓ'} (P : Pred (Key × V) ℓₐ) : AVLMap V → Set (k ⊔ 
 all∅ : {V : Set ℓ'} → (P : Pred (Key × V) ℓₐ) → AllM P (map (leaf {{⊥⁺<⊤⁺}}))
 all∅ f = map (leaf ⦃ ⊥⁺<⊤⁺ ⦄)
 
+foldr : {V : Set ℓ'} {l : Level} {A : Set l} → (Key × V → A → A) → A → AVLMap V → A
+foldr f g (map m) = fldr f g m
+
 module BMapAVLInstance (V : Set ℓ) where
   open import Map.Proofs.Insertion.Proofs order V
   open import Map.Proofs.Proofs order V
@@ -68,9 +71,6 @@ module BMapAVLInstance (V : Set ℓ) where
     toNotAnyM : ∀ {h : ℕ} {m : BOBMap V ⊥⁺ ⊤⁺ h} {P : Pred V ℓₚ} {k : Key}
                 → ¬ Any P k m → ¬ AnyM P k (map m)
     toNotAnyM neg (map prf) = neg prf
-
-    fldr : {l : Level} {A : Set l} → (Key × V → A → A) → A → AVLMap V → A
-    fldr f g (map m) = foldr f g m
 
     ¬Sym : ∀ {ℓ : Level} {A : Set ℓ} {a b : A} → ¬ (a ≡ b) → ¬ (b ≡ a)
     ¬Sym nEq x = nEq (sym x)
@@ -193,7 +193,8 @@ module BMapAVLInstance (V : Set ℓ) where
     ---------------------------------------------------------------------------------
     mergeMap : MMap {ℓ₁ = ℓ₁} {K = Key} {V} (AVLMap V)
     MMap.bMap mergeMap = basicMap
-    MMap.unionWith mergeMap f (map m) (map n) = map $ proj₁ $ proj₂ $ union-loose f m n
+    MMap.unionWith mergeMap f (map m) (map n) with union-loose f m n
+    ... | retval _ t = map t
 
     ---------------------------------------------------------------------------------
     -- Union proofs
