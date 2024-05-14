@@ -1,4 +1,5 @@
 {-# OPTIONS --erasure #-}
+{-# OPTIONS --allow-unsolved-metas #-}
 
 module Map.AdamsTree where
 
@@ -30,21 +31,22 @@ postulate
 data balance (c : ℕ) : ℕ → ℕ → Set where
   bal : ∀ {a b} → ∣ a - b ∣ ≤ c → balance c a b
 
-data ATree (l u : ℕ) : @erased ℕ → Set where
-  leaf : {{l < u}} → ATree l u 0
-  node : {sl sr : ℕ}
+data ATree (@0 l u : ℕ) : @0 ℕ → Set where
+  Leaf : {{@0 lu :  l < u}} → ATree l u 0
+  Node : {sl sr : ℕ}
     → (v : ℕ)
     → (lt : ATree l v sl)
     → (rt : ATree v u sr)
     -- this causes issues with matching on sl and sr for some reason
 --    → {{ b : ∣ sl - sr ∣ ≤ ω }}
     → ATree l u (suc (sl + sr))
+{-# COMPILE AGDA2HS ATree #-}
 
-mklim : ∀ {l u s}
+@0 mklim : ∀ {l u s}
   → ATree l u s
   → l < u
-mklim (leaf ⦃ l<u ⦄) = l<u
-mklim (node v lt rt) = <-trans (mklim lt) (mklim rt)
+mklim (Leaf ⦃ l<u ⦄) = l<u
+mklim (Node v lt rt) = <-trans (mklim lt) (mklim rt)
 
 join : ∀ {sl sr l u}
   → (v : ℕ)
@@ -77,16 +79,16 @@ postulate
 
 splitAt : ∀ {s l u}
   → (v : ℕ)
-  → {{l < v}} → {{v < u}}
+  → {{@0 lv : l < v}} → {{@0 lv : v < u}}
   → (m : ATree l u (suc s))
   → Split v m
-splitAt {s} {l} {u} v t@(node w lt rt) with compv v w
-splitAt {s} {l} {u} v {{p1}} t@(node w leaf rt) | tri< a ¬b ¬c = ans
+splitAt {s} {l} {u} v t@(Node w lt rt) with compv v w
+splitAt {s} {l} {u} v {{p1}} t@(Node w Leaf rt) | tri< a ¬b ¬c = ans
   where
     ans : Split v t
-    ans = split nothing (leaf {{p1}}) (join w (leaf {{a}}) rt) (1# , refl)
+    ans = split nothing (Leaf {{p1}}) (join w (Leaf {{a}}) rt) (1# , refl)
 
-splitAt {s} {l} {u} v {{p1}} t@(node w lt@(node {sl} {sr} _ _ _) rt)
+splitAt {s} {l} {u} v {{p1}} t@(Node w lt@(Node {sl} {sr} _ _ _) rt)
   | tri< a ¬b ¬c with splitAt v {{p1}} {{a}} lt
 ... | split value ll rr prf
   = split value ll (join w rr rt) (ans {sl} {sr} prf)
@@ -102,16 +104,16 @@ splitAt {s} {l} {u} v {{p1}} t@(node w lt@(node {sl} {sr} _ _ _) rt)
       rewrite c+sb≡sc+b sl₁ (sr₂ + sr₁) rewrite abc≡abc sl₁ sr₂ sr₁
       = 1# , n≡n⇒sn≡sn (m≡n⇒m+c≡n+c (suc (sl + sr)) (sl₁ + sr₂) sr₁ prf)
 
-splitAt {s} {l} {u} v t@(node w lt rt) | tri≈ ¬a refl ¬c
+splitAt {s} {l} {u} v t@(Node w lt rt) | tri≈ ¬a refl ¬c
   = split (just w) lt rt (0# , refl)
-splitAt {s} {l} {u} v {{_}} {{p2}} t@(node {sl} w lt leaf) | tri> ¬a ¬b c
+splitAt {s} {l} {u} v {{_}} {{p2}} t@(Node {sl} w lt Leaf) | tri> ¬a ¬b c
   = ans
   where
     ans : Split v t
-    ans = split nothing (join w lt (leaf {{c}})) (leaf {{p2}})
+    ans = split nothing (join w lt (Leaf {{c}})) (Leaf {{p2}})
                 (1# , n≡n⇒sn≡sn (sym (n+0 (sl + 0))))
 
-splitAt {s} {l} {u} v {{_}} {{p2}} t@(node w lt rt@(node {sl} {sr} _ _ _))
+splitAt {s} {l} {u} v {{_}} {{p2}} t@(Node w lt rt@(Node {sl} {sr} _ _ _))
  | tri> ¬a ¬b c with splitAt v {{c}} {{p2}} rt
 ... | split value ll rr prf
   = split value (join w lt ll) rr (ans {sl} {sr} prf)
@@ -182,32 +184,29 @@ n≤n : ∀ n → n ≤ n
 n≤n zero = z≤n
 n≤n (suc n) = s≤s (n≤n n)
 
-n⊔0 : ∀ n → n ⊔ 0 ≡ n
-n⊔0 zero = refl
-n⊔0 (suc n) = refl
-
-unionᵒᵏ : ∀ {s₁ s₂ l u}
+unionOk : ∀ {s₁ s₂ l u}
   → ATree l u s₁
   → ATree l u s₂
-  → ∃ λ (s : ℕ)
+  → ∃ λ (s : ℕ) -- "Not supported: type-level lambda λ s → [...]"
     → ATree l u s × s ≤ (s₁ + s₂) × (s₁ ⊔ s₂) ≤ s
-unionᵒᵏ {_} {s} leaf t = _ , t , n≤n s , n≤n s
-unionᵒᵏ {s} t leaf rewrite n+0 s rewrite n⊔0 s = _ , t , n≤n s , n≤n s
-unionᵒᵏ {s₁} {s₂} t₁@(node {sl₁} {sr₁} v₁ l₁ r₁) t₂@(node v₂ l₂ r₂)
+unionOk {_} {s} Leaf t = _ , t , n≤n s , n≤n s
+unionOk {s} t Leaf rewrite n+0 s rewrite n⊔0 s = _ , t , n≤n s , n≤n s
+unionOk {s₁} {s₂} t₁@(Node {sl₁} {sr₁} v₁ l₁ r₁) t₂@(Node v₂ l₂ r₂)
   with splitAt v₂ {{mklim l₂}} {{mklim r₂}} t₁
-... | split {sl} {sr} w lv rv hp with unionᵒᵏ lv l₂
-... | sL , tL , p+L , p⊔L with unionᵒᵏ rv r₂
+... | split {sl} {sr} w lv rv hp with unionOk lv l₂
+... | sL , tL , p+L , p⊔L with unionOk rv r₂
 ... | sR , tR , p+R , p⊔R
   = suc (sL + sR)
   , join v₂ tL tR
   , s≤s (sss≤ssss {sL} {sR} {sl} {sr} {sl₁} {sr₁} hp p+L p+R)
   , s≤s (ss⊔ss≤sss {sL} {sR} {sl} {sr} {sl₁} {sr₁} hp p⊔L p⊔R)
+{-# COMPILE AGDA2HS unionOk #-}
 
-union : ∀ {s₁ s₂ l u}
+union : {s₁ s₂ l u : ℕ}
   → ATree l u s₁
   → ATree l u s₂
   → ∃ λ (s : ℕ) → ATree l u s
-union t leaf = _ , leaf
-union leaf t = _ , leaf
-union {suc s₁} {suc s₂} t₁ t₂ with unionᵒᵏ t₁ t₂
+union t Leaf = _ , Leaf
+union Leaf t = _ , Leaf
+union {suc s₁} {suc s₂} t₁ t₂ with unionOk t₁ t₂
 ... | s , t , _ , _ = s , t
