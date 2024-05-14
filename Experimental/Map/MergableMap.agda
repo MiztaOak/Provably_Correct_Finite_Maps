@@ -3,6 +3,7 @@ module Map.MergableMap where
 open import Level renaming (suc to lsuc; zero to lzero)
 open import Data.Maybe.Base using (Maybe; just; nothing; is-just)
 open import Data.Sum
+open import Data.Product
 
 private
   variable
@@ -35,9 +36,24 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
 
       ∪-∈ : ∀ m1 m2 f k
             → k ∈ unionWith f m1 m2
-            → k ∈ m1 ⊎ k ∈ m2
+            → k ∈ m1 ⊎ k ∈ m2 ⊎ (k ∈ m1 × k ∈ m2)
 
       -- safety prop of above?
       ∪-∈' : ∀ m1 m2 f k
             → k ∈ m1 ⊎ k ∈ m2
             → k ∈ unionWith f m1 m2
+
+      ∪-safe : ∀ k v₁ v₂ m₁ m₂ f
+        → k ↦ v₁ ∈ m₁
+        → k ↦ v₂ ∈ m₂
+        → k ↦ f v₁ (just v₂) ∈ unionWith f m₁ m₂
+
+      ∪-safe-left : ∀ k v m₁ m₂ f
+        → k ↦ v ∈ m₁
+        → k ∉ m₂
+        → k ↦ f v nothing ∈ unionWith f m₁ m₂
+
+      ∪-safe-right : ∀ k v m₁ m₂ f
+        → k ∉ m₁
+        → k ↦ v ∈ m₂
+        → k ↦ v ∈ unionWith f m₁ m₂

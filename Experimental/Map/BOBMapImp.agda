@@ -209,6 +209,9 @@ module BMapAVLInstance (V : Set ℓ) where
     MMap.∪-∅ mergeMap m f = (λ k₁ v x → {!!}) , {!!}
     MMap.∪-∈ mergeMap = {!!}
     MMap.∪-∈' mergeMap = {!!}
+    MMap.∪-safe mergeMap = {!!}
+    MMap.∪-safe-left mergeMap = {!!}
+    MMap.∪-safe-right mergeMap = {!!}
 
 {-    BOBMapImp : CMap {ℓ₁ = ℓ₁} {K = Key} {V} (AVLMap V)
     CMap.dMap BOBMapImp = deleteMap
