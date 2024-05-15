@@ -194,7 +194,7 @@ module BMapAVLInstance (V : Set ℓ) where
     mergeMap : MMap {ℓ₁ = ℓ₁} {K = Key} {V} (AVLMap V)
     MMap.bMap mergeMap = basicMap
     MMap.unionWith mergeMap f (map m) (map n) with union-loose f m n
-    ... | retval _ t = map t
+    ... | retval _ t _ = map t
 
     ---------------------------------------------------------------------------------
     -- Union proofs

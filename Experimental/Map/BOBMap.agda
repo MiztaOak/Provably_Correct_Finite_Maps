@@ -405,12 +405,16 @@ module _ {v} {V : Set v} where
   n≤sn : ∀ {n} → n ≤ suc n
   n≤sn {n} = <⇒≤ (n<1+n n)
 
-  record Split (x : Key) (l u : Key⁺) (h : ℕ) : Set (k ⊔ v ⊔ ℓ₁) where
+  record Split (x : Key) (@0 l u : Key⁺) (h : ℕ) : Set (k ⊔ v ⊔ ℓ₁) where
     constructor split
     field
       value : Maybe V
-      leftT : ∃ λ hl → hl ≤ h × BOBMap V l [ x ] hl
-      rightT : ∃ λ hr → hr ≤ h × BOBMap V [ x ] u hr
+      leftH : ℕ
+      @0 leftP : leftH ≤ h
+      leftT : BOBMap V l [ x ] leftH
+      rightH : ℕ
+      @0 rightP : rightH ≤ h
+      rightT : BOBMap V [ x ] u rightH
 
   bigbal : ∀ {a b c}
           → a ~ b ⊔ c
@@ -448,17 +452,28 @@ module _ {v} {V : Set v} where
   sa≤b⇒a≤sb : ∀ {a b} → suc a ≤ b → a ≤ suc b
   sa≤b⇒a≤sb {a} {b} prf = s≤s⁻¹ (m≤n⇒m≤1+n (m≤n⇒m≤1+n prf))
 
+  data SplitPartL {@0 l u : Key⁺} (@0 sh : ℕ) (x : Key) : Set (k ⊔ v ⊔ ℓ₁) where
+    ltI : (hl' : ℕ) → (@0 prf : hl' ≤ sh) → BOBMap V l [ x ] hl' → SplitPartL sh x
+
+  data SplitPartR {@0 l u : Key⁺} (@0 sh : ℕ) (x : Key) : Set (k ⊔ v ⊔ ℓ₁) where
+    rtI : (hr' : ℕ) → (@0 prf : hr' ≤ sh) → BOBMap V [ x ] u hr' → SplitPartR sh x
+
   splitAt : ∀ {l u h}
              → (k : Key)
              → {{@erased l<k : l <⁺ [ k ]}} → {{@erased k<u : [ k ] <⁺ u}}
              → (m : BOBMap V l u h)
              → Split k l u h
   splitAt {ₗ} {ᵘ} {zero} k leaf
-    = split nothing (0 , z≤n , leaf) (0 , z≤n , leaf)
+    = split nothing 0 z≤n leaf 0 z≤n leaf
 
   splitAt {h = suc h} k (node (k' , v') l r b) with compare k k'
   splitAt {ₗ} {ᵘ} {h} k {{l<k = l<k}} (node {hl = hl} {hr = hr} (k' , v') l r b)
-    | tri< x _ _ = split (Split.value leftS) lt rt
+    | tri< x _ _ = case lt of λ where
+      (ltI lh lp lt) → case rt of λ where
+        (rtI rh rp rt) →
+          split (Split.value leftS)
+            lh lp lt
+            rh rp rt
     where
       sh : ℕ
       sh = h
@@ -466,44 +481,46 @@ module _ {v} {V : Set v} where
       leftS : Split k ₗ [ k' ] hl
       leftS = splitAt k {{l<k}} {{[ x ]ᴿ}} l
 
-      lt : ∃ λ hl' → hl' ≤ sh × BOBMap V ₗ [ k ] hl'
+      lt : SplitPartL {ₗ} {ᵘ} sh k --∃ λ hl' → hl' ≤ sh × BOBMap V ₗ [ k ] hl'
       lt with lembal b
-      lt | inr (inr (o , _)) with Split.leftT leftS
-      lt | inr (inr (o , _)) | ht , ht<hl , t = ht , ≤-trans ht<hl (m≤n⇒m≤1+n o) , t
-      lt | inr (inl (o , _)) with Split.leftT leftS
-      lt | inr (inl (o , _)) | ht , ht<hl , t = ht , ≤-trans ht<hl (m≤n⇒m≤1+n o) , t
-      lt | inl (o , _) with Split.leftT leftS
-      lt | inl (o , _) | ht , ht<hl , t = ht , ≤-trans ht<hl (sa≤b⇒a≤sb o) , t
+      lt | inr (inr (o , _))
+        = ltI (Split.leftH leftS) (≤-trans (Split.leftP leftS) (m≤n⇒m≤1+n o)) (Split.leftT leftS)
+      lt | inr (inl (o , _))
+        = ltI (Split.leftH leftS) (≤-trans (Split.leftP leftS) (m≤n⇒m≤1+n o)) (Split.leftT leftS)
+      lt | inl (o , _)
+        = ltI (Split.leftH leftS) (≤-trans (Split.leftP leftS) (sa≤b⇒a≤sb o)) (Split.leftT leftS)
 
       -- a bit (very) convoluted, surely there are better ways to do this
       -- also uses a few lemmas which are not proven yet
-      rt : ∃ λ hr' → hr' ≤ sh × BOBMap V [ k ] ᵘ hr'
-      rt with Split.rightT leftS
-      rt | ht , ht<hl , t with gJoin (k' , v') t r
-      rt | ht , ht<hl , t | 0# , β with lembal b
+      rt : SplitPartR {ₗ} {ᵘ} sh k --∃ λ hr' → hr' ≤ sh × BOBMap V [ k ] ᵘ hr'
+      rt with leftS
+      rt | split _ _ _ _ ht ht<hl t with gJoin (k' , v') t r
+      rt | split _ _ _ _ ht ht<hl t | 0# , β with lembal b
       ... | inl (hl<h , hr≤h)
-        = max ht hr , lem≤max (≤-trans ht<hl (sa≤b⇒a≤sb hl<h)) (m≤n⇒m≤1+n hr≤h) , β
+        = rtI (max ht hr) (lem≤max (≤-trans ht<hl (sa≤b⇒a≤sb hl<h)) (m≤n⇒m≤1+n hr≤h)) β
       -- max ht hr , lem≤max (≤-trans ht<hl (m≤n⇒m≤1+n hl<h)) (m≤n⇒m≤1+n hr<h) , β
       ... | inr (inl (hl≤h , hr<h))
-        = max ht hr , lem≤max (≤-trans ht<hl (m≤n⇒m≤1+n hl≤h)) (sa≤b⇒a≤sb hr<h) , β
+        = rtI (max ht hr) (lem≤max (≤-trans ht<hl (m≤n⇒m≤1+n hl≤h)) (sa≤b⇒a≤sb hr<h)) β
       ... | inr (inr (hl≤h , hr≤h))
-        = max ht hr , lem≤max (≤-trans ht<hl (m≤n⇒m≤1+n hl≤h)) (m≤n⇒m≤1+n hr≤h) , β
-      rt | ht , ht<hl , t | 1# , β with lembal b
+        = rtI (max ht hr) (lem≤max (≤-trans ht<hl (m≤n⇒m≤1+n hl≤h)) (m≤n⇒m≤1+n hr≤h)) β
+      rt | split _ _ _ _ ht ht<hl t | 1# , β with lembal b
       ... | inl (hl<h , hr≤h)
-        = suc (max ht hr)
-        , s≤s (lem≤max (≤-trans ht<hl (s≤s⁻¹ (m≤n⇒m≤1+n hl<h))) hr≤h)
-        , β
+        = rtI (suc (max ht hr))
+              (s≤s (lem≤max (≤-trans ht<hl (s≤s⁻¹ (m≤n⇒m≤1+n hl<h))) hr≤h))
+              β
       ... | inr (inl (hl≤h , hr<h))
-        = suc (max ht hr)
-        , s≤s (lem≤max (≤-trans ht<hl hl≤h) (s≤s⁻¹ (m≤n⇒m≤1+n hr<h)))
-        , β
+        = rtI (suc (max ht hr))
+              (s≤s (lem≤max (≤-trans ht<hl hl≤h) (s≤s⁻¹ (m≤n⇒m≤1+n hr<h))))
+              β
       ... | inr (inr (hl≤h , hr≤h))
-        = suc (max ht hr)
-        , s≤s (lem≤max (≤-trans ht<hl hl≤h) hr≤h)
-        , β
+        = rtI (suc (max ht hr))
+              (s≤s (lem≤max (≤-trans ht<hl hl≤h) hr≤h))
+              β
 
   splitAt {ₗ} {ᵘ} {h} k (node {hl = hl} {hr = hr} (.k , v') l r b)
-    | tri≈ _ refl _ = split (just v') (hl , lt) (hr , rt)
+    | tri≈ _ refl _ = split (just v')
+                            hl (proj₁ lt) (proj₂ lt)
+                            hr (proj₁ rt) (proj₂ rt)
     where
       sh : ℕ
       sh = h
@@ -521,7 +538,12 @@ module _ {v} {V : Set v} where
       ... | inr (inr (o , u)) = m≤n⇒m≤1+n u , r
 
   splitAt {ₗ} {ᵘ} {h} k {{k<u = k<u}} (node {hl = hl} {hr = hr} (k' , v') l r b)
-    | tri> _ _ x = split (Split.value rightS) lt rt
+    | tri> _ _ x = case lt of λ where
+      (ltI lh lp lt) → case rt of λ where
+        (rtI rh rp rt) →
+          split (Split.value rightS)
+            lh lp lt
+            rh rp rt
     where
       sh : ℕ
       sh = h
@@ -529,44 +551,44 @@ module _ {v} {V : Set v} where
       rightS : Split k [ k' ] ᵘ hr
       rightS = splitAt k {{[ x ]ᴿ}} r
 
-      rt : ∃ λ hr' → hr' ≤ sh × BOBMap V [ k ] ᵘ hr'
+      rt : SplitPartR {ₗ} {ᵘ} sh k --∃ λ hr' → hr' ≤ sh × BOBMap V [ k ] ᵘ hr'
       rt with lembal b
-      rt | inl (_ , o) with Split.rightT rightS
-      ... | ht , ht<hr , t = ht , ≤-trans ht<hr (m≤n⇒m≤1+n o) , t
-      rt | inr (inl (o , u)) with Split.rightT rightS
-      ... | ht , ht<hr , t = ht , ≤-trans ht<hr (sa≤b⇒a≤sb u) , t
-      rt | inr (inr (o , u)) with Split.rightT rightS
-      ... | ht , ht<hr , t = ht , ≤-trans ht<hr (m≤n⇒m≤1+n u) , t
+      rt | inl (_ , o) with rightS
+      ... | split _ _ _ _ ht ht<hr t = rtI ht (≤-trans ht<hr (m≤n⇒m≤1+n o)) t
+      rt | inr (inl (o , u)) with rightS
+      ... | split _ _ _ _ ht ht<hr t = rtI ht (≤-trans ht<hr (sa≤b⇒a≤sb u)) t
+      rt | inr (inr (o , u)) with rightS
+      ... | split _ _ _ _ ht ht<hr t = rtI ht (≤-trans ht<hr (m≤n⇒m≤1+n u)) t
 
-      lt : ∃ λ hl' → hl' ≤ sh × BOBMap V ₗ [ k ] hl'
-      lt with Split.leftT rightS
-      lt | ht , ht<hr , t with gJoin (k' , v') l t
-      lt | ht , ht<hr , t | 0# , β with lembal b
-      ... | inl (hl<h , hr≤h) =
-          max hl ht
-        , lem≤max (sa≤b⇒a≤sb hl<h) (≤-trans ht<hr (m≤n⇒m≤1+n hr≤h))
-        , β
-      ... | inr (inl (hl≤h , hr<h)) =
-          max hl ht
-        , lem≤max (m≤n⇒m≤1+n hl≤h) (≤-trans ht<hr (sa≤b⇒a≤sb hr<h))
-        , β
-      ... | inr (inr (hl≤h , hr≤h)) =
-          max hl ht
-        , lem≤max (m≤n⇒m≤1+n hl≤h) (≤-trans ht<hr (m≤n⇒m≤1+n hr≤h))
-        , β
-      lt | ht , ht<hr , t | 1# , β with lembal b
-      ... | inl (hl<h , hr≤h) =
-          suc (max hl ht)
-        , s≤s (lem≤max (s≤s⁻¹ (m≤n⇒m≤1+n hl<h)) (≤-trans ht<hr hr≤h))
-        , β
-      ... | inr (inl (hl≤h , hr<h)) =
-          suc (max hl ht)
-        , s≤s (lem≤max hl≤h (≤-trans ht<hr (s≤s⁻¹ (m≤n⇒m≤1+n hr<h))))
-        , β
-      ... | inr (inr (hl≤h , hr≤h)) =
-          suc (max hl ht)
-        , s≤s (lem≤max hl≤h (≤-trans ht<hr hr≤h))
-        , β
+      lt : SplitPartL {ₗ} {ᵘ} sh k --∃ λ hl' → hl' ≤ sh × BOBMap V ₗ [ k ] hl'
+      lt with rightS
+      lt | split _ ht ht<hr t _ _ _ with gJoin (k' , v') l t
+      lt | split _ ht ht<hr t _ _ _ | 0# , β with lembal b
+      ... | inl (hl<h , hr≤h) = ltI
+          (max hl ht)
+          (lem≤max (sa≤b⇒a≤sb hl<h) (≤-trans ht<hr (m≤n⇒m≤1+n hr≤h)))
+          β
+      ... | inr (inl (hl≤h , hr<h)) = ltI
+          (max hl ht)
+          (lem≤max (m≤n⇒m≤1+n hl≤h) (≤-trans ht<hr (sa≤b⇒a≤sb hr<h)))
+          β
+      ... | inr (inr (hl≤h , hr≤h)) = ltI
+          (max hl ht)
+          (lem≤max (m≤n⇒m≤1+n hl≤h) (≤-trans ht<hr (m≤n⇒m≤1+n hr≤h)))
+          β
+      lt | split _ ht ht<hr t _ _ _ | 1# , β with lembal b
+      ... | inl (hl<h , hr≤h) = ltI
+          (suc (max hl ht))
+          (s≤s (lem≤max (s≤s⁻¹ (m≤n⇒m≤1+n hl<h)) (≤-trans ht<hr hr≤h)))
+          β
+      ... | inr (inl (hl≤h , hr<h)) = ltI
+          (suc (max hl ht))
+          (s≤s (lem≤max hl≤h (≤-trans ht<hr (s≤s⁻¹ (m≤n⇒m≤1+n hr<h)))))
+          β
+      ... | inr (inr (hl≤h , hr≤h)) = ltI
+          (suc (max hl ht))
+          (s≤s (lem≤max hl≤h (≤-trans ht<hr hr≤h)))
+          β
 
   -- * UNION STARTS HERE -----------------------------------------------------
 
@@ -839,7 +861,7 @@ module _ {v} {V : Set v} where
     | Ordℕ.greater .h₂ n rewrite lemR {n} {h₂} = {!!}
 
   -- UNION ------------------------------------------------------
-
+{-
   union : {h1 h2 : ℕ} → ∀ {l u}
           → (V → Maybe V → V)
           → BOBMap V l u h1
@@ -852,7 +874,7 @@ module _ {v} {V : Set v} where
   ... | split value (hL , prfL , treeL) (hR , prfR , treeR) with union f treeL lt
   ... | i , t1 with union f treeR rt
   ... | j , t2 rewrite fixHeight i j bal prfR prfL = gJoin (k , f v value) t1 t2 -- fixMap {i} k f v value bal prfR prfL t1 (union f treeR rt)
-
+-}
   baltomax : ∀ a b c → a ~ b ⊔ c → max a b ≡ c
   baltomax a .(1 + a) .(1 + a) ~+ = n⊔sn≡sn a
   baltomax a .a .a ~0 = n⊔n≡n a
@@ -902,8 +924,12 @@ module _ {v} {V : Set v} where
     → suc (max s₁ s₂) ≤ i ⊕ max uL uR
   lbound s₁ s₂ hl hr hL hR uL uR i b p1 p2 p3 p4 = {!!}
 
-  data UnionReturn {l u : Key⁺} {h1 h2 : ℕ} (t₁ : BOBMap V l u h1) (t₂ : BOBMap V l u h2) : Set (k ⊔ v ⊔ ℓ₁) where
-    retval : (h : ℕ) → BOBMap V l u h → {{@0 hprf : h ≤ (h1 + h2) }} → UnionReturn t₁ t₂
+  record UnionReturn {l u : Key⁺} {h1 h2 : ℕ} (t₁ : BOBMap V l u h1) (t₂ : BOBMap V l u h2) : Set (k ⊔ v ⊔ ℓ₁) where
+    constructor retval
+    field
+      hof : ℕ
+      tree : BOBMap V l u hof
+      @0 prf : hof ≤ (h1 + h2)
 
   eqto≤ : ∀ n → n ≤ n → n ≤ n + 0
   eqto≤ n p rewrite n+0 n = ≤-refl
@@ -915,19 +941,19 @@ module _ {v} {V : Set v} where
     → UnionReturn t1 t2
 --    → ∃ λ h
 --      → BOBMap V l u h × h ≤ (h1 + h2)
-  union-loose {h1} {h2} f leaf t = retval h2 t {{≤-refl}}
-  union-loose {h1} f t leaf = retval h1 t {{eqto≤ h1 ≤-refl}}
+  union-loose {h1} {h2} f leaf t = retval h2 t ≤-refl
+  union-loose {h1} f t leaf = retval h1 t (eqto≤ h1 ≤-refl)
   union-loose {suc s₁} {suc s₂} f t₁@(node p₁ l₁ r₁ b₁) t₂@(node p₂ l₂ r₂ b₂)
     with splitAt (proj₁ p₂) {{mklim l₂}} {{mklim r₂}} t₁
   union-loose {suc s₁} {suc s₂} f t₁@(node p₁ l₁ r₁ b₁) t₂@(node {hl} {hr} p₂ l₂ r₂ b₂)
-    | split value (hL , prfL , treeL) (hR , prfR , treeR)
+    | split value hL prfL treeL hR prfR treeR
     with union-loose f treeL l₂
-  ... | retval uL tL {{plL}} with union-loose f treeR r₂
-  ... | retval uR tR {{plR}} with gJoin (proj₁ p₂ , f (proj₂ p₂) value) tL tR
+  ... | retval uL tL plL with union-loose f treeR r₂
+  ... | retval uR tR plR with gJoin (proj₁ p₂ , f (proj₂ p₂) value) tL tR
   ... | i , t = retval
                   (i ⊕ max uL uR)
                   t
-                  {{ubound s₁ s₂ hl hr hL hR uL uR i b₂ prfL prfR plL plR}}
+                  (ubound s₁ s₂ hl hr hL hR uL uR i b₂ prfL prfR plL plR)
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 
