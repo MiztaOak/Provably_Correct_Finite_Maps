@@ -200,14 +200,16 @@ module BMapAVLInstance (V : Set ℓ) where
     -- Union proofs
     ---------------------------------------------------------------------------------
     proj₁ (MMap.∪-∅ᴸ mergeMap (map leaf) f) _ _ (map ())
-    proj₁ (MMap.∪-∅ᴸ mergeMap (map (node _ _ _ _)) f) _ _ x = {!x!}
+    proj₁ (MMap.∪-∅ᴸ mergeMap (map (node _ _ _ _)) f) _ _ x = x
     proj₂ (MMap.∪-∅ᴸ mergeMap (map leaf) f) _ _ (map ())
-    proj₂ (MMap.∪-∅ᴸ mergeMap (map (node _ _ _ _)) f) _ _ x = {!x!}
+    proj₂ (MMap.∪-∅ᴸ mergeMap (map (node _ _ _ _)) f) _ _ x = x
     proj₁ (MMap.∪-∅ᴿ mergeMap (map leaf) f) _ _ (map ())
     proj₁ (MMap.∪-∅ᴿ mergeMap (map (node _ _ _ _)) f) _ _ x = x
     proj₂ (MMap.∪-∅ᴿ mergeMap (map leaf) f) _ _ (map ())
     proj₂ (MMap.∪-∅ᴿ mergeMap (map (node _ _ _ _)) f) _ _ x = x
-    MMap.∪-∅ mergeMap m f = (λ k v x → {!proj₂ $ MMap.∪-∅ᴸ mergeMap m f!}) , {!!}
+    proj₁ (MMap.∪-∅ mergeMap (map leaf) f) _ _ (map ())
+    proj₂ (MMap.∪-∅ mergeMap (map leaf) f) _ _ (map ())
+    MMap.∪-∅ mergeMap (map (node _ _ _ _)) f = (λ _ _ x → x) , (λ _ _ x → x)
     MMap.∪-∈ mergeMap = {!!}
     MMap.∪-∈' mergeMap = {!!}
     MMap.∪-safe mergeMap = {!!}
