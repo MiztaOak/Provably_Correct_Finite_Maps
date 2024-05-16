@@ -42,6 +42,7 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
             → k ∈ m1 ⊎ k ∈ m2
             → k ∈ unionWith f m1 m2
 
+      -- TODO I think this might be right biased (recall we split m₁)
       ∪-safe : ∀ k v₁ v₂ m₁ m₂ f
         → k ↦ v₁ ∈ m₁
         → k ↦ v₂ ∈ m₂
@@ -56,3 +57,8 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
         → k ∉ m₁
         → k ↦ v ∈ m₂
         → k ↦ v ∈ unionWith f m₁ m₂
+
+      -- do we need to show source of this? comes from formal-prelude
+      ∪-cong : ∀ f m₁ m₂ m₃
+        → m₁ ≐ m₂
+        → unionWith f m₁ m₃ ≐ unionWith f m₂ m₃
