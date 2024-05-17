@@ -70,7 +70,7 @@ max~ ~- = ~0
 ~max ~0 = ~0
 ~max ~- = ~+
 
-data BOBMap (V : Set v) (l u : Key⁺) : @0 ℕ → Set (k ⊔ v ⊔ ℓ₁) where
+data BOBMap (@0 V : Set v) (@0 l u : Key⁺) : ℕ → Set (k ⊔ v ⊔ ℓ₁) where
   leaf : {{@erased l<u : l <⁺ u}} → BOBMap V l u 0
   node : ∀ {hl hr h}
          → ((k , v) : Key × V)
@@ -80,12 +80,12 @@ data BOBMap (V : Set v) (l u : Key⁺) : @0 ℕ → Set (k ⊔ v ⊔ ℓ₁) whe
          → BOBMap V l u (suc h)
 
 module _ {v} {V : Set v} where
-  singleton : ∀ {l u : Key⁺} (k : Key) → V
+  singleton : ∀ {@0 l u : Key⁺} (k : Key) → V
     → ⦃ l<k : l <⁺ [ k ] ⦄ ⦃ k<u : [ k ] <⁺ u ⦄
     → BOBMap V l u 1
   singleton k v = node (k , v) leaf leaf ~0
 
-  data Any (P : Pred V ℓₚ) {l u : Key⁺} (kₚ : Key) :
+  data Any (P : Pred V ℓₚ) {@0 l u : Key⁺} (kₚ : Key) :
     ∀ {h : ℕ} → @erased BOBMap V l u h → Set (k ⊔ ℓ₁ ⊔ v ⊔ ℓₚ) where
     here : ∀ {h hl hr} {v : V}
            {{@erased l≤k : l <⁺ [ kₚ ]}} {{@erased k≤u : [ kₚ ] <⁺ u}}
@@ -111,7 +111,7 @@ module _ {v} {V : Set v} where
            → {bal : hl ~ hr ⊔ h}
            → Any P kₚ (node (k' , v) lm rm bal)
 
-  fldr : ∀ {l u} {h : ℕ} {n : Level} {A : Set n}
+  fldr : ∀ {@0 l u} {h : ℕ} {n : Level} {A : Set n}
           → (Key × V → A → A)
           → A
           → BOBMap V l u h
@@ -119,21 +119,21 @@ module _ {v} {V : Set v} where
   fldr f g leaf = g
   fldr f g (node p l r bal) = fldr f (f p (fldr f g r)) l
 
-  record Cons (l u : Key⁺) (h : ℕ) : Set (k ⊔ v ⊔ ℓ₁) where
+  record Cons (@0 l u : Key⁺) (h : ℕ) : Set (k ⊔ v ⊔ ℓ₁) where
     constructor cons
     field
       head : Key × V
       @erased l<u : l <⁺ [ proj₁ head ]
       tail : ∃ λ i → BOBMap V [ proj₁ head ] u (i ⊕ h)
 
-  reduce : ∀ {l y u h}
+  reduce : ∀ {@0 l y u} → {h : ℕ}
           → {{@erased l≤y : l <⁺ y}}
           → BOBMap V y u h
           → BOBMap V l u h
   reduce {l} {y} {u} {{a}} (leaf {{b}}) = leaf {{trans⁺ l a b}}
   reduce {{a}} (node p l r bal) = node p (reduce {{a}} l) r bal
 
-  raise : ∀ {l y u h}
+  raise : ∀ {@0 l y u} → {h : ℕ}
           → {{@erased y≤u : y <⁺ u}}
           → BOBMap V l y h
           → BOBMap V l u h
@@ -146,10 +146,10 @@ module _ {v} {V : Set v} where
   mklim (leaf {{p}}) = p
   mklim {l} {u} (node p lt rt bal) = trans⁺ l (mklim lt) (mklim rt)
   private
-    _∈_ : Key → {l u : Key⁺} {h : ℕ} → BOBMap V l u h → Set (k ⊔ ℓ₁ ⊔ v)
+    _∈_ : Key → {@0 l u : Key⁺} {h : ℕ} → BOBMap V l u h → Set (k ⊔ ℓ₁ ⊔ v)
     k ∈ m = Any {ℓₚ = 0ℓ} (λ _ → True) k m
 
-  _∈?_ : ∀ {l u h} (x : Key)
+  _∈?_ : ∀ {@0 l u} {h : ℕ} (x : Key)
          → (a : BOBMap V l u h)
          → Maybe (x ∈ a)
   _∈?_ x leaf = nothing
@@ -159,7 +159,7 @@ module _ {v} {V : Set v} where
   ... | tri> _ _ prf = (_∈?_ x rt) >>= λ α → just (right {{[ prf ]ᴿ}} α)
 
 -- * JOINS STARTS HERE -----------------------------------------------------
-  joinˡ⁺ : ∀ {l u : Key⁺} {h} {hl} {hr}
+  joinˡ⁺ : ∀ {@0 l u : Key⁺} {h} {hl} {hr}
     → (p : Key × V)
     → ∃ (λ i → BOBMap V l [ proj₁ p ] (i ⊕ hl))
     → BOBMap V [ proj₁ p ] u hr
@@ -173,7 +173,7 @@ module _ {v} {V : Set v} where
   joinˡ⁺ p (1# , node pᴸ ltᴸ (node pᴿ ltᴿ rtᴿ b) ~+) rt ~- =
     0# , (node pᴿ (node pᴸ ltᴸ ltᴿ (max~ b)) (node p rtᴿ rt (~max b)) ~0)
 
-  joinʳ⁺ : ∀ {l u : Key⁺} {h} {hl} {hr}
+  joinʳ⁺ : ∀ {@0 l u : Key⁺} {h} {hl} {hr}
     → (p : Key × V)
     → BOBMap V l [ proj₁ p ] hl
     → ∃ (λ i → BOBMap V [ proj₁ p ] u (i ⊕ hr))
@@ -187,7 +187,7 @@ module _ {v} {V : Set v} where
   joinʳ⁺ p lt (1# , node pᴿ (node pᴸ ltᴸ rtᴸ b) rtᴿ ~-) ~+ =
     0# , node pᴸ (node p lt ltᴸ (max~ b)) (node pᴿ rtᴸ rtᴿ (~max b)) ~0
 
-  joinˡ⁻ : ∀ {l u} {hl hr h}
+  joinˡ⁻ : ∀ {@0 l u} {hl hr h}
           → ((k , v) : Key × V)
           → ∃ (λ i → BOBMap V l [ k ] pred[ i ⊕ hl ])
           → BOBMap V [ k ] u hr
@@ -200,7 +200,7 @@ module _ {v} {V : Set v} where
   joinˡ⁻ {hl = suc hl} kv (0# , lt) rt ~- = 0# , (node kv lt rt ~0)
   joinˡ⁻ {hl = suc hl} kv (1# , lt) rt b = 1# , (node kv lt rt b)
 
-  joinʳ⁻ : ∀ {l u} {hl hr h}
+  joinʳ⁻ : ∀ {@0 l u} {hl hr h}
            → ((k , v) : Key × V)
            → BOBMap V l [ k ] hl
            → ∃ (λ i → BOBMap V [ k ] u pred[ i ⊕ hr ])
@@ -213,7 +213,7 @@ module _ {v} {V : Set v} where
   joinʳ⁻ {hr = suc hr} kv lt (0# , rt) ~- = joinˡ⁺ kv (1# , lt) rt ~-
   joinʳ⁻ {hr = suc hr} kv lt (1# , rt) b = 1# , node kv lt rt b
 
-  uncons : ∀ {l u h}
+  uncons : ∀ {@0 l u} → {h : ℕ}
              → BOBMap V l u (suc h)
              → Cons l u h
   uncons (node p leaf rm ~+) = cons p (mklim leaf) (0# , rm)
@@ -222,7 +222,7 @@ module _ {v} {V : Set v} where
   uncons (node {suc _} p lm rm bal) with uncons lm
   ... | cons head l<u tail = cons head l<u (joinˡ⁻ p tail rm bal)
 
-  join : {l u : Key⁺} {k : Key} {hl hr h : ℕ}
+  join : {@0 l u : Key⁺} {k : Key} {hl hr h : ℕ}
          → BOBMap V l [ k ] hl
          → BOBMap V [ k ] u hr
          → hl ~ hr ⊔ h
@@ -233,7 +233,7 @@ module _ {v} {V : Set v} where
   join {hr = suc _} lt rt b with uncons rt
   ... | cons head l<u tail = joinʳ⁻ head (raise ⦃ l<u ⦄ lt) tail b
 
-  insertWith : {l u : Key⁺} {h : ℕ} (k : Key) (f : Maybe V → V)
+  insertWith : {@0 l u : Key⁺} {h : ℕ} (k : Key) (f : Maybe V → V)
                {{@erased l≤u : l <⁺ [ k ]}} {{@erased p≤u : [ k ] <⁺ u}}
                → BOBMap V l u h
                → ∃ λ i → BOBMap V l u (i ⊕ h)
@@ -243,14 +243,14 @@ module _ {v} {V : Set v} where
   ... | tri≈ _ refl _ = 0# , node (k , f (just (proj₂ p))) lt rt bal
   ... | tri> _ _ p<k = joinʳ⁺ p lt (insertWith k f {{[ p<k ]ᴿ}} rt) bal
 
-  insert : {l u : Key⁺} {h : ℕ} (kv : Key × V)
+  insert : {@0 l u : Key⁺} {h : ℕ} (kv : Key × V)
            {{@erased l≤p : l <⁺ [ (proj₁ kv) ]}}
            {{@erased p≤u : [ (proj₁ kv) ] <⁺ u}}
            → BOBMap V l u h
            → ∃ λ i → BOBMap V l u (i ⊕ h)
   insert (k , v) m = insertWith k (λ _ → v) m
 
-  lookup : ∀ {l u : Key⁺} {h : ℕ}
+  lookup : ∀ {@0 l u : Key⁺} {h : ℕ}
            → BOBMap V l u h
            → Key
            → Maybe V
@@ -334,7 +334,7 @@ module _ {v} {V : Set v} where
   illegal~⊔3R : ∀ {a b c d} → a ~ b ⊔ suc (suc (suc b + c + d)) → ⊥
   illegal~⊔3R {a} {b} {c} {d} = λ ()
 
-  gJoinRight : {hr x : ℕ} {l u : Key⁺}
+  gJoinRight : {hr x : ℕ} {@0 l u : Key⁺}
                 → ((k , v) : Key × V)
                 → BOBMap V l [ k ] (suc (suc (hr + x)))
                 → BOBMap V [ k ] u hr
@@ -359,7 +359,7 @@ module _ {v} {V : Set v} where
   ... | right .hc k = ⊥-elim (illegal~⊔3R b )
   ... | 1-offR .hc = ⊥-elim (illegal~⊔2R b)
 
-  gJoinLeft : {hl x : ℕ} {l u : Key⁺}
+  gJoinLeft : {hl x : ℕ} {@0 l u : Key⁺}
                → ((k , v) : Key × V)
                → BOBMap V l [ k ] hl
                → BOBMap V [ k ] u (suc (suc (hl + x)))
@@ -384,7 +384,7 @@ module _ {v} {V : Set v} where
   ... | 1-offR .hc = ⊥-elim (illegal~⊔2L b)
   ... | right .hc k = ⊥-elim (illegal~⊔3L b)
 
-  gJoin : {hl hr : ℕ} {l u : Key⁺}
+  gJoin : {hl hr : ℕ} {@0 l u : Key⁺}
           → ((k , v) : Key × V)
           → BOBMap V l [ k ] hl
           → BOBMap V [ k ] u hr
@@ -440,7 +440,7 @@ module _ {v} {V : Set v} where
   lem≤max : ∀ {a b c} → a ≤ c → b ≤ c → max a b ≤ c
   lem≤max p1 p2 = ⊔-lub p1 p2
 
-  lemin : ∀ {l u h}
+  lemin : ∀ {@0 l u} {h : ℕ}
           → {x : Key}
           → {m : BOBMap V l u h}
           → x ∈ m
@@ -458,7 +458,7 @@ module _ {v} {V : Set v} where
   data SplitPartR {@0 l u : Key⁺} (@0 sh : ℕ) (x : Key) : Set (k ⊔ v ⊔ ℓ₁) where
     rtI : (hr' : ℕ) → (@0 prf : hr' ≤ sh) → BOBMap V [ x ] u hr' → SplitPartR sh x
 
-  splitAt : ∀ {l u h}
+  splitAt : ∀ {@0 l u} {h : ℕ}
              → (k : Key)
              → {{@erased l<k : l <⁺ [ k ]}} → {{@erased k<u : [ k ] <⁺ u}}
              → (m : BOBMap V l u h)
@@ -915,16 +915,21 @@ module _ {v} {V : Set v} where
   --   max hL hl ≤ suc (max s₁ s₂)
   -- but this does not help showing that suc (max s₁ s₂) ≤ max uL uR as we
   -- know nothing about the relation of uL/uR and s₁/s₂.
-  lbound : (s₁ s₂ hl hr hL hR uL uR : ℕ) → (i : ℕ₂)
+  lbound : (s₁ s₂ hl hr hL hR uL uR : ℕ)
     → hl ~ hr ⊔ s₂
-    → hL ≤ suc s₁
-    → hR ≤ suc s₁
+    → (∃ λ i → i ⊕ s₁ ≡ max hL hR)
+--    → hL ≤ suc s₁
+--    → hR ≤ suc s₁
     → max hL hl ≤ uL
     → max hR hr ≤ uR
-    → suc (max s₁ s₂) ≤ i ⊕ max uL uR
-  lbound s₁ s₂ hl hr hL hR uL uR i b p1 p2 p3 p4 = {!!}
+    → max s₁ s₂ ≤ max uL uR
+  lbound s₁ s₂ hl hr hL hR uL uR b (0# , p1) p3 p4 with baltomax hl hr s₂ b
+  ... | xx rewrite sym xx | p1 | testo hL hl hR hr
+    = testo2 (max hL hl) uL (max hR hr) uR p3 p4
+  lbound s₁ s₂ hl hr hL hR uL uR b (1# , p1) p3 p4 = {!!}
 
-  record UnionReturn {l u : Key⁺} {h1 h2 : ℕ} (t₁ : BOBMap V l u h1) (t₂ : BOBMap V l u h2) : Set (k ⊔ v ⊔ ℓ₁) where
+  record UnionReturn {@0 l u : Key⁺} {h1 h2 : ℕ}
+                     (@0 t₁ : BOBMap V l u h1) (@0 t₂ : BOBMap V l u h2) : Set (k ⊔ v ⊔ ℓ₁) where
     constructor retval
     field
       hof : ℕ
@@ -934,7 +939,7 @@ module _ {v} {V : Set v} where
   eqto≤ : ∀ n → n ≤ n → n ≤ n + 0
   eqto≤ n p rewrite n+0 n = ≤-refl
 
-  union-loose : {h1 h2 : ℕ} → {l u : Key⁺}
+  union-loose : {h1 h2 : ℕ} → {@0 l u : Key⁺}
     → (V → Maybe V → V)
     → (t1 : BOBMap V l u h1)
     → (t2 : BOBMap V l u h2)
@@ -957,7 +962,7 @@ module _ {v} {V : Set v} where
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 
-  delete : ∀ {l u : Key⁺} {h : ℕ} (k : Key)
+  delete : ∀ {@0 l u : Key⁺} {h : ℕ} (k : Key)
            {{@erased l≤p : l <⁺ [ k ]}} {{@erased p≤u : [ k ] <⁺ u}}
            → BOBMap V l u h
            → ∃ λ i → BOBMap V l u pred[ i ⊕ h ]
@@ -973,7 +978,7 @@ module _ {v} {V : Set v} where
   -- Maybe a bit of a weak argument but its the best I have got.
   -- And allLookup is correct since it uses a membership proof for the lookup
   -- just like lookup∈
-  data All (P : Pred (Key × V) ℓₐ) {l u : Key⁺}
+  data All (P : Pred (Key × V) ℓₐ) {@0 l u : Key⁺}
       : ∀ {h : ℕ} → BOBMap V l u h → Set (k ⊔ ℓ₁ ⊔ v ⊔ ℓₐ) where
     leaf : ⦃ @erased l<u : l <⁺ u ⦄ → All P leaf
     node : ∀ {hl hr h}
@@ -987,7 +992,7 @@ module _ {v} {V : Set v} where
            → All P rt
            → All P (node (k , v) lt rt bal)
 
-  allLookup : {l u : Key⁺} {h : ℕ} {m : BOBMap V l u h} {k : Key} {v : V} {P : Pred (Key × V) ℓₐ}
+  allLookup : {@0 l u : Key⁺} {h : ℕ} {m : BOBMap V l u h} {k : Key} {v : V} {P : Pred (Key × V) ℓₐ}
     → Any (λ v' → v ≡ v') k  m
     → All P m
     → P (k , v)
@@ -995,7 +1000,7 @@ module _ {v} {V : Set v} where
   allLookup (left prf) (node p lt rt) = allLookup prf lt
   allLookup (right prf) (node p lt rt) = allLookup prf rt
 
-  alljoinᴸ : ∀ {l u : Key⁺} {hl hr h : ℕ} {P : Pred (Key × V) ℓₐ}
+  alljoinᴸ : ∀ {@0 l u : Key⁺} {hl hr h : ℕ} {P : Pred (Key × V) ℓₐ}
     → {k : Key} {v : V}
     → {lt⁺ : ∃ λ i → BOBMap V l [ k ] (i ⊕ hl)}
     → {rt : BOBMap V [ k ] u hr}
@@ -1012,7 +1017,7 @@ module _ {v} {V : Set v} where
   alljoinᴸ {lt⁺ = (1# , node _ _ (node _ _ _ _) ~+)} {rt} p (node a aL (node aᴿ aLᴿ aRᴿ)) allR ~- =
     node aᴿ (node a aL aLᴿ) (node p aRᴿ allR)
 
-  alljoinᴿ : ∀ {l u : Key⁺} {hl hr h : ℕ} {P : Pred (Key × V) ℓₐ}
+  alljoinᴿ : ∀ {@0 l u : Key⁺} {hl hr h : ℕ} {P : Pred (Key × V) ℓₐ}
     → {k : Key} {v : V}
     → {lt : BOBMap V l [ k ] hl}
     → {rt⁺ : ∃ λ i → BOBMap V [ k ] u (i ⊕ hr)}
@@ -1029,7 +1034,7 @@ module _ {v} {V : Set v} where
   alljoinᴿ {rt⁺ = (1# , (node _ (node _ _ _ _) _ ~-))} p allL (node a (node aᴸ aLᴸ aRᴸ) aR) ~+ =
     node aᴸ (node p allL aLᴸ) (node a aRᴸ aR)
 
-  allInsert : {l u : Key⁺} {h : ℕ} {(k , v) : Key × V}
+  allInsert : {@0 l u : Key⁺} {h : ℕ} {(k , v) : Key × V}
               {P : Pred (Key × V) ℓₐ}
               {{@erased l<u : l <⁺ [ k ]}} {{@erased p<u : [ k ] <⁺ u}}
               {m : BOBMap V l u h}
