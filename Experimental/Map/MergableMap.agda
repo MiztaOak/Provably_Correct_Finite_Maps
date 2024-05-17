@@ -46,7 +46,7 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
       ∪-safe : ∀ k v₁ v₂ m₁ m₂ f
         → k ↦ v₁ ∈ m₁
         → k ↦ v₂ ∈ m₂
-        → k ↦ f v₁ (just v₂) ∈ unionWith f m₁ m₂
+        → k ↦ f v₁ (just v₂) ∈ unionWith f m₂ m₁
 
       ∪-safe-left : ∀ k v m₁ m₂ f
         → k ↦ v ∈ m₁

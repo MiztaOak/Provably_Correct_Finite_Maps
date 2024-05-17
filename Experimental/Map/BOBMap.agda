@@ -80,7 +80,7 @@ data BOBMap (@0 V : Set v) (@0 l u : Key⁺) : @0 ℕ → Set (k ⊔ v ⊔ ℓ�
          → BOBMap V l u (suc h)
 
 module _ {v} {V : Set v} where
-  singleton : ∀ {l u : Key⁺} (k : Key) → V
+  singleton : ∀ {@0 l u : Key⁺} (k : Key) → V
     → ⦃ l<k : l <⁺ [ k ] ⦄ ⦃ k<u : [ k ] <⁺ u ⦄
     → BOBMap V l u 1
   singleton k v = node (k , v) leaf leaf ~0
@@ -111,7 +111,7 @@ module _ {v} {V : Set v} where
            → {@erased bal : hl ~ hr ⊔ h}
            → Any P kₚ (node (k' , v) lm rm bal)
 
-  fldr : ∀ {l u} {h : ℕ} {n : Level} {A : Set n}
+  fldr : ∀ {@0 l u} {h : ℕ} {n : Level} {A : Set n}
           → (Key × V → A → A)
           → A
           → BOBMap V l u h
@@ -146,7 +146,7 @@ module _ {v} {V : Set v} where
   mklim (leaf {{p}}) = p
   mklim {l} {u} (node p lt rt bal) = trans⁺ l (mklim lt) (mklim rt)
   private
-    _∈_ : Key → {l u : Key⁺} {h : ℕ} → BOBMap V l u h → Set (k ⊔ ℓ₁ ⊔ v)
+    _∈_ : Key → {@0 l u : Key⁺} {h : ℕ} → BOBMap V l u h → Set (k ⊔ ℓ₁ ⊔ v)
     k ∈ m = Any {ℓₚ = 0ℓ} (λ _ → True) k m
 
   _∈?_ : ∀ {@0 l u h} (x : Key)
@@ -439,7 +439,7 @@ module _ {v} {V : Set v} where
   lem≤max : ∀ {a b c} → a ≤ c → b ≤ c → max a b ≤ c
   lem≤max p1 p2 = ⊔-lub p1 p2
 
-  lemin : ∀ {l u h}
+  lemin : ∀ {@0 l u} {h : ℕ}
           → {x : Key}
           → {m : BOBMap V l u h}
           → x ∈ m
@@ -457,7 +457,7 @@ module _ {v} {V : Set v} where
   data SplitPartR {@0 l u : Key⁺} (@0 sh : ℕ) (x : Key) : Set (k ⊔ v ⊔ ℓ₁) where
     rtI : (hr' : ℕ) → (@0 prf : hr' ≤ sh) → BOBMap V [ x ] u hr' → SplitPartR sh x
 
-  splitAt : ∀ {@0 l u} {h}
+  splitAt : ∀ {@0 l u} {h : ℕ}
              → (k : Key)
              → {{@erased l<k : l <⁺ [ k ]}} → {{@erased k<u : [ k ] <⁺ u}}
              → (m : BOBMap V l u h)
@@ -914,16 +914,21 @@ module _ {v} {V : Set v} where
   --   max hL hl ≤ suc (max s₁ s₂)
   -- but this does not help showing that suc (max s₁ s₂) ≤ max uL uR as we
   -- know nothing about the relation of uL/uR and s₁/s₂.
-  lbound : (s₁ s₂ hl hr hL hR uL uR : ℕ) → (i : ℕ₂)
+  lbound : (s₁ s₂ hl hr hL hR uL uR : ℕ)
     → hl ~ hr ⊔ s₂
-    → hL ≤ suc s₁
-    → hR ≤ suc s₁
+    → (∃ λ i → i ⊕ s₁ ≡ max hL hR)
+--    → hL ≤ suc s₁
+--    → hR ≤ suc s₁
     → max hL hl ≤ uL
     → max hR hr ≤ uR
-    → suc (max s₁ s₂) ≤ i ⊕ max uL uR
-  lbound s₁ s₂ hl hr hL hR uL uR i b p1 p2 p3 p4 = {!!}
+    → max s₁ s₂ ≤ max uL uR
+  lbound s₁ s₂ hl hr hL hR uL uR b (0# , p1) p3 p4 with baltomax hl hr s₂ b
+  ... | xx rewrite sym xx | p1 | testo hL hl hR hr
+    = testo2 (max hL hl) uL (max hR hr) uR p3 p4
+  lbound s₁ s₂ hl hr hL hR uL uR b (1# , p1) p3 p4 = {!!}
 
-  record UnionReturn {@0 l u : Key⁺} {@0 h1 h2 : ℕ} (@0 t₁ : BOBMap V l u h1) (@0 t₂ : BOBMap V l u h2) : Set (k ⊔ v ⊔ ℓ₁) where
+  record UnionReturn {@0 l u : Key⁺} {h1 h2 : ℕ}
+                     (@0 t₁ : BOBMap V l u h1) (@0 t₂ : BOBMap V l u h2) : Set (k ⊔ v ⊔ ℓ₁) where
     constructor retval
     field
       hof : ℕ
@@ -933,7 +938,7 @@ module _ {v} {V : Set v} where
   eqto≤ : ∀ n → n ≤ n → n ≤ n + 0
   eqto≤ n p rewrite n+0 n = ≤-refl
 
-  union-loose : {h1 h2 : ℕ} → {l u : Key⁺}
+  union-loose : {h1 h2 : ℕ} → {@0 l u : Key⁺}
     → (V → Maybe V → V)
     → (t1 : BOBMap V l u h1)
     → (t2 : BOBMap V l u h2)
