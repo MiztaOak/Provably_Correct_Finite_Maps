@@ -935,11 +935,15 @@ module _ {v} {V : Set v} where
       tree : BOBMap V l u hof
       @0 prf : hof ≤ (h1 + h2)
 
-  eqto≤ : ∀ n → n ≤ n → n ≤ n + 0
+  @erased eqto≤ : ∀ n → n ≤ n → n ≤ n + 0
   eqto≤ n p rewrite n+0 n = ≤-refl
 
+  combineVal : (V → V → V) → V → Maybe V → V
+  combineVal f v₁ nothing = v₁
+  combineVal f v₁ (just v₂) = f v₁ v₂
+
   union-loose : {h1 h2 : ℕ} → {@0 l u : Key⁺}
-    → (V → Maybe V → V)
+    → (V → V → V)
     → (t1 : BOBMap V l u h1)
     → (t2 : BOBMap V l u h2)
     → UnionReturn t1 t2
@@ -953,7 +957,7 @@ module _ {v} {V : Set v} where
     | split value hL prfL treeL hR prfR treeR
     with union-loose f treeL l₂
   ... | retval uL tL plL with union-loose f treeR r₂
-  ... | retval uR tR plR with gJoin (proj₁ p₂ , f (proj₂ p₂) value) tL tR
+  ... | retval uR tR plR with gJoin (proj₁ p₂ , combineVal f (proj₂ p₂) value) tL tR
   ... | i , t = retval
                   (i ⊕ max uL uR)
                   t

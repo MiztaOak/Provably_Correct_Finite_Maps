@@ -1,7 +1,6 @@
 module Map.MergableMap where
 
 open import Level renaming (suc to lsuc; zero to lzero)
-open import Data.Maybe.Base using (Maybe; just; nothing; is-just)
 open import Data.Sum
 open import Data.Product
 
@@ -18,7 +17,7 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
 
     field
       bMap    : BMap {ℓ} {ℓ'} {ℓ₁} {K} {V} Map
-      unionWith : (V → Maybe V → V) → Map → Map → Map
+      unionWith : (V → V → V) → Map → Map → Map
 
     private
       module BaseMap = Map.BasicMap.BMap bMap
@@ -46,12 +45,12 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
       ∪-safe : ∀ k v₁ v₂ m₁ m₂ f
         → k ↦ v₁ ∈ m₁
         → k ↦ v₂ ∈ m₂
-        → k ↦ f v₁ (just v₂) ∈ unionWith f m₂ m₁
+        → k ↦ f v₁ v₂ ∈ unionWith f m₂ m₁
 
       ∪-safe-left : ∀ k v m₁ m₂ f
         → k ↦ v ∈ m₁
         → k ∉ m₂
-        → k ↦ f v nothing ∈ unionWith f m₁ m₂
+        → k ↦ v ∈ unionWith f m₁ m₂
 
       ∪-safe-right : ∀ k v m₁ m₂ f
         → k ∉ m₁
