@@ -398,13 +398,36 @@ module _ {v} {V : Set v} where
 \end{code}
 
 \newcommand{\JoinType}{
-\begin{code}
+\begin{code}[hide]
+  module _ where
   postulate
+\end{code}
+\begin{code}
     gJoin : {hl hr : ℕ} {@0 l u : Key⁺}
       → ((k , v) : Key × V)
       → AVLMapIndexed V l [ k ] hl
       → AVLMapIndexed V [ k ] u hr
       → ∃ λ i → AVLMapIndexed V l u (i ⊕ max hl hr)
+\end{code}
+}
+
+\newcommand{\JoinLR}{
+\begin{code}[hide]
+  module _ where
+  postulate
+\end{code}
+\begin{code}
+    gJoinRight : {hr x : ℕ} {@0 l u : Key⁺}
+      → ((k , v) : Key × V)
+      → AVLMapIndexed V l [ k ] (suc (suc (hr + x)))
+      → AVLMapIndexed V [ k ] u hr
+      → ∃ λ i → AVLMapIndexed V l u (i ⊕ suc (suc (hr + x)))
+
+    gJoinLeft : {hl x : ℕ} {@0 l u : Key⁺}
+      → ((k , v) : Key × V)
+      → AVLMapIndexed V l [ k ] hl
+      → AVLMapIndexed V [ k ] u (suc (suc (hl + x)))
+      → ∃ λ i → AVLMapIndexed V l u (i ⊕ suc (suc (hl + x)))
 \end{code}
 }
 
