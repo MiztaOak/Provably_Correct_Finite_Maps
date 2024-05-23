@@ -20,24 +20,6 @@ open import Map.Proofs.Proofs order V
 open StrictTotalOrder (toStrictTotalOrder order) renaming (Carrier to Key)
 open import Map.Proofs.Insertion.Helpers order V
 
-notInLeft : ∀ {l : Key⁺} {h : ℕ}
-            (k : Key)
-            (m : BOBMap V l [ k ] h)
-            → k ∉ m
-notInLeft k leaf ()
-notInLeft k (node .(k , _) lm rm b) (here tt) = ⊥-elim (irrefl⁺ [ k ] (mklim rm))
-notInLeft k (node p lm rm b) (left ⦃ ord ⦄ prf) = ⊥-elim (asym [ ord ]-lower [ mklim rm ]-lower)
-notInLeft k (node p lm rm b) (right prf) = notInLeft k rm prf
-
-notInRight : ∀ {u : Key⁺} {h : ℕ}
-             (k : Key)
-             (m : BOBMap V [ k ] u h)
-             → k ∉ m
-notInRight k leaf ()
-notInRight k (node p lm rm b) (here tt) = ⊥-elim (irrefl⁺ [ k ] (mklim lm))
-notInRight k (node p lm rm b) (left prf) = notInRight k lm prf
-notInRight k (node p lm rm b) (right ⦃ ord ⦄ prf) = ⊥-elim (asym [ ord ]-lower [ mklim lm ]-lower)
-
 inRaise : ∀ {l y u : Key⁺} {h : ℕ}
           ⦃ @erased y<u : y <⁺ u ⦄
           {k : Key}

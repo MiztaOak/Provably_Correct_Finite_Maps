@@ -5,7 +5,7 @@ open import Relation.Binary.Bundles using (StrictTotalOrder)
 open import OrdSet using (OrdSet; toStrictTotalOrder)
 
 module Map.Proofs.Insertion.Proofs {k ℓ₁ v} (order : OrdSet k ℓ₁) (V : Set v) where
-open import Data.Nat.Base using (ℕ; _*_; suc; zero)
+open import Data.Nat.Base using (ℕ; _+_; suc; zero)
 open import Data.Empty using (⊥)
 open import Relation.Binary.PropositionalEquality hiding (trans; [_])
 open import Level using (Level; _⊔_) renaming (suc to s; zero to z)
@@ -34,18 +34,62 @@ open import Map.Proofs.Insertion.Helpers order V
 ---------------------------------------------------------------------------------
 -- Induction Principle using insert
 ---------------------------------------------------------------------------------
-ip-insert : ∀ {l u : Key⁺} --⦃ @erased l<u : l <⁺ u ⦄
-            (P : {h : ℕ} → BOBMap V l u h → Set (k ⊔ v))
-            → (∀ (m : BOBMap V l u 0) → P m )
-            × (∀ {h} → (m : BOBMap V l u h)
+ip-struct : ∀ (P : {l u : Key⁺} {h : ℕ} → BOBMap V l u h → Set (k ⊔ v))
+            → (∀ {l u} → ⦃ @0 l<u : l <⁺ u ⦄ → P (leaf ⦃ l<u ⦄))
+            × (∀ {l u} {hl hr h}
+                 → (k : Key)
+                 → {v : V}
+                 → {lm : BOBMap V l [ k ] hl}
+                 → {rm : BOBMap V [ k ] u hr}
+                 → P lm
+                 → P rm
+                 → (bal : hl ~ hr ⊔ h)
+                 → k ∉ lm
+                 → k ∉ rm
+                 → P (node (k , v) lm rm bal))
+            → (∀ {l u h} → (m : BOBMap V l u h) → P m)
+ip-struct P (base , step) (leaf ⦃ l<u ⦄)  = base ⦃ l<u ⦄
+ip-struct P (base , step) (node (k , v) lm rm bal) =
+  step k (ip-struct P (base , step) lm) (ip-struct P (base , step) rm) bal (notInLeft k lm) (notInRight k rm)
+
+sizeOf : ∀ {l u : Key⁺} {h : ℕ} → BOBMap V l u h → ℕ
+sizeOf leaf = 0
+sizeOf (node _ lm rm _) = suc (sizeOf lm + sizeOf rm)
+
+leaf≡size0 : ∀ {l u : Key⁺} ⦃ l<u : l <⁺ u ⦄ → sizeOf leaf ≡ 0
+leaf≡size0 = refl
+
+size0≡leaf : ∀ {l u : Key⁺} {h : ℕ} {m : BOBMap V l u h} → sizeOf m ≡ 0 → h ≡ 0
+size0≡leaf {m = leaf} eq = refl
+size0≡leaf {m = node _ _ _ _} ()
+
+postulate
+  separate : ∀ {l u h} → BOBMap V l u (suc h) → (Key × V) × BOBMap V l u h
+  sepMin : ∀ {l u h} → (m : BOBMap V l u (suc h)) → l <⁺ [ (proj₁ $ proj₁ (separate m)) ]
+  sepMax : ∀ {l u h} → (m : BOBMap V l u (suc h)) → [ (proj₁ $ proj₁ (separate m)) ] <⁺ u
+  sepLemma : ∀ {l u h} → (m : BOBMap V l u (suc h))
+    → (insert (proj₁ (separate m)) ⦃ sepMin m ⦄ ⦃ sepMax m ⦄ (proj₂ (separate m))) ≡ (1# , m)
+  notInSep : ∀ {l u h} → (m : BOBMap V l u (suc h)) → (proj₁ $ proj₁ (separate m)) ∉ (proj₂ (separate m))
+
+proj₂Refl : ∀ {i j} {A : Set i} {B : Set j} {a a' : A} {b b' : B} → (a , b) ≡ (a' , b') → b ≡ b'
+proj₂Refl refl = refl
+
+ip-insert : ∀ (P : ∀ {l u} {h : ℕ} → BOBMap V l u h → Set (k ⊔ v))
+            → (∀ {l u} → ⦃ @0 l<u : l <⁺ u ⦄ → P (leaf ⦃ l<u ⦄))
+            × (∀ {l u h} → (m : BOBMap V l u h)
                  → P m
                  → ∀ k v
                  → ⦃ @erased l<k : l <⁺ [ k ] ⦄ ⦃ @erased k<u : [ k ] <⁺ u ⦄
                  → k ∉ m
                  → P (proj₂ (insertWith k (λ _ → v) ⦃ l<k ⦄ ⦃ k<u ⦄ m)))
-            → (∀ {h} → (m : BOBMap V l u h) → P m)
-ip-insert P (base , step) leaf = base leaf
-ip-insert P (base , step) (node p lm rm bal) = {!!}
+            → (∀ {l u h} → (m : BOBMap V l u h) → P m)
+ip-insert P (base , step) m with sizeOf m in sizeEq
+ip-insert P (base , step) (leaf ⦃ l<u ⦄) | zero = base ⦃ l<u ⦄
+ip-insert P (base , step) {h = suc _} m | suc s with separate m in eqSep
+... | p , m' with sym eqSep
+... | refl with
+  step m' (ip-insert P (base , step) m') (proj₁ p) (proj₂ p) ⦃ sepMin m ⦄ ⦃ sepMax m ⦄ (notInSep m)
+... | res rewrite sepLemma m = res
 
 ---------------------------------------------------------------------------------
 -- Prove that Insert results in ∈

@@ -130,6 +130,24 @@ isEq? x y with compare x y
 ... | tri≈ _ refl _ = inj₁ refl
 ... | tri> _ nEq _  = inj₂ nEq
 
+notInLeft : ∀ {l : Key⁺} {h : ℕ}
+            (k : Key)
+            (m : BOBMap V l [ k ] h)
+            → k ∉ m
+notInLeft k leaf ()
+notInLeft k (node .(k , _) lm rm b) (here tt) = ⊥-elim (irrefl⁺ [ k ] (mklim rm))
+notInLeft k (node p lm rm b) (left ⦃ ord ⦄ prf) = ⊥-elim (asym [ ord ]-lower [ mklim rm ]-lower)
+notInLeft k (node p lm rm b) (right prf) = notInLeft k rm prf
+
+notInRight : ∀ {u : Key⁺} {h : ℕ}
+             (k : Key)
+             (m : BOBMap V [ k ] u h)
+             → k ∉ m
+notInRight k leaf ()
+notInRight k (node p lm rm b) (here tt) = ⊥-elim (irrefl⁺ [ k ] (mklim lm))
+notInRight k (node p lm rm b) (left prf) = notInRight k lm prf
+notInRight k (node p lm rm b) (right ⦃ ord ⦄ prf) = ⊥-elim (asym [ ord ]-lower [ mklim lm ]-lower)
+
 
 ---------------------------------------------------------------------------------
 -- Convert _↦_∈_ to _∈_
