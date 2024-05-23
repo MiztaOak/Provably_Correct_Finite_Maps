@@ -408,36 +408,16 @@ module _ {v} {V : Set v} where
 \end{code}
 }
 
-\begin{code}[hide]
-    splitAt : ∀ {@0 l u} {h : ℕ}
-      → (k : Key)
-      → {{@erased l<k : l <⁺ [ k ]}} → {{@erased k<u : [ k ] <⁺ u}}
-      → (m : AVLMapIndexed V l u h)
-      → Split k l u h
-    @0 ubound : (s₁ s₂ hl hr hL hR uL uR : ℕ) → (i : ℕ₂)
-      → hl ~ hr ⊔ s₂
-      → hL ≤ suc s₁
-      → hR ≤ suc s₁
-      → uL ≤ hL + hl
-      → uR ≤ hR + hr
-      → i ⊕ max uL uR ≤ (suc s₁ + suc s₂)
-
-  unionWith : {h1 h2 : ℕ} → {@0 l u : Key⁺}
-    → (V → Maybe V → V)
+\newcommand{\fodlrProblem}{
+\begin{code}
+  inT1Union : ∀ {l u : Key⁺} {h1 h2 : ℕ }
+    → (k : Key)
+    → {v : V}
+    → (f : V → Maybe V → V)
+    → ⦃ l<k : l <⁺ [ k ] ⦄ ⦃ k<u : [ k ] <⁺ u ⦄
     → (t1 : AVLMapIndexed V l u h1)
     → (t2 : AVLMapIndexed V l u h2)
-    → UnionReturn t1 t2
-  unionWith {h1} {h2} f leaf t = retval h2 t ≤-refl
-  unionWith {h1} f t leaf = retval h1 t (eqto≤ h1 ≤-refl)
-  unionWith {suc s₁} {suc s₂} f t₁@(node p₁ l₁ r₁ b₁) t₂@(node p₂ l₂ r₂ b₂)
-    with splitAt (proj₁ p₂) {{mklim l₂}} {{mklim r₂}} t₁
-  unionWith {suc s₁} {suc s₂} f t₁@(node p₁ l₁ r₁ b₁) t₂@(node {hl} {hr} p₂ l₂ r₂ b₂)
-    | split value hL prfL treeL hR prfR treeR
-    with unionWith f treeL l₂
-  ... | retval uL tL plL with unionWith f treeR r₂
-  ... | retval uR tR plR with gJoin (proj₁ p₂ , f (proj₂ p₂) value) tL tR
-  ... | i , t = retval
-      (i ⊕ max uL uR)
-      t
-      (ubound s₁ s₂ hl hr hL hR uL uR i b₂ prfL prfR plL plR)
+    → Any (_≡_ v) k t1
+    → Any (_≡_ v) k (foldr (λ (k' , v') m → proj₂ $ insertWith k (f v) {!m!}) t2 t1)
 \end{code}
+}
