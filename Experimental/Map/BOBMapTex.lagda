@@ -398,26 +398,15 @@ module _ {v} {V : Set v} where
 \end{code}
 
 \newcommand{\JoinType}{
-\begin{code}
+\begin{code}[hide]
+  module _ where
   postulate
+\end{code}
+\begin{code}
     gJoin : {hl hr : ℕ} {@0 l u : Key⁺}
       → ((k , v) : Key × V)
       → AVLMapIndexed V l [ k ] hl
       → AVLMapIndexed V [ k ] u hr
       → ∃ λ i → AVLMapIndexed V l u (i ⊕ max hl hr)
-\end{code}
-}
-
-\newcommand{\fodlrProblem}{
-\begin{code}
-  inT1Union : ∀ {l u : Key⁺} {h1 h2 : ℕ }
-    → (k : Key)
-    → {v : V}
-    → (f : V → Maybe V → V)
-    → ⦃ l<k : l <⁺ [ k ] ⦄ ⦃ k<u : [ k ] <⁺ u ⦄
-    → (t1 : AVLMapIndexed V l u h1)
-    → (t2 : AVLMapIndexed V l u h2)
-    → Any (_≡_ v) k t1
-    → Any (_≡_ v) k (foldr (λ (k' , v') m → proj₂ $ insertWith k (f v) {!m!}) t2 t1)
 \end{code}
 }

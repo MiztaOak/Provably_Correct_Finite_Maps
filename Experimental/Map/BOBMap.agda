@@ -14,7 +14,7 @@ open import Data.Nat.Base
   using (ℕ; zero; suc; pred; _+_; _*_; _<_; _≤_; z<s; s<s; z≤n; s≤s; s≤s⁻¹)
   renaming (_⊔_ to max; compare to compareℕ; Ordering to Ordℕ)
 open import Data.Nat.Properties
-  using (n<1+n; n≤1+n; ≤-refl; <⇒≤; m≤n⇒m≤1+n; ≤-trans; +-identityʳ; m≤n⇒m⊔n≡n; ⊔-comm; _≤?_; n≤0⇒n≡0; suc-injective; ≤-reflexive; ⊔-assoc; ⊔-idem; ⊔-sel; ⊔-lub; m≤n⇒m≤n⊔o; m≤n⇒m≤o⊔n)
+  using (n<1+n; n≤1+n; ≤-refl; <⇒≤; m≤n⇒m≤1+n; ≤-trans; +-identityʳ; m≤n⇒m⊔n≡n; ⊔-comm; _≤?_; n≤0⇒n≡0; suc-injective; ≤-reflexive; ⊔-assoc; ⊔-idem; ⊔-sel; ⊔-lub; m≤n⇒m≤n⊔o; m≤n⇒m≤o⊔n; m≢1+m+n)
 open import Data.Fin.Base using (Fin) renaming (zero to fzero; suc to fsuc)
 open import Data.Product
 open import Data.Sum using (_⊎_) renaming (inj₁ to inl; inj₂ to inr)
@@ -81,7 +81,7 @@ data BOBMap (@0 V : Set v) (@0 l u : Key⁺) : @0 ℕ → Set (k ⊔ v ⊔ ℓ�
 
 module _ {v} {V : Set v} where
   singleton : ∀ {@0 l u : Key⁺} (k : Key) → V
-    → ⦃ l<k : l <⁺ [ k ] ⦄ ⦃ k<u : [ k ] <⁺ u ⦄
+    → ⦃@0 l<k : l <⁺ [ k ] ⦄ ⦃@0 k<u : [ k ] <⁺ u ⦄
     → BOBMap V l u 1
   singleton k v = node (k , v) leaf leaf ~0
 
@@ -140,7 +140,7 @@ module _ {v} {V : Set v} where
   raise {x} {y} {z} {{a}} (leaf {{b}}) = leaf {{trans⁺ x b a}}
   raise {{a}} (node p l r bal) = node p l (raise {{a}} r) bal
 
-  @erased mklim : ∀ {l u h}
+  @erased mklim : ∀ {@0 l u h}
           → BOBMap V l u h
           → l <⁺ u
   mklim (leaf {{p}}) = p
@@ -312,7 +312,6 @@ module _ {v} {V : Set v} where
   compareBalance zero (suc (suc b)) = right zero b
   compareBalance (suc zero) zero = 1-offL zero
   compareBalance (suc (suc a)) zero = left zero a
-  {-# CATCHALL #-}
   compareBalance (suc a) (suc b) with compareBalance a b
   ... | left .b k = left (suc b) k
   ... | 1-offL .b = 1-offL (suc b)
@@ -320,66 +319,54 @@ module _ {v} {V : Set v} where
   ... | 1-offR .a = 1-offR (suc a)
   ... | right .a k = right (suc a) k
 
-  -- these are highlighted yellow, why?
+  sucbal : ∀ {a b c} → ((suc a) ~ (suc b) ⊔ (suc c)) → (a ~ b ⊔ c)
+  sucbal ~+ = ~+
+  sucbal ~0 = ~0
+  sucbal ~- = ~-
+
   illegal~⊔2L : ∀ {a b c} → a ~ b ⊔ suc (suc a + c) → ⊥
-  illegal~⊔2L {a} {b} {c} = λ ()
+  illegal~⊔2L {zero} {b} {c} = λ ()
+  illegal~⊔2L {suc zero} {zero} {c} = λ ()
+  illegal~⊔2L {suc a} {suc b} {c} p with illegal~⊔2L {a} {b} {c}
+  ... | xx rewrite c+sb≡sc+b a c = contradiction (sucbal p) xx
 
   illegal~⊔2R : ∀ {a b c} → a ~ b ⊔ suc (suc b + c) → ⊥
-  illegal~⊔2R {a} {b} {c} = λ ()
+  illegal~⊔2R {zero} {b} {c} = λ ()
+  illegal~⊔2R {suc zero} {zero} {c} = λ ()
+  illegal~⊔2R {suc a} {suc b} {c} p with illegal~⊔2R {a} {b} {c}
+  ... | xx rewrite c+sb≡sc+b a c = contradiction (sucbal p) xx
 
   illegal~⊔3L : ∀ {a b c d} → a ~ b ⊔ suc (suc (suc a + c + d)) → ⊥
-  illegal~⊔3L {a} {b} {c} {d} = λ ()
+  illegal~⊔3L {a} {b} {c} {d} with sym (c+sb≡sc+b a (c + d))
+  ... | xx rewrite abc≡abc a c d | xx = illegal~⊔2L
 
   illegal~⊔3R : ∀ {a b c d} → a ~ b ⊔ suc (suc (suc b + c + d)) → ⊥
-  illegal~⊔3R {a} {b} {c} {d} = λ ()
+  illegal~⊔3R {a} {b} {c} {d} with sym (c+sb≡sc+b b (c + d))
+  ... | xx rewrite abc≡abc b c d | xx = illegal~⊔2R
 
   gJoinRight : {hr x : ℕ} {@0 l u : Key⁺}
-                → ((k , v) : Key × V)
-                → BOBMap V l [ k ] (suc (suc (hr + x)))
-                → BOBMap V [ k ] u hr
-                → ∃ λ i → BOBMap V l u (i ⊕ suc (suc (hr + x)))
+    → ((k , v) : Key × V)
+    → BOBMap V l [ k ] (suc (suc (hr + x)))
+    → BOBMap V [ k ] u hr
+    → ∃ λ i → BOBMap V l u (i ⊕ suc (suc (hr + x)))
   gJoinRight {hr} {x} {ₗ} {ᵘ} p (node {hl = hl} {hr = hc} p2 l c b) r
     with compareBalance hc hr
-  ... | left .hr k = joinʳ⁺ p2 l T' b
-    where
-      T' : ∃ λ i → BOBMap V [ proj₁ p2 ] ᵘ (i ⊕ hc)
-      T' = gJoinRight p c r
-
-  ... | 1-offL .hr = joinʳ⁺ p2 l T' b
-    where
-      T' : ∃ λ i → BOBMap V [ proj₁ p2 ] ᵘ (i ⊕ hc)
-      T' = 1# , node p c r ~-
-
-  ... | balanced .hr = joinʳ⁺ p2 l T' b
-    where
-      T' : ∃ λ i → BOBMap V [ proj₁ p2 ] ᵘ (i ⊕ hc)
-      T' = 1# , node p c r ~0
-
+  ... | left .hr k = joinʳ⁺ p2 l (gJoinRight p c r) b
+  ... | 1-offL .hr = joinʳ⁺ p2 l (1# , node p c r ~-) b
+  ... | balanced .hr = joinʳ⁺ p2 l (1# , node p c r ~0) b
   ... | right .hc k = ⊥-elim (illegal~⊔3R b )
   ... | 1-offR .hc = ⊥-elim (illegal~⊔2R b)
 
   gJoinLeft : {hl x : ℕ} {@0 l u : Key⁺}
-               → ((k , v) : Key × V)
-               → BOBMap V l [ k ] hl
-               → BOBMap V [ k ] u (suc (suc (hl + x)))
-               → ∃ λ i → BOBMap V l u (i ⊕ suc (suc (hl + x)))
+    → ((k , v) : Key × V)
+    → BOBMap V l [ k ] hl
+    → BOBMap V [ k ] u (suc (suc (hl + x)))
+    → ∃ λ i → BOBMap V l u (i ⊕ suc (suc (hl + x)))
   gJoinLeft {hl} {x} {ₗ} {ᵘ} p l (node {hl = hc} {hr = hr} p2 c r b)
     with compareBalance hc hl
-  ... | left     .hl k = joinˡ⁺ p2 T' r b
-    where
-      T' : ∃ λ i → BOBMap V ₗ [ proj₁ p2 ] (i ⊕ hc)
-      T' = gJoinLeft p l c
-
-  ... | 1-offL   .hl   = joinˡ⁺ p2 T' r b
-    where
-      T' : ∃ λ i → BOBMap V ₗ [ proj₁ p2 ] (i ⊕ hc)
-      T' = 1# , node p l c ~+
-
-  ... | balanced .hl   = joinˡ⁺ p2 T' r b
-    where
-      T' : ∃ λ i → BOBMap V ₗ [ proj₁ p2 ] (i ⊕ hc)
-      T' = 1# , node p l c ~0
-
+  ... | left     .hl k = joinˡ⁺ p2 (gJoinLeft p l c) r b
+  ... | 1-offL   .hl   = joinˡ⁺ p2 (1# , node p l c ~+) r b
+  ... | balanced .hl   = joinˡ⁺ p2 (1# , node p l c ~0) r b
   ... | 1-offR .hc = ⊥-elim (illegal~⊔2L b)
   ... | right .hc k = ⊥-elim (illegal~⊔3L b)
 
@@ -927,7 +914,7 @@ module _ {v} {V : Set v} where
     = testo2 (max hL hl) uL (max hR hr) uR p3 p4
   lbound s₁ s₂ hl hr hL hR uL uR b (1# , p1) p3 p4 = {!!}
 
-  record UnionReturn {@0 l u : Key⁺} {h1 h2 : ℕ}
+  record UnionReturn {@0 l u : Key⁺} {@0 h1 h2 : ℕ}
                      (@0 t₁ : BOBMap V l u h1) (@0 t₂ : BOBMap V l u h2) : Set (k ⊔ v ⊔ ℓ₁) where
     constructor retval
     field
@@ -962,6 +949,16 @@ module _ {v} {V : Set v} where
                   (i ⊕ max uL uR)
                   t
                   (ubound s₁ s₂ hl hr hL hR uL uR i b₂ prfL prfR plL plR)
+
+  unionWith : {h1 h2 : ℕ} → {@0 l u : Key⁺}
+    → (V → V → V)
+    → (t1 : BOBMap V l u h1)
+    → (t2 : BOBMap V l u h2)
+    → ∃ λ h → BOBMap V l u h
+  unionWith {h1} {h2} f t1 t2 with h1 ≤? h2
+  ... | yes a = _ , UnionReturn.tree (union-loose f t1 t2)
+  ... | no  _ = _ , UnionReturn.tree (union-loose f t2 t1)
+
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 
