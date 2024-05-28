@@ -159,6 +159,18 @@ notInRight k (node p lm rm b) (right ⦃ ord ⦄ prf) = ⊥-elim (asym [ ord ]-l
 ↦∈To∈ (right prf) = right (↦∈To∈ prf)
 
 
+---------------------------------------------------------------------------------
+-- Convert _∈ to _↦_∈_
+---------------------------------------------------------------------------------
+∈To↦∈ : ∀ {l u : Key⁺} {h : ℕ} {k : Key} {m : BOBMap V l u h}
+  → k ∈ m → ∃ (λ v → k ↦ v ∈ m)
+∈To↦∈ {m = node (k , v) _ _ _} (here x) = v , (here refl)
+∈To↦∈ (left prf) = let
+  (v , prf') = ∈To↦∈ prf
+  in v , (left prf')
+∈To↦∈ (right prf) = let
+  (v , prf') = ∈To↦∈ prf
+  in v , (right prf')
 
 {-
 compareSelf : ∀ (k : Key) → compare k k ≡ tri≈ (irrefl refl) refl (irrefl refl)

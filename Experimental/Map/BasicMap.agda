@@ -10,6 +10,7 @@ open import Prelude
 open import Relation.Binary.PropositionalEquality
 open import Data.Sum
 open import Relation.Binary.Definitions
+open import Relation.Binary.Structures
 
 private
   variable
@@ -35,9 +36,6 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
     insert : K → V → Map → Map
     insert k v m = insertWith k (λ _ → v) m
 
-    [_↦_]_ : K → V → Map → Set ℓ'
-    [ k ↦ v ] m = lookup m k ≡ just v
-
     _↦_∉_ : K → V → Map → Set (ℓ ⊔ ℓ' ⊔ ℓ₁)
     k ↦ v ∉ m = ¬ (k ↦ v ∈ m)
 
@@ -52,16 +50,12 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
 
     field
       refl⊆ : Reflexive _⊆_
-      -- ⊆ is not symmetric or asymmetric becuase
-      -- a ⊆ b ⇏ b ⊆ a
-      -- a ⊆ a ⇏ ¬ a ⊆ a
       trans⊆ : Transitive _⊆_
-      refl≐ : Reflexive _≐_
-      sym≐  : Symmetric _≐_
-      trans≐ : Transitive _≐_
+      isequivalence : IsEquivalence _≐_
 
     field
       ↦∈To∈ : ∀ {k v m} → k ↦ v ∈ m → k ∈ m
+      ∈To↦∈ : ∀ {k m} → k ∈ m → ∃ (λ v → k ↦ v ∈ m)
 
       ∈↦-∅ : ∀ k v → k ↦ v ∉ ∅
       ∈-∅ : ∀ k → k ∉ ∅
@@ -86,8 +80,8 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
       ---------------------------------------------------------------------------------
       lookup-∅ : ∀ k → lookup ∅ k ≡ nothing
 
-      ∈⇒lookup : ∀ m k {v} → [ k ↦ v ] m → k ↦ v ∈ m
-      lookup⇒∈ : ∀ m k v → k ↦ v ∈ m → [ k ↦ v ] m
+      ∈⇒lookup : ∀ m k {v} → lookup m k ≡ just v → k ↦ v ∈ m
+      lookup⇒∈ : ∀ m k v → k ↦ v ∈ m → lookup m k ≡ just v
 
       lookup≡lookup∈ : ∀ k m → (k∈m : k ∈ m) → just (lookup∈ k∈m) ≡ lookup m k
 
@@ -98,7 +92,7 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
       ⊢ ∀ f a b . lookup (insert f (a , b)) a = b
       -}
       lookup-insert : ∀ k m f
-                       → [ k ↦ f (lookup m k) ] (insertWith k f m)
+                       → lookup (insertWith k f m) k ≡ just (f (lookup m k))
 
       {-
       ⊢ ∀ a c . (a ≠ c) ⊃

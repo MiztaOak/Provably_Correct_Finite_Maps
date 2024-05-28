@@ -962,7 +962,7 @@ module _ {v} {V : Set v} where
 
   -- * DELETE STARTS HERE ----------------------------------------------------
 
-  delete : ∀ {@0 l u : Key⁺} {h : ℕ} (k : Key)
+  delete : ∀ {@0 l u : Key⁺} {@0 h : ℕ} (k : Key)
            {{@erased l≤p : l <⁺ [ k ]}} {{@erased p≤u : [ k ] <⁺ u}}
            → BOBMap V l u h
            → ∃ λ i → BOBMap V l u pred[ i ⊕ h ]

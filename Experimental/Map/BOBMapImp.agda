@@ -14,7 +14,7 @@ open import Relation.Unary using (Pred)
 open import Data.Empty using (⊥)
 open import Relation.Binary.PropositionalEquality hiding (trans; [_])
 open import Data.Maybe.Base hiding (map)
-open import Data.Sum hiding (map)
+open import Data.Sum hiding (map; reduce)
 open import Relation.Nullary using (¬_)
 open import Relation.Binary.Definitions
 
@@ -62,6 +62,17 @@ module BMapAVLInstance (V : Set ℓ) where
     toBMap : (m : AVLMap V) → BOBMap V ⊥⁺  ⊤⁺ (height m)
     toBMap (map x) = x
 
+    toMap : {l u : Key⁺} {h : ℕ} → BOBMap V l u h → AVLMap V
+    toMap {[ x ]} {[ y ]} m = map (raise ⦃ [ y ]<⊤⁺ ⦄ (reduce ⦃ ⊥⁺<[ x ] ⦄ m))
+    toMap {[ x ]} {⊥⁺} m = map (raise ⦃ ⊥⁺<⊤⁺ ⦄ (reduce ⦃ ⊥⁺<[ x ] ⦄ m))
+    toMap {⊥⁺} {[ x ]} m = map (raise ⦃ [ x ]<⊤⁺ ⦄ m)
+    toMap {⊥⁺} {⊥⁺} m = map (raise ⦃ ⊥⁺<⊤⁺ ⦄ m)
+    toMap {[ x ]} {⊤⁺} m = map (reduce ⦃ ⊥⁺<[ x ] ⦄ m)
+    toMap {⊥⁺} {⊤⁺} m = map m
+    toMap {⊤⁺} {[ x ]} m = map (raise ⦃ [ x ]<⊤⁺ ⦄ (reduce ⦃ ⊥⁺<⊤⁺ ⦄ m))
+    toMap {⊤⁺} {⊥⁺} m = map (raise ⦃ ⊥⁺<⊤⁺ ⦄ (reduce ⦃ ⊥⁺<⊤⁺ ⦄ m))
+    toMap {⊤⁺} {⊤⁺} m = map (reduce ⦃ ⊥⁺<⊤⁺ ⦄ m)
+
     toAny : {m : AVLMap V} {P : Pred V ℓₚ} {k : Key} → AnyM P k m → Any P k (toBMap m)
     toAny (map x) = x
 
@@ -98,10 +109,18 @@ module BMapAVLInstance (V : Set ℓ) where
     ---------------------------------------------------------------------------------
     BMap.refl⊆ basicMap k v x = x
     BMap.trans⊆ basicMap a b = λ k v x → b k v (a k v x)
-    BMap.refl≐ basicMap = (λ k₁ v x₁ → x₁) , (λ k₁ v x₁ → x₁)
-    BMap.sym≐ basicMap (α , β) = (λ k v x → β k v x ) , (λ k v x → α k v x)
-    BMap.trans≐ basicMap (a , b) (c , d) = (λ k v x → c k v (a k v x)) , (λ k v x → b k v (d k v x))
+    BMap.isequivalence basicMap = record { refl = refl≐ ; sym = sym≐ ; trans = trans≐ }
+      where
+        refl≐ : Reflexive (BMap._≐_ basicMap)
+        refl≐ = (λ k₁ v x → x) , (λ k₁ v x → x)
+        sym≐ : Symmetric (BMap._≐_ basicMap)
+        sym≐ (α , β) = (λ k v x → β k v x) , λ k v x → α k v x
+        trans≐ : Transitive (BMap._≐_ basicMap)
+        trans≐ (a , b) (c , d) = (λ k v x → c k v (a k v x)) , λ k v x → b k v (d k v x)
     BMap.↦∈To∈ basicMap (map m) = map (↦∈To∈ m)
+    BMap.∈To↦∈ basicMap (map m) = let
+      (v , prf) = ∈To↦∈ m
+      in v , map prf
     BMap.∈-singleton basicMap _ k' _ _ (map prf) = ∈-singleton ⦃ ⊥⁺<[ k' ] ⦄ ⦃ [ k' ]<⊤⁺ ⦄ prf
     BMap.∈↦-∅ basicMap _ _ (map ())
     BMap.∈-∅ basicMap _ (map ())
@@ -109,7 +128,8 @@ module BMapAVLInstance (V : Set ℓ) where
     ---------------------------------------------------------------------------------
     -- Insertion and lookup proofs
     ---------------------------------------------------------------------------------
-    BMap.ips basicMap = {!!}
+    BMap.ips basicMap P (base , step) (map m) = {!!}
+      --ip-insert (λ x → P {!!}) ((λ {l} {u} ⦃ l<u ⦄ → base) , λ m' x k v nEq → step {!map!} {!!} k v {!nEq!}) m
     BMap.lookup-∅ basicMap _ = refl
     BMap.∈⇒lookup basicMap (map m) k prf = map $ ∈⇒lookup m k prf
     BMap.lookup⇒∈ basicMap (map m) k v (map prf) = lookup⇒∈ k m prf

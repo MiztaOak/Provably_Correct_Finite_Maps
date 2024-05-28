@@ -13,7 +13,7 @@ open import Data.Product hiding (map)
 open import Function.Base
 open import Relation.Unary using (Pred)
 open import Data.Maybe.Base hiding (map)
-open import Data.Sum hiding (map)
+open import Data.Sum hiding (map; reduce)
 open import Relation.Nullary using (¬_)
 open import Relation.Binary.Definitions
 
@@ -56,13 +56,6 @@ sizeOf : ∀ {l u : Key⁺} {h : ℕ} → BOBMap V l u h → ℕ
 sizeOf leaf = 0
 sizeOf (node _ lm rm _) = suc (sizeOf lm + sizeOf rm)
 
-leaf≡size0 : ∀ {l u : Key⁺} ⦃ l<u : l <⁺ u ⦄ → sizeOf leaf ≡ 0
-leaf≡size0 = refl
-
-size0≡leaf : ∀ {l u : Key⁺} {h : ℕ} {m : BOBMap V l u h} → sizeOf m ≡ 0 → h ≡ 0
-size0≡leaf {m = leaf} eq = refl
-size0≡leaf {m = node _ _ _ _} ()
-
 postulate
   separate : ∀ {l u h} → BOBMap V l u (suc h) → (Key × V) × BOBMap V l u h
   sepMin : ∀ {l u h} → (m : BOBMap V l u (suc h)) → l <⁺ [ (proj₁ $ proj₁ (separate m)) ]
@@ -70,9 +63,6 @@ postulate
   sepLemma : ∀ {l u h} → (m : BOBMap V l u (suc h))
     → (insert (proj₁ (separate m)) ⦃ sepMin m ⦄ ⦃ sepMax m ⦄ (proj₂ (separate m))) ≡ (1# , m)
   notInSep : ∀ {l u h} → (m : BOBMap V l u (suc h)) → (proj₁ $ proj₁ (separate m)) ∉ (proj₂ (separate m))
-
-proj₂Refl : ∀ {i j} {A : Set i} {B : Set j} {a a' : A} {b b' : B} → (a , b) ≡ (a' , b') → b ≡ b'
-proj₂Refl refl = refl
 
 ip-insert : ∀ (P : ∀ {l u} {h : ℕ} → BOBMap V l u h → Set (k ⊔ v))
             → (∀ {l u} → ⦃ @0 l<u : l <⁺ u ⦄ → P (leaf ⦃ l<u ⦄))
