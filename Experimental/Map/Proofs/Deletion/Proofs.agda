@@ -30,11 +30,10 @@ open import Map.Proofs.Deletion.Helpers order V
 del-∈ : ∀ {l u : Key⁺} {h : ℕ}
         (k : Key) (m : BOBMap V l u h)
         ⦃ @erased l<k : l <⁺ [ k ] ⦄ ⦃ @erased k<u : [ k ] <⁺ u ⦄
-        → k ∈ m
         → k ∉ proj₂ (delete k m)
-del-∈ k leaf () ∉dM
-del-∈ k (node p lm rm b) ∈M ∉dM with compare k (proj₁ p)
-... | tri< a _ _ = del-∈ k lm ⦃ k<u = [ a ]ᴿ ⦄ (anyLeft a ∈M) prfᴸ
+del-∈ k leaf ()
+del-∈ k (node p lm rm b) ∉dM with compare k (proj₁ p)
+... | tri< a _ _ = del-∈ k lm ⦃ k<u = [ a ]ᴿ ⦄ prfᴸ
   where
     prfᴸ = ∈ᴸ-joinᴸ⁻ ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ (delete k ⦃ p≤u = [ a ]ᴿ ⦄ lm) rm b [ a ]ᴿ ∉dM
 ... | tri≈ _ refl _ = notHere {rm = rm} (notInLeft k lm) ∉dM
@@ -52,7 +51,7 @@ del-∈ k (node p lm rm b) ∈M ∉dM with compare k (proj₁ p)
     ... | cons head l<u tail with
       ∈ᴸ-joinᴿ⁻ ⦃ trans⁺ l (mklim lm) l<u ⦄ ⦃ mklim (proj₂ tail) ⦄ (raise ⦃ l<u ⦄ lm) tail b l<u prf
     ... | prfᴸ = ¬lm (inRaise' ⦃ l<u ⦄ prfᴸ)
-... | tri> _ _ c = del-∈ k rm ⦃ [ c ]ᴿ ⦄ (anyRight c ∈M) prfᴿ
+... | tri> _ _ c = del-∈ k rm ⦃ [ c ]ᴿ ⦄ prfᴿ
   where
     prfᴿ = ∈ᴿ-joinᴿ⁻ ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ lm (delete k ⦃ [ c ]ᴿ ⦄ rm) b [ c ]ᴿ ∉dM
 

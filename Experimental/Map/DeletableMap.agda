@@ -28,7 +28,7 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
       -- Deletion properties
       ---------------------------------------------------------------------------------
       del-∉ : ∀ {k m} → k ∉ m → delete k m ≐ m
-      del-∈ : ∀ {k m} → k ∈ m → k ∉ delete k m
+      del-∈ : ∀ {k m} → k ∉ delete k m
       del-safe : ∀ {k k' v m} → k' ↦ v ∈ m → k ≢ k' → k' ↦ v ∈ delete k m
       del-noAdd : ∀ {k k' v m} → k ↦ v ∈ delete k' m → k ↦ v ∈ m
       del-removeK : ∀ {k v m} → k ↦ v ∉ delete k m

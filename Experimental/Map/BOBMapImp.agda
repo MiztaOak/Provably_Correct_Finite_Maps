@@ -182,7 +182,7 @@ module BMapAVLInstance (V : Set ℓ) where
       where
         leftSide = λ k' v x → map $ del-∉del⊆ k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m (toNotAny prf) k' v (toAny x)
         rightSide = λ k' v x → map $ del-∉m⊆ k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m (toNotAny prf) k' v (toAny x)
-    DMap.del-∈ deleteMap {k} {map m} prf = toNotAnyM $ del-∈ k m ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ (toAny prf)
+    DMap.del-∈ deleteMap {k} {map m} (map prf) = del-∈ k m ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ prf
     DMap.del-safe deleteMap {k} {k'} {m = map m} (map prf) nEq =
       map $ del-safe k k' m ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ prf nEq
     DMap.del-noAdd deleteMap {k} {k'} {m = map m} (map prf) =
