@@ -129,10 +129,12 @@ module BMapAVLInstance (V : Set ℓ) where
     -- Insertion and lookup proofs
     ---------------------------------------------------------------------------------
     BMap.ips basicMap P (base , step) (map m) = {!!}
-      --ip-insert (λ x → P {!!}) ((λ {l} {u} ⦃ l<u ⦄ → base) , λ m' x k v nEq → step {!map!} {!!} k v {!nEq!}) m
+
     BMap.lookup-∅ basicMap _ = refl
     BMap.∈⇒lookup basicMap (map m) k prf = map $ ∈⇒lookup m k prf
     BMap.lookup⇒∈ basicMap (map m) k v (map prf) = lookup⇒∈ k m prf
+    BMap.∉⇒nothing basicMap (map m) k prf = ∉⇒nothing (toNotAny prf)
+    BMap.nothing⇒∉ basicMap (map m) k prf = toNotAnyM (nothing⇒∉ prf)
     BMap.lookup≡lookup∈ basicMap k (map m) (map prf) = lookup≡lookup∈ k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m prf
     BMap.mapsTo basicMap (map prf) = map (mapsTo prf)
     BMap.lookup-insert basicMap k (map m) f = lookup-insert k ⦃ ⊥⁺<[ k ] ⦄ ⦃ [ k ]<⊤⁺ ⦄ m f

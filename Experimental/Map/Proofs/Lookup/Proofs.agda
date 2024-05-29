@@ -35,6 +35,36 @@ mapsTo (left prf)  = left (mapsTo prf)
 mapsTo (right prf) = right (mapsTo prf)
 
 ---------------------------------------------------------------------------------
+-- ∉⇒nothing
+---------------------------------------------------------------------------------
+∉⇒nothing : ∀ {l u : Key⁺} {h : ℕ} {m : BOBMap V l u h} {k : Key}
+  → k ∉ m → lookup m k ≡ nothing
+∉⇒nothing {m = leaf} {k} prf = refl
+∉⇒nothing {m = node p lm rm bal} {k} k∉m with compare k (proj₁ p)
+... | tri< k<p _ _ = ∉⇒nothing (∉Left k<p k∉m)
+... | tri≈ _ refl _ = ⊥-elim (k∉m (here ⦃ mklim lm ⦄ ⦃ mklim rm ⦄ tt))
+... | tri> _ _ p<k = ∉⇒nothing (∉Right p<k k∉m)
+
+---------------------------------------------------------------------------------
+-- ∉⇒nothing
+---------------------------------------------------------------------------------
+nothing⇒∉ : ∀ {l u : Key⁺} {h : ℕ} {m : BOBMap V l u h} {k : Key}
+  → (lookup m k ≡ nothing) → k ∉ m
+nothing⇒∉ {m = leaf} {k} eq ()
+nothing⇒∉ {m = node p lm rm bal} {k} eq (left ⦃ k<p ⦄ prf ) with compare k (proj₁ p)
+... | tri< k<p _ _ = nothing⇒∉ eq prf
+nothing⇒∉ {m = node p _ _ _} {.(proj₁ p)} () (left prf) | tri≈ _ refl _
+... | tri> ¬k<p _ _ = ⊥-elim (¬k<p [ k<p ]-lower)
+nothing⇒∉ {m = node p lm rm bal} {k} eq (here tt) with compare k (proj₁ p)
+... | tri< _ k≢p _ = ⊥-elim (k≢p refl)
+nothing⇒∉ {m = node .(k , _) _ _ _} {k} () (here tt) | tri≈ _ refl _
+... | tri> _ k≢p _ = ⊥-elim (k≢p refl)
+nothing⇒∉ {m = node p lm rm bal} {k} eq (right ⦃ p<k ⦄ prf) with compare k (proj₁ p)
+... | tri< _ _ ¬p<k = ⊥-elim (¬p<k [ p<k ]-lower)
+nothing⇒∉ {m = node p _ _ _} {.(proj₁ p)} () (right prf) | tri≈ _ refl _
+... | tri> _ _ p<k = nothing⇒∉ eq prf
+
+---------------------------------------------------------------------------------
 -- ∈⇒lookup
 ---------------------------------------------------------------------------------
 ∈⇒lookup : ∀ {l u : Key⁺} {h : ℕ} (m : BOBMap V l u h) (k : Key) {v : V}

@@ -83,6 +83,9 @@ module _ {ℓ₁ : Level} {K : Set ℓ} {V : Set ℓ'} where
       ∈⇒lookup : ∀ m k {v} → lookup m k ≡ just v → k ↦ v ∈ m
       lookup⇒∈ : ∀ m k v → k ↦ v ∈ m → lookup m k ≡ just v
 
+      ∉⇒nothing : ∀ m k → k ∉ m → lookup m k ≡ nothing
+      nothing⇒∉ : ∀ m k → lookup m k ≡ nothing → k ∉ m
+
       lookup≡lookup∈ : ∀ k m → (k∈m : k ∈ m) → just (lookup∈ k∈m) ≡ lookup m k
 
       -- would this be usefull?
