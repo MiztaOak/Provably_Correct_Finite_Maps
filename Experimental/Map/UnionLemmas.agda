@@ -15,6 +15,10 @@ open import Relation.Nullary.Negation.Core using (¬_; contradiction)
 open import Relation.Binary.PropositionalEquality.Core
 open import Relation.Binary.Definitions
 
+n⊔n≡n : ∀ n → n ⊔ n ≡ n
+n⊔n≡n zero = refl
+n⊔n≡n (suc n) rewrite n⊔n≡n n = refl
+
 n+0 : ∀ n → n + 0 ≡ n
 n+0 zero = refl
 n+0 (suc n) rewrite n+0 n = refl
