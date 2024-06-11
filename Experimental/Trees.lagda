@@ -1,3 +1,9 @@
+\newcommand{\DataF}{
+\begin{code}
+{-# OPTIONS --erasure #-}
+\end{code}
+}
+
 \begin{code}[hide]
 module Trees where
 
@@ -31,56 +37,54 @@ S × T = Σ S λ _ → T
 infixr 5 _×_
 \end{code}
 
-\newcommand{\Tree1}{
+\newcommand{\TreeA}{
+\begin{code}[hide]
+module one where
+\end{code}
 \begin{code}
-module one (Key : Set) (Val : Set) where
-
   data Tree : Set where
     leaf : Tree
 \end{code}
 }
 
-\newcommand{\Tree2}{
-\begin{code}
-module two (Key : Set) (Val : Set) where
+\begin{code}[hide]
+postulate
+  v : Level
+  Key⁺ : Set
+  _<⁺_ : Set → Set → Set
+  Key : Set
+\end{code}
 
-  data Tree : Set where
-    leaf : Tree
-    node : Key → (l : Tree) → (r : Tree) → Tree
+\newcommand{\TreeB}{
+\begin{code}[hide]
+module two (V : Set) where
+\end{code}
+\begin{code}
+  data Tree (V : Set) : Set where
+    leaf : Tree V
+    node : (Key × V)
+      → (l : Tree V)
+      → (r : Tree V)
+      → Tree V
 \end{code}
 }
 
-\newcommand{\Tree3}{
+\newcommand{\TreeC}{
+\begin{code}[hide]
+module three (V : Set) where
+\end{code}
 \begin{code}
-module three (Key : Set) (Val : Set) where
-
-  data Tree : ℕ → Set where
-    leaf : Tree 0
-    node : ∀ {hl hr} → Key
-      → (l : Tree hl) → (r : Tree hr)
-      → Tree (1 + hl + hr)
+  data Tree (V : Set) : ℕ → Set where
+    leaf : Tree V 0
+    node : ∀ {hl hr}
+      → (Key × V)
+      → (l : Tree V hl)
+      → (r : Tree V hr)
+      → Tree V (1 + hl ⊔ hr)
 \end{code}
 }
 
-\newcommand{\Tree4}{
-\begin{code}
-data _~_⊔_ : ℕ → ℕ → ℕ → Set where
-  ~- : ∀ {n} → suc n ~ n ⊔ suc n
-  ~0 : ∀ {n} → n ~ n ⊔ n
-  ~+ : ∀ {n} → n ~ suc n ⊔ suc n
-
-module four (Key : Set) (Val : Set) where
-
-  data Tree : ℕ → Set where
-    leaf : Tree 0
-    node : ∀ {hl hr h} → Key
-      → (l : Tree hl) → (r : Tree hr)
-      → {{bal : hl ~ hr ⊔ h}}
-      → Tree (1 + h)
-\end{code}
-}
-
-\newcommand{\Tree5}{
+\newcommand{\McBrideOrdering}{
 \begin{code}
 Rel : Set → Set₁
 Rel A = A × A → Set
@@ -95,15 +99,49 @@ ext R (_ , top) = ⊤
 ext R ([ x ] , [ y ]) = R (x , y)
 ext R (bot , _) = ⊤
 ext R _         = ⊥
+\end{code}
+}
 
-module five {ℓ : Level} (Key : Set)
-  (Val : Set) (R : Rel Key) where
+\newcommand{\TreeD}{
+\begin{code}[hide]
+module four {ℓ : Level} (KV : Set)
+  (R : Rel KV) where
+\end{code}
+\begin{code}
+  data Tree (V : Set) (l u : Order KV)
+    : ℕ → Set where
+    leaf : {{l<u : l <⁺ u}}
+      → Tree V l u 0
+    node : ∀ {hl hr} → (kv : KV)
+      → (l : Tree V l [ kv ] hl)
+      → (r : Tree V [ kv ] u hr)
+      → Tree V l u (1 + hl ⊔ hr)
+\end{code}
+}
 
-  data Tree (l u : Order Key) : ℕ → Set ℓ where
-    leaf : {{l<u : ext R (l , u)}} → Tree l u 0
-    node : ∀ {hl hr h} → (k : Key)
-      → (l : Tree l [ k ] hl) → (r : Tree [ k ] u hr)
+\newcommand{\DataE}{
+\begin{code}
+data _~_⊔_ : ℕ → ℕ → ℕ → Set where
+  ~- : ∀ {n} → suc n ~ n ⊔ suc n
+  ~0 : ∀ {n} → n ~ n ⊔ n
+  ~+ : ∀ {n} → n ~ suc n ⊔ suc n
+\end{code}
+}
+
+\newcommand{\TreeE}{
+\begin{code}[hide]
+module five {ℓ : Level} (KV : Set)
+  (R : Rel KV) where
+\end{code}
+\begin{code}
+  data Tree (V : Set) (l u : Order KV)
+    : ℕ → Set where
+    leaf : {{l<u : l <⁺ u}}
+      → Tree V l u 0
+    node : ∀ {hl hr h} → (kv : KV)
+      → (l : Tree V l [ kv ] hl)
+      → (r : Tree V [ kv ] u hr)
       → {{bal : hl ~ hr ⊔ h}}
-      → Tree l u (1 + h)
+      → Tree V l u (1 + h)
 \end{code}
 }

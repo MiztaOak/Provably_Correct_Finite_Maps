@@ -1,5 +1,4 @@
 {-# OPTIONS --erasure #-}
-{-# OPTIONS --allow-unsolved-metas #-}
 open import Relation.Binary.Bundles using (StrictTotalOrder)
 open import OrdSet
 
@@ -261,7 +260,6 @@ module _ {v} {V : Set v} where
 
   -- * GENERAL JOIN STARTS HERE ----------------------------------------------
 
-  -- TODO: Look over these lemmas
   lemR : {n m : ℕ} → max (suc (m + n)) m ≡ suc (m + n)
   lemR {n} {zero} = refl
   lemR {n} {suc m} rewrite lemR {n} {m} = refl
@@ -434,7 +432,6 @@ module _ {v} {V : Set v} where
   lemin {h = h} {x = x} {m = leaf} ()
   lemin {h = suc h} {m = node (x , _) l r b} _ = h , refl
 
-  -- what the hell??
   sa≤b⇒a≤sb : ∀ {a b} → suc a ≤ b → a ≤ suc b
   sa≤b⇒a≤sb {a} {b} prf = s≤s⁻¹ (m≤n⇒m≤1+n (m≤n⇒m≤1+n prf))
 
@@ -467,7 +464,7 @@ module _ {v} {V : Set v} where
       leftS : Split k ₗ [ k' ] hl
       leftS = splitAt k {{l<k}} {{[ x ]ᴿ}} l
 
-      lt : SplitPartL {ₗ} {ᵘ} sh k --∃ λ hl' → hl' ≤ sh × BOBMap V ₗ [ k ] hl'
+      lt : SplitPartL {ₗ} {ᵘ} sh k
       lt with lembal b
       lt | inr (inr (o , _))
         = ltI (Split.leftH leftS) (≤-trans (Split.leftP leftS) (m≤n⇒m≤1+n o)) (Split.leftT leftS)
@@ -476,15 +473,12 @@ module _ {v} {V : Set v} where
       lt | inl (o , _)
         = ltI (Split.leftH leftS) (≤-trans (Split.leftP leftS) (sa≤b⇒a≤sb o)) (Split.leftT leftS)
 
-      -- a bit (very) convoluted, surely there are better ways to do this
-      -- also uses a few lemmas which are not proven yet
-      rt : SplitPartR {ₗ} {ᵘ} sh k --∃ λ hr' → hr' ≤ sh × BOBMap V [ k ] ᵘ hr'
+      rt : SplitPartR {ₗ} {ᵘ} sh k
       rt with leftS
       rt | split _ _ _ _ ht ht<hl t with gJoin (k' , v') t r
       rt | split _ _ _ _ ht ht<hl t | 0# , β with lembal b
       ... | inl (hl<h , hr≤h)
         = rtI (max ht hr) (lem≤max (≤-trans ht<hl (sa≤b⇒a≤sb hl<h)) (m≤n⇒m≤1+n hr≤h)) β
-      -- max ht hr , lem≤max (≤-trans ht<hl (m≤n⇒m≤1+n hl<h)) (m≤n⇒m≤1+n hr<h) , β
       ... | inr (inl (hl≤h , hr<h))
         = rtI (max ht hr) (lem≤max (≤-trans ht<hl (m≤n⇒m≤1+n hl≤h)) (sa≤b⇒a≤sb hr<h)) β
       ... | inr (inr (hl≤h , hr≤h))
@@ -537,7 +531,7 @@ module _ {v} {V : Set v} where
       rightS : Split k [ k' ] ᵘ hr
       rightS = splitAt k {{[ x ]ᴿ}} r
 
-      rt : SplitPartR {ₗ} {ᵘ} sh k --∃ λ hr' → hr' ≤ sh × BOBMap V [ k ] ᵘ hr'
+      rt : SplitPartR {ₗ} {ᵘ} sh k
       rt with lembal b
       rt | inl (_ , o) with rightS
       ... | split _ _ _ _ ht ht<hr t = rtI ht (≤-trans ht<hr (m≤n⇒m≤1+n o)) t
@@ -546,7 +540,7 @@ module _ {v} {V : Set v} where
       rt | inr (inr (o , u)) with rightS
       ... | split _ _ _ _ ht ht<hr t = rtI ht (≤-trans ht<hr (m≤n⇒m≤1+n u)) t
 
-      lt : SplitPartL {ₗ} {ᵘ} sh k --∃ λ hl' → hl' ≤ sh × BOBMap V ₗ [ k ] hl'
+      lt : SplitPartL {ₗ} {ᵘ} sh k
       lt with rightS
       lt | split _ ht ht<hr t _ _ _ with gJoin (k' , v') l t
       lt | split _ ht ht<hr t _ _ _ | 0# , β with lembal b
@@ -577,290 +571,7 @@ module _ {v} {V : Set v} where
           β
 
   -- * UNION STARTS HERE -----------------------------------------------------
-{-
-  sa+n : ∀ {a n} → suc (a + n) ≡ a + suc n
-  sa+n {zero} {zero} = refl
-  sa+n {zero} {suc n} = refl
-  sa+n {suc a} {n} rewrite sa+n {a} {n} = refl
 
-  ≤+n : ∀ {a b n} → a ≤ b → a ≤ b + n
-  ≤+n {zero} {b} {n} p = z≤n
-  {-# CATCHALL #-}
-  ≤+n {a} {b} {zero} p rewrite n+0 b = p
-  {-# CATCHALL #-}
-  ≤+n {a} {b} {suc n} p with m≤n⇒m≤1+n (≤+n {a} {b} {n} p)
-  ... | x rewrite sa+n {b} {n} = x
-
-  lemgt : ∀ {a b c n} → b ≤ c → a ≡ c + n → max a b ≡ c + n
-  lemgt {a} {b} {c} {n} p1 p2 with ≤+n {n = n} p1
-  ... | x rewrite p2 with m≤n⇒m⊔n≡n x
-  ... | y rewrite ⊔-comm b (c + n) = y
--}
-  n⊔n≡n : ∀ n → max n n ≡ n
-  n⊔n≡n n = lemC {n}
-{-
-  mab≡mba : ∀ a b → max a b ≡ max b a
-  mab≡mba a b = ⊔-comm a b
-
-  lemm : ∀ {a b} → b ≤ a → max a b ≡ a
-  lemm {zero} {zero} p1 = refl
-  lemm {suc a} {zero} p1 = refl
-  lemm {suc a} {suc b} (s≤s p1) rewrite lemm p1 = refl
-
-  lemm' : ∀ {a b} → b ≤ a → max b a ≡ a
-  lemm' {zero} {zero} p1 = refl
-  lemm' {suc a} {zero} p1 = refl
-  lemm' {suc a} {suc b} (s≤s p1) = n≡n⇒sn≡sn (lemm' p1)
-
-  ⊔-0 : ∀ {n} → max n zero ≡ n
-  ⊔-0 {zero} = refl
-  ⊔-0 {suc n} = refl
-
-  lemm+n : ∀ {a b n} → b ≤ a → max (a + n) b ≡ a + n
-  lemm+n {zero} {zero} {n} p1 = ⊔-0 {n}
-  lemm+n {suc a} {zero} {n} p1 = refl
-  lemm+n {suc a} {suc b} {n} (s≤s p1) with b ≤? a
-  ... | yes x rewrite lemm+n {a} {b} {n} x = refl
-  ... | no  x = contradiction p1 x
-
-  n≢sn : ∀ {n} → ¬ n ≡ suc n
-  n≢sn {n} ()
-
-  sa≰sb⇒a≰b : ∀ {a b} → ¬ (suc a) ≤ (suc b) → ¬ a ≤ b
-  sa≰sb⇒a≰b {a} {b} sa≰sb a≤b = contradiction (s≤s a≤b) sa≰sb
-
-  a≰b∧a≤sb⇒a=sb : ∀ {a b} → ¬ a ≤ b → a ≤ suc b → a ≡ suc b
-  a≰b∧a≤sb⇒a=sb {zero} {b} p1 p2 = ⊥-elim (p1 z≤n)
-  a≰b∧a≤sb⇒a=sb {suc a} {zero} p1 p2
-    rewrite n≤0⇒n≡0 (s≤s⁻¹ p2) = refl
-  a≰b∧a≤sb⇒a=sb {suc a} {suc b} p1 p2
-    rewrite a≰b∧a≤sb⇒a=sb {a} {b} (sa≰sb⇒a≰b p1) (s≤s⁻¹ p2) = refl
-
-  postulate
-    a+sb≡sc⇒a+b≡c : ∀ {a b c} → a + suc b ≡ suc c → c ≡ a + b
-
-  lemA : ∀ {hlʳ hrʳ hl n hL hR}
-         → hlʳ ~ hrʳ ⊔ hl + n
-         → hL ≤ hl
-         → hR ≤ hl
-         → max hlʳ hL ~ max hrʳ hR ⊔ hl + n
-  lemA {hlʳ} {hrʳ} {hl} {zero} {hL} {hR} b hl<hl hr<hl
-    rewrite n+0 hl with bigbal b
-  ... | inl (refl , refl)
-    rewrite lemm hl<hl rewrite lemm hr<hl = b
-  ... | inr (inl (refl , refl))
-    rewrite lemm hl<hl rewrite lemm hr<hl = fun
-    where
-      fun : suc hrʳ ~ max hrʳ hR ⊔ suc hrʳ
-      fun with hR ≤? hrʳ
-      ... | yes x rewrite lemm x = ~-
-      ... | no  x rewrite a≰b∧a≤sb⇒a=sb x hr<hl rewrite lem4R {hrʳ} = ~0
-  ... | inr (inr (refl , refl))
-    rewrite lemm hl<hl rewrite lemm hr<hl = fun
-    where
-      fun : max hlʳ hL ~ suc hlʳ ⊔ suc hlʳ
-      fun with hL ≤? hlʳ
-      ... | yes x rewrite lemm x = b
-      ... | no  x rewrite a≰b∧a≤sb⇒a=sb x hl<hl rewrite lem4R {hlʳ} = ~0
-  lemA {hlʳ} {hrʳ} {hl} {suc n} {hL} {hR} b hl<hl hr<hl
-    with bigbal b
-  ... | inl (refl , refl)
-    rewrite lemm+n {n = suc n} hl<hl rewrite lemm+n {n = suc n} hr<hl = b
-  ... | inr (inl (refl , t))
-    rewrite lemm+n {n = suc n} hl<hl
-    rewrite a+sb≡sc⇒a+b≡c t
-    rewrite lemm+n {n = n} hr<hl = b
-  ... | inr (inr (refl , t))
-    rewrite lemm+n {n = suc n} hr<hl
-    rewrite a+sb≡sc⇒a+b≡c t
-    rewrite lemm+n {n = n} hl<hl = b
-
-  postulate
-    tttt : ∀ {a b n} → a + suc n ≡ suc b → a + n ≡ b
-    pppp : ∀ {a b c n} → c + n ≡ a → b ≤ c → max a b ≡ a
-
-  ssss : ∀ {a b c n}
-         → c + n ≡ suc a
-         → b ≤ c
-         → suc (max a b) ≡ c + n ⊎ suc (max a b) ≡ suc c + n
-  ssss {a} {b} {c} {zero} c0=sa b<c
-    rewrite n+0 c
-    rewrite c0=sa
-    with b ≤? a
-  ... | yes x
-    rewrite lemm x = inl refl
-  ... | no  x
-    rewrite a≰b∧a≤sb⇒a=sb x b<c
-    rewrite lem4R {a}
-    = inr refl
-  ssss {a} {b} {c} {suc n} c0=sa b<c
-    rewrite c0=sa
-    with b ≤? a
-  ... | yes x
-    rewrite lemm x = inl refl
-  ... | no  x
-    rewrite pppp (tttt c0=sa) b<c
-    = inl refl
-
-  sss2 : ∀ {a b c n}
-         → c + n ≡ suc a
-         → b ≤ c
-         → max (suc a) (max a b) ≡ suc a
-  sss2 {a} {b} {c} c0=sa b<c with ssss c0=sa b<c
-  ... | inr x
-    rewrite n+0 c
-    rewrite suc-injective x
-    rewrite c0=sa
-    rewrite n⊔n≡n a
-    = refl
-  ... | inl x
-    rewrite n+0 c
-    rewrite c0=sa
-    rewrite suc-injective x
-    rewrite lem4L {a}
-    = refl
-
-  suc≡≤ : ∀ {n m} → n ≡ suc m → m ≤ n
-  suc≡≤ {.(suc m)} {m} refl = n≤1+n m
-
-  sss2L : ∀ {a b c n}
-          → c + n ≡ suc a
-          → b ≤ c
-          → max (max a b) (suc a) ≡ suc a
-  sss2L {a} {b} {c} p1 p2 with sss2 p1 p2
-  ... | x rewrite mab≡mba (max a b) (suc a) = x
-
-  ≤suc : ∀ {n m} → n ≤ m → n ≤ (suc m)
-  ≤suc z≤n = z≤n
-  ≤suc (s≤s prf) = s≤s (≤suc prf)
-
-  fixHeight1# : ∀ {n hlʳ hrʳ hl hR hL}
-    → hlʳ ~ hrʳ ⊔ hl + n
-    → hR ≤ hl
-    → hL ≤ hl
-    → max (suc (max hlʳ hL)) (1# ⊕ max hrʳ hR) ≡ suc (hl + n)
-  fixHeight1# {n} {hl = hl} bal prfR prfL with bigbal (lemA bal prfL prfR)
-  ... | inl (fst , snd) rewrite fst rewrite snd rewrite n⊔n≡n (hl + n) = refl
-  ... | inr (inl (fst , snd)) rewrite fst rewrite lemm (suc≡≤ snd) = refl
-  ... | inr (inr (fst , snd)) rewrite fst rewrite lemm' (suc≡≤ snd) = refl
-
-  m⊔sm⇒sm : ∀ {m} → max (suc m) m ≡ suc m
-  m⊔sm⇒sm {zero} = refl
-  m⊔sm⇒sm {suc m} rewrite m⊔sm⇒sm {m} = refl
-
-  fixMapUR : ∀ {n hlʳ hrʳ hl hR hL} {l u : Key⁺}
-    → (k : Key)
-    → (f : V → Maybe V → V)
-    → (v : V)
-    → (value : Maybe V)
-    → hlʳ ~ hrʳ ⊔ hl + n
-    → hR ≤ hl
-    → hL ≤ hl
-    → BOBMap V l [ k ] (suc (max hlʳ hL))
-    → ∃ (λ j → BOBMap V [ k ] u (j ⊕ max hrʳ hR))
-    → ∃ (λ i → BOBMap V l u (i ⊕ suc (hl + n)))
-  fixMapUR k f v value bal prfR prfL t1 (j , t2) with bigbal (lemA bal prfL prfR)
-  fixMapUR {n} {hl = hl} k f v value bal prfR prfL t1 (j , t2)
-    | inl (fst , snd) rewrite fst rewrite snd with gJoin (k , f v value) t1 t2
-  ... | i , t with j
-  ... | 0# rewrite m⊔sm⇒sm {hl + n} = i , t
-  ... | 1# rewrite n⊔n≡n (hl + n) = i , t
-  fixMapUR {hrʳ = hrʳ} {hR = hR} k f v value bal prfR prfL t1 (j , t2)
-    | inr (inl (fst , snd)) rewrite fst with gJoin (k , f v value) t1 t2
-  ... | i , t with j
-  ... | 0# rewrite snd rewrite lemRR {max hrʳ hR} = i , t
-  ... | 1# rewrite lemm (suc≡≤ snd) = i , t
-  fixMapUR {n} {hl = hl} k f v value bal prfR prfL t1 (j , t2)
-    | inr (inr (fst , snd)) rewrite fst with j
-  ... | 0# rewrite snd = joinʳ⁺ (k , f v value) t1 (0# , t2) ~0
-  ... | 1# with gJoin (k , f v value) t1 t2
-  ... | i , t rewrite lemm' (suc≡≤ snd) = i , t
-
-  lemA' : ∀ {hlʳ hrʳ hL hR hl n : ℕ}
-      → hlʳ ~ hrʳ ⊔ hl + n
-      → hL ≤ hl → hR ≤ hl
-      → max hL hlʳ ~ max hR hrʳ ⊔ hl + n
-  lemA' {hlʳ} {hrʳ} {hL} {hR} bal prfL prfR rewrite ⊔-comm hL hlʳ rewrite ⊔-comm hR hrʳ = lemA bal prfL prfR
-
-  ≤or≡ : ∀ {n m} → n ≤ suc m → n ≤ m ⊎ (n ≡ suc m)
-  ≤or≡ {.zero} {m} z≤n = inl z≤n
-  ≤or≡ {.1} {zero} (s≤s {zero} prf) = inr refl
-  ≤or≡ {suc zero} {suc m} (s≤s prf) = inl (s≤s z≤n)
-  ≤or≡ {suc (suc n)} {suc m} (s≤s prf) with ≤or≡ prf
-  ... | inl x = inl (s≤s x)
-  ... | inr refl = inr refl
-
-  lemA0 : ∀ {hlʳ hrʳ hL hR hl : ℕ}
-      → hlʳ ~ hrʳ ⊔ hl
-      → hL ≤ suc hl → hR ≤ suc hl
-      → max hL hlʳ ~ max hR hrʳ ⊔ hl
-  lemA0 bal prfL prfR with ≤or≡ prfL
-  ... | inl x = {!!}
-  ... | inr refl with ≤or≡ prfR
-  ... | inl x = {!!}
-  ... | inr refl = {!!}
-
-  lemASuc : ∀ {hlʳ hrʳ hL hR hl n : ℕ}
-      → hlʳ ~ hrʳ ⊔ hl
-      → hL ≤ suc (hl + n) → hR ≤ suc (hl + n)
-      → max hL hlʳ ~ max hR hrʳ ⊔ suc (hl + n)
-  lemASuc bal prfL prfR = {!!}
-
-  fixHeight : ∀ i j {h₁ h₂ hl hr hR hL}
-    → hl ~ hr ⊔ h₂
-    → hR ≤ (suc h₁)
-    → hL ≤ (suc h₁)
-    → suc (max h₁ h₂) ≡ max (i ⊕ max hL hl) (j ⊕ max hR hr)
-  fixHeight 0# 0# bal prfR prfL = {!!}
-  fixHeight 0# 1# bal prfR prfL = {!!}
-  fixHeight 1# 0# bal prfR prfL = {!!}
-  fixHeight 1# 1# bal prfR prfL = {!!}
-
-  fixMap : ∀ {i h₁ h₂ hl hr hR hL} {l u : Key⁺}
-    → (k : Key)
-    → (f : V → Maybe V → V)
-    → (v : V)
-    → (value : Maybe V)
-    → hl ~ hr ⊔ h₂
-    → hR ≤ (suc h₁)
-    → hL ≤ (suc h₁)
-    → BOBMap V l [ k ] (i ⊕ (max hL hl))
-    → ∃ (λ j → BOBMap V [ k ] u (j ⊕ max hR hr))
-    → ∃ (λ k → BOBMap V l u (k ⊕ suc (max h₁ h₂)))
-  fixMap {i} {h₁} {h₂} k f v v' bal prfR prfL t1 (j , t2) with compareℕ h₁ h₂
-  ---- h₁ < h₂ ----
-  fixMap {0#} {h₁} {h₂} k f v v' bal prfR prfL t1 (j , t2)
-    | Ordℕ.less .h₁ n rewrite lemL {n} {h₁} = joinʳ⁺ (k , f v v') t1 (j , t2) (lemA' bal prfL prfR)
-  fixMap {1#} {h₁} {h₂} {hl} {hr} {hL} {hR} k f v v' bal prfR prfL t1 (j , t2)
-    | Ordℕ.less .h₁ n rewrite lemL {n} {h₁}
-      rewrite ⊔-comm hR hl rewrite ⊔-comm hL hr
-      = fixMapUR k f v v' bal prfR prfL t1 (j , t2)
-  ---- h₁ ≡ h₂ ----
-  fixMap {0#} {h₁} {.h₁} k f v v' bal prfR prfL t1 (j , t2)
-    | Ordℕ.equal .h₁ rewrite n⊔n≡n h₁ = joinʳ⁺ (k , f v v') t1 (j , t2) (lemA0 bal prfL prfR)
-  fixMap {1#} {h₁} {.h₁} k f v v' bal prfR prfL t1 (j , t2)
-    | Ordℕ.equal .h₁ rewrite n⊔n≡n h₁ = {!gJoin (k , f v v') t1 t2!}
-  ---- h₁ > h₂ ----
-  fixMap {0#} {h₁} {h₂} k f v v' bal prfR prfL t1 (j , t2)
-    | Ordℕ.greater .h₂ n rewrite lemR {n} {h₂} = joinʳ⁺ (k , f v v') t1 (j , t2) {!lemASuc bal  !}
-  fixMap {1#} {h₁} {h₂} k f v v' bal prfR prfL t1 (j , t2)
-    | Ordℕ.greater .h₂ n rewrite lemR {n} {h₂} = {!!}
--}
-  -- UNION ------------------------------------------------------
-{-
-  union : {h1 h2 : ℕ} → ∀ {l u}
-          → (V → Maybe V → V)
-          → BOBMap V l u h1
-          → BOBMap V l u h2
-          → ∃ λ n → BOBMap V l u (n ⊕ max h1 h2)
-  union f leaf n@leaf = 0# , (leaf ⦃ mklim n ⦄)
-  union f leaf n@(node _ _ _ _) = 0# , n
-  union f m@(node _ _ _ _) leaf = 0# , m
-  union f m@(node _ _ _ _) n@(node (k , v) lt rt bal) with splitAt k ⦃ mklim lt ⦄ ⦃ mklim rt ⦄ m
-  ... | split value (hL , prfL , treeL) (hR , prfR , treeR) with union f treeL lt
-  ... | i , t1 with union f treeR rt
-  ... | j , t2 rewrite fixHeight i j bal prfR prfL = gJoin (k , f v value) t1 t2 -- fixMap {i} k f v value bal prfR prfL t1 (union f treeR rt)
--}
   baltomax : ∀ a b c → a ~ b ⊔ c → max a b ≡ c
   baltomax a .(1 + a) .(1 + a) ~+ = n⊔sn≡sn a
   baltomax a .a .a ~0 = n⊔n≡n a
@@ -893,27 +604,6 @@ module _ {v} {V : Set v} where
     = s≤s (⊔-lub (≤-trans p4 (a≤b+c≤d⇒a+c≤b+d hR (suc s₁) hr s₂ p2 snd))
                  (≤-trans p3 (a≤b+c≤d⇒a+c≤b+d hL (suc s₁) hl s₂ p1 fst)))
 
-  -- Given a lower bound of max h1 h2 ≤ h where h is the output height and
-  -- h1 & h2 are input heights it is not possible to prove it with the
-  -- existing information.
-  -- The furthest I can get is
-  --   max hR hr ≤ suc (max s₁ s₂)
-  --   max hL hl ≤ suc (max s₁ s₂)
-  -- but this does not help showing that suc (max s₁ s₂) ≤ max uL uR as we
-  -- know nothing about the relation of uL/uR and s₁/s₂.
-  lbound : (s₁ s₂ hl hr hL hR uL uR : ℕ)
-    → hl ~ hr ⊔ s₂
-    → (∃ λ i → i ⊕ s₁ ≡ max hL hR)
---    → hL ≤ suc s₁
---    → hR ≤ suc s₁
-    → max hL hl ≤ uL
-    → max hR hr ≤ uR
-    → max s₁ s₂ ≤ max uL uR
-  lbound s₁ s₂ hl hr hL hR uL uR b (0# , p1) p3 p4 with baltomax hl hr s₂ b
-  ... | xx rewrite sym xx | p1 | testo hL hl hR hr
-    = testo2 (max hL hl) uL (max hR hr) uR p3 p4
-  lbound s₁ s₂ hl hr hL hR uL uR b (1# , p1) p3 p4 = {!!}
-
   record UnionReturn {@0 l u : Key⁺} {@0 h1 h2 : ℕ}
                      (@0 t₁ : BOBMap V l u h1) (@0 t₂ : BOBMap V l u h2) : Set (k ⊔ v ⊔ ℓ₁) where
     constructor retval
@@ -934,8 +624,6 @@ module _ {v} {V : Set v} where
     → (t1 : BOBMap V l u h1)
     → (t2 : BOBMap V l u h2)
     → UnionReturn t1 t2
---    → ∃ λ h
---      → BOBMap V l u h × h ≤ (h1 + h2)
   union-loose {h1} {h2} f leaf t = retval h2 t ≤-refl
   union-loose {h1} f t leaf = retval h1 t (eqto≤ h1 ≤-refl)
   union-loose {suc s₁} {suc s₂} f t₁@(node p₁ l₁ r₁ b₁) t₂@(node p₂ l₂ r₂ b₂)
@@ -1050,9 +738,3 @@ module _ {v} {V : Set v} where
   ... | ge k'<k = alljoinᴿ {rt⁺ = m} a allL (allInsert ⦃ [ k'<k ]ᴿ ⦄ p allR) bal
     where
       m = insert (k , v) ⦃ [ k'<k ]ᴿ ⦄ rt
-
--- -}
--- -}
--- -}
--- -}
--- -}
